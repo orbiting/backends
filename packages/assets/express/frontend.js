@@ -23,7 +23,8 @@ module.exports = (server) => {
 
     const [_, sanitizedPath, webp] = new RegExp(/(.*?)(\.webp)?$/, 'g').exec(path)
 
-    const result = await fetch(`${FRONTEND_BASE_URL}/${sanitizedPath}`, {
+    const frontendUrl = `${FRONTEND_BASE_URL}/${sanitizedPath}`
+    const result = await fetch(frontendUrl, {
       method: 'GET',
       headers: {
         Authorization: FRONTEND_AUTHORIZATION_HEADER
@@ -41,7 +42,10 @@ module.exports = (server) => {
     return returnImage({
       response: res,
       stream: result.body,
-      headers: result.headers,
+      headers: {
+        ...result.headers,
+        Link: `<${frontendUrl}>; rel="canonical"`
+      },
       options: {
         ...req.query,
         webp: !!webp

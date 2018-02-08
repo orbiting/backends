@@ -14,6 +14,7 @@ const pipeHeaders = [
   'Access-Control-Allow-Headers',
   'Access-Control-Allow-Methods',
   'Access-Control-Allow-Origin',
+  'Link'
 ]
 
 module.exports = async ({
