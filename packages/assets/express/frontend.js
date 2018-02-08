@@ -38,14 +38,12 @@ module.exports = (server) => {
       console.error('frontend fetch failed', result.url, result.status)
       return res.status(result.status).end()
     }
+    result.headers.set('Link', `<${frontendUrl}>; rel="canonical"`)
 
     return returnImage({
       response: res,
       stream: result.body,
-      headers: {
-        ...result.headers,
-        Link: `<${frontendUrl}>; rel="canonical"`
-      },
+      headers: result.headers,
       options: {
         ...req.query,
         webp: !!webp
