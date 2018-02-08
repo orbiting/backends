@@ -2,7 +2,8 @@ const fetch = require('isomorphic-unfetch')
 const debug = require('debug')('assets:frontend')
 const { returnImage } = require('../lib')
 const {
-  FRONTEND_BASE_URL
+  FRONTEND_BASE_URL,
+  FRONTEND_AUTHORIZATION_HEADER
 } = process.env
 
 if (!FRONTEND_BASE_URL) {
@@ -23,7 +24,10 @@ module.exports = (server) => {
     const [_, sanitizedPath, webp] = new RegExp(/(.*?)(\.webp)?$/, 'g').exec(path)
 
     const result = await fetch(`${FRONTEND_BASE_URL}/${sanitizedPath}`, {
-      method: 'GET'
+      method: 'GET',
+      headers: {
+        Authorization: FRONTEND_AUTHORIZATION_HEADER
+      }
     })
       .catch(error => {
         console.error('frontend fetch failed', { error })
