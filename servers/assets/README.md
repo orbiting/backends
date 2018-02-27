@@ -40,10 +40,13 @@ GITHUB_APP_KEY=
 
 # base url used on /frontend
 FRONTEND_BASE_URL=http://localhost:3010
+FRONTEND_AUTHORIZATION_HEADER=
 
 # whiteliste buckets with regions for /s3
 AWS_BUCKET_WHITELIST=republik-assets:eu-central-1
 ```
+
+If the frontend is HTTP basic-auth protected, you can generate a basic authorization header with Basic ${(new Buffer('user:password')).toString('base64')} in Node.js and use it with FRONTEND_AUTHORIZATION_HEADER. This does create a back door access to the front end.
 
 Install dependencies.
 ```
