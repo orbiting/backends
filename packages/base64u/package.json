@@ -1,6 +1,6 @@
 {
   "name": "@orbiting/backend-modules-base64u",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Encode and decode strings to base64 in an urlsafe manner",
   "main": "index.js",
   "repository": {
