@@ -1,4 +1,4 @@
-const { encode, decode, match } = require('./index')
+const { encode, decode, match, ensureDecodedEmail } = require('./index')
 const abab = require('abab')
 const test = require('tape')
 
@@ -102,6 +102,42 @@ const testSeries = (env, runEnv) => {
       assert,
       assert => {
         assert.equal(match('cGV0ZXI/Xw'), false)
+        assert.end()
+      }
+    )
+  )
+
+  test(
+    `(${env}) base64u.ensureDecodedEmail encoded "heidi@alm.tld"`,
+    assert => runEnv(
+      assert,
+      assert => {
+        assert.equal(
+          ensureDecodedEmail('aGVpZGlAYWxtLnRsZA'),
+          'heidi@alm.tld'
+        )
+        assert.end()
+      }
+    )
+  )
+
+  test(
+    `(${env}) base64u.ensureDecodedEmail plain "heidi@alm.tld"`,
+    assert => runEnv(
+      assert,
+      assert => {
+        assert.equal(ensureDecodedEmail('heidi@alm.tld'), 'heidi@alm.tld')
+        assert.end()
+      }
+    )
+  )
+
+  test(
+    `(${env}) base64u.ensureDecodedEmail empty string`,
+    assert => runEnv(
+      assert,
+      assert => {
+        assert.equal(ensureDecodedEmail(''), '')
         assert.end()
       }
     )

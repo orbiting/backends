@@ -23,16 +23,25 @@ const fromUnicode = string => decodeURIComponent(
   }).join('')
 )
 
+const decode = base64u => {
+  return typeof window === 'object'
+    ? fromUnicode(window.atob(urlDecode(base64u)))
+    : Buffer.from(urlDecode(base64u), 'base64').toString('utf8')
+}
+
+const encode = string => urlEncode(
+  typeof window === 'object'
+    ? window.btoa(toUnicode(string))
+    : Buffer.from(string, 'utf8').toString('base64')
+)
+
+const match = base64u => /^[A-Za-z0-9\-_]+$/.test(base64u)
+
+const ensureDecodedEmail = (email = '') => match(email) ? decode(email) : email
+
 module.exports = {
-  decode: base64u => {
-    return typeof window === 'object'
-      ? fromUnicode(window.atob(urlDecode(base64u)))
-      : Buffer.from(urlDecode(base64u), 'base64').toString('utf8')
-  },
-  encode: string => urlEncode(
-    typeof window === 'object'
-      ? window.btoa(toUnicode(string))
-      : Buffer.from(string, 'utf8').toString('base64')
-  ),
-  match: base64u => /^[A-Za-z0-9\-_]+$/.test(base64u)
+  decode,
+  encode,
+  match,
+  ensureDecodedEmail
 }
