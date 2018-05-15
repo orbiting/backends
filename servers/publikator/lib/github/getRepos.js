@@ -1,8 +1,5 @@
 const { lib: { clients: createGithubClients } } = require('@orbiting/backend-modules-github')
-
-const {
-  GITHUB_LOGIN
-} = process.env
+const config = require('config')
 
 const fragments = `
 fragment LatestPublicationProbs on Ref {
@@ -138,7 +135,7 @@ const listQuery = args => ({
   `,
   variables: {
     ...args,
-    login: GITHUB_LOGIN
+    login: config.get('github.default.login')
   }
 })
 
@@ -158,7 +155,7 @@ const nameQuery = repoNames => ({
     }
   `,
   variables: {
-    login: GITHUB_LOGIN
+    login: config.get('github.default.login')
   }
 })
 
@@ -176,7 +173,7 @@ module.exports = {
       }
 
       const search = await githubRest.search.code({
-        q: `org:${GITHUB_LOGIN} ${args.search}`,
+        q: `org:${config.get('github.default.login')} ${args.search}`,
         per_page: args.first
       })
 

@@ -1,4 +1,5 @@
 const { Roles: { ensureUserHasRole } } = require('@orbiting/backend-modules-auth')
+const config = require('config')
 const { getRepos, tagNormalizer } = require('../../../lib/github')
 
 const {
@@ -7,10 +8,7 @@ const {
 } = require('../Repo')
 const { document: getDocument } = require('../Commit')
 
-const {
-  GITHUB_LOGIN,
-  REPOS_NAME_FILTER
-} = process.env
+const { REPOS_NAME_FILTER } = process.env
 
 module.exports = async (__, args, { user, redis }) => {
   ensureUserHasRole(user, 'editor')
@@ -31,7 +29,7 @@ module.exports = async (__, args, { user, redis }) => {
       .map(async (repository) => {
         const repo = {
           ...repository,
-          id: `${GITHUB_LOGIN}/${repository.name}`
+          id: `${config.get(`github.default.login`)}/${repository.name}`
         }
 
         const latestCommit = await getCommit(repo, { id: repo.defaultBranchRef.target.oid }, { redis })
