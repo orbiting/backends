@@ -1,23 +1,17 @@
-const checkEnv = require('check-env')
 const { parse } = require('url')
+const checkEnv = require('check-env')
+const config = require('config')
 const visit = require('unist-util-visit')
 
 checkEnv([
   'FRONTEND_BASE_URL'
 ])
 
-const {
-  GITHUB_LOGIN,
-  FRONTEND_BASE_URL
-} = process.env
+const { FRONTEND_BASE_URL } = process.env
 
 const PUBLIC_HOSTNAME = parse(FRONTEND_BASE_URL).hostname
 
 const getRepoId = (url, requireQuery) => {
-  checkEnv([
-    'GITHUB_LOGIN'
-  ])
-
   if (!url) {
     return
   }
@@ -33,7 +27,7 @@ const getRepoId = (url, requireQuery) => {
   if (
     hostname !== 'github.com' ||
     pathSegments.length !== 2 ||
-    pathSegments[0] !== GITHUB_LOGIN
+    pathSegments[0] !== config.get('github.default.login')
   ) {
     return
   }
