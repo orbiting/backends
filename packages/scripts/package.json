@@ -20,6 +20,7 @@
     "link": "yarn link"
   },
   "dependencies": {
-    "child-process-promise": "^2.2.1"
+    "child-process-promise": "^2.2.1",
+    "config": "^1.30.0"
   }
 }
