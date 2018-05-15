@@ -1,6 +1,9 @@
 require('@orbiting/backend-modules-env').config()
 const server = require('./server')
 const throng = require('throng')
+const path = require('path')
+
+process.env.NODE_CONFIG_DIR = path.resolve('../../config')
 
 const {
   CLUSTER,
