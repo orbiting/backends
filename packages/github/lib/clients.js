@@ -1,20 +1,21 @@
 const { createApolloFetch } = require('apollo-fetch')
+const config = require('config')
+
 const GitHubApi = require('@octokit/rest')
+
 const appAuth = require('./appAuth')
 
-const {
-  GITHUB_LOG_RATELIMIT
-} = process.env
 const DEV = process.env.NODE_ENV && process.env.NODE_ENV !== 'production'
 
 let installationToken
 let nextRateLimitCheck
 
-module.exports = async () => {
-  const nearFuture = new Date()
-  nearFuture.setMinutes(nearFuture.getMinutes() + 15)
-  if (!installationToken || installationToken.expiresAt < nearFuture) {
-    installationToken = await appAuth.getInstallationToken()
+module.exports = async (githubEnv = 'default') => {
+  const now = Date.now()
+  const later = now + (15 * 60 * 1000) // Add 15 minutes
+
+  if (!installationToken || installationToken.expiresAt < later) {
+    installationToken = await appAuth.getInstallationToken(githubEnv)
   }
 
   const githubApolloFetch = createApolloFetch({
@@ -46,16 +47,16 @@ module.exports = async () => {
     token: installationToken.token
   })
 
-  if (GITHUB_LOG_RATELIMIT) {
-    const now = new Date().getTime()
+  if (config.get(`github.${githubEnv}.rateLimit`)) {
     if (!nextRateLimitCheck || nextRateLimitCheck <= now) {
-      nextRateLimitCheck = now + 15 * 60 * 1000
+      nextRateLimitCheck = later
       githubRest.misc.getRateLimit({})
         .then(response => {
           if (!response.data) {
             console.error('could not get rateLimit!', response)
           } else {
             const { data } = response
+
             try { // sanitize dates
               data.resources.core.resetDate = new Date(data.resources.core.reset * 1000).toString()
               data.resources.search.resetDate = new Date(data.resources.search.reset * 1000).toString()

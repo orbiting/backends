@@ -1,14 +1,8 @@
-const jwt = require('jsonwebtoken')
+const config = require('config')
 const fetch = require('isomorphic-unfetch')
-const checkEnv = require('check-env')
+const jwt = require('jsonwebtoken')
 
-const {
-  GITHUB_APP_ID,
-  GITHUB_APP_KEY,
-  GITHUB_INSTALLATION_ID
-} = process.env
-
-const getAppJWT = () => {
+const getAppJWT = (githubEnv) => {
   const now = Math.floor(Date.now() / 1000)
 
   const payload = {
@@ -17,38 +11,29 @@ const getAppJWT = () => {
     // JWT expiration time (10 minute maximum, 5 for inaccurate times)
     exp: now + (5 * 60),
     // GitHub App's identifier
-    iss: GITHUB_APP_ID
+    iss: config.get(`github.${githubEnv}.appId`)
   }
 
   const key = Buffer.from(
-    GITHUB_APP_KEY
+    config
+      .get(`github.${githubEnv}.appKey`)
       .replace(/@/g, '\n')
-      .replace(/\\\s/g, ' ')
-    , 'utf-8'
+      .replace(/\\\s/g, ' '),
+    'utf-8'
   )
 
-  const token = jwt.sign(
-    payload,
-    key,
-    { algorithm: 'RS256' }
-  )
+  const token = jwt.sign(payload, key, { algorithm: 'RS256' })
 
   return token
 }
 
-const getInstallationToken = async () => {
-  checkEnv([
-    'GITHUB_APP_ID',
-    'GITHUB_APP_KEY',
-    'GITHUB_INSTALLATION_ID'
-  ])
-
+const getInstallationToken = async (githubEnv = 'default') => {
   const response = await fetch(
-    `https://api.github.com/installations/${GITHUB_INSTALLATION_ID}/access_tokens`,
+    `https://api.github.com/installations/${config.get(`github.${githubEnv}.installationId`)}/access_tokens`,
     {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${getAppJWT()}`,
+        'Authorization': `Bearer ${getAppJWT(githubEnv)}`,
         'Accept': 'application/vnd.github.machine-man-preview+json'
       }
     }
@@ -63,13 +48,8 @@ const getInstallationToken = async () => {
     throw new Error('Error getting installation token', response)
   }
 
-  const {
-    token,
-    expires_at
-  } = response
+  const { token, expires_at } = response
   const expiresAt = new Date(expires_at)
-
-  console.log(`new GitHub installation token expires at: ${expiresAt}`)
 
   return {
     token,
