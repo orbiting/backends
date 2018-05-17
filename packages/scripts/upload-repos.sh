@@ -2,6 +2,10 @@
 set -eu;
 
 # Push a folder with repositories to an organization's repositories
+# 
+# Usage:
+#   packages/scripts/upload-repos.sh <source folder glob>
+#
 # Example:
 #   packages/scripts/upload-repos.sh ../repos/*
 
