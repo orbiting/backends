@@ -13,7 +13,7 @@ An example is available in root folder's `.env.examples`.
 * `GITHUB_DUPLIKATOR_TARGET` is an GitHub Application, Organization Account
   allowed to create repositories in an organization.
 
-When cloning or pushing repositories, `git` and used SSH credentials require
+When cloning or pushing repositories, `git` requires SSH credentials with
 access to private repositories in organizations.
 
 ### Clone repositories from an GitHub organization to local machine
