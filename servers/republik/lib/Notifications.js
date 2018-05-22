@@ -41,7 +41,7 @@ const submitComment = async (comment, discussion, context) => {
           dp."discussionId" = :discussionId
       WHERE
         -- exclude commenter
-        u.id != :userId AND
+        u.id = :userId AND
         (
           dp."notificationOption" = 'ALL' OR
           (dp."notificationOption" IS NULL AND u."defaultDiscussionNotificationOption" = 'ALL') OR
@@ -66,8 +66,8 @@ const submitComment = async (comment, discussion, context) => {
           dp."discussionId" = :discussionId AND
           dp."notificationOption" = 'ALL'
       WHERE
-        -- exclude commenter
-        u.id != :userId
+        -- (disabled, was !=) exclude commenter
+        u.id = :userId
   `, {
     discussionId: comment.discussionId,
     parentIds: comment.parentIds,
