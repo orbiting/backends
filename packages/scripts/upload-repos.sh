@@ -16,9 +16,7 @@ fi
 
 BASEDIR=$(dirname "$0")
 
-ls -d $1 | \
-  DEBUG=scripts:* $BASEDIR/create-repos.js | \
-  while read -r gitRepoDir gitRepoUrl gitRepoName; \
+ls -d $1 | DEBUG=scripts:* $BASEDIR/create-repos.js | while read -r gitRepoDir gitRepoUrl gitRepoName; \
   do \
     echo "${gitRepoName} pushing..."; \
     git -C $gitRepoDir remote add duplikator $gitRepoUrl; \
