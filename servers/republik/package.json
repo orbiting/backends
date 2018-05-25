@@ -8,7 +8,7 @@
   "private": true,
   "license": "AGPL-3.0",
   "dependencies": {
-    "@project-r/styleguide": "^5.75.0",
+    "@project-r/styleguide": "^5.77.2",
     "@slack/client": "^4.1.0",
     "apollo-modules-node": "^0.1.4",
     "d3-array": "^1.2.1",
@@ -53,6 +53,8 @@
     "translations:local": "gsheets --key=1NE1igcbxtTrVd5P72Ubqmgv4yKYh0LRGa0EuYSEQKxE --title=live --pretty --out lib/translations.json",
     "launch": "yarn run db:migrate:up && node script/launch/activateMemberships.js && node script/launch/add_launch_data.js",
     "launch:local": "sh script/launch/launch_local.sh",
+    "roleUser": "node ../../packages/auth/script/roleUser",
+    "roleUsers": "node ../../packages/auth/script/roleUsers",
     "test:prepare": "rm -rf node_modules/.bin && ln -s ../../../node_modules/.bin node_modules/ && dropdb --if-exists republik-test && createdb republik-test && NODE_ENV=development OVERWRITE_ENV=.test.env yarn run db:reset:seed",
     "test:travis": "yarn run test:prepare && istanbul cover tape \"__tests__/**/*.test.js\" --report lcovonly",
     "test:watch": "yarn run test:prepare && NODE_ENV=development OVERWRITE_ENV=.test.env nodemon --exec 'tape \"__tests__/**/*.test.js\"' | tap-diff",
