@@ -2,9 +2,9 @@
 set -eu;
 
 # Push a folder with repositories to an organization's repositories
-# 
+#
 # Usage:
-#   packages/scripts/upload-repos.sh <source folder glob>
+#   packages/scripts/upload-repos.sh "<source folder glob>"
 #
 # Example:
 #   packages/scripts/upload-repos.sh ../repos/*
@@ -26,6 +26,6 @@ ls -d $1 | DEBUG=scripts:* $BASEDIR/create-repos.js | while read -r gitRepoDir g
       git -C $gitRepoDir remote add duplikator $gitRepoUrl; \
     fi; \
     echo "${gitRepoName} pushing..."; \
-    git -C  $gitRepoDir push duplikator --mirror --quiet; \
+    git -C $gitRepoDir push duplikator --mirror --quiet; \
     echo "${gitRepoName} pushed."; \
   done;
