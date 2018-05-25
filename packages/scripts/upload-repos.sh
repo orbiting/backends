@@ -18,8 +18,14 @@ BASEDIR=$(dirname "$0")
 
 ls -d $1 | DEBUG=scripts:* $BASEDIR/create-repos.js | while read -r gitRepoDir gitRepoUrl gitRepoName; \
   do \
+    if (git -C $gitRepoDir remote | grep -Fxq duplikator) then \
+      echo "${gitRepoName} updating remote..."; \
+      git -C $gitRepoDir remote set-url duplikator $gitRepoUrl; \
+    else \
+      echo "${gitRepoName} adding remote..."; \
+      git -C $gitRepoDir remote add duplikator $gitRepoUrl; \
+    fi; \
     echo "${gitRepoName} pushing..."; \
-    git -C $gitRepoDir remote add duplikator $gitRepoUrl; \
     git -C  $gitRepoDir push duplikator --mirror --quiet; \
     echo "${gitRepoName} pushed."; \
   done;
