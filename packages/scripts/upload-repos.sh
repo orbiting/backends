@@ -7,7 +7,7 @@ set -eu;
 #   packages/scripts/upload-repos.sh "<source folder glob>"
 #
 # Example:
-#   packages/scripts/upload-repos.sh ../repos/*
+#   packages/scripts/upload-repos.sh "../repos/*"
 
 if [ -z "$1" ] ; then
   echo "Provide path to repos folder e.g. ../repos/*"
