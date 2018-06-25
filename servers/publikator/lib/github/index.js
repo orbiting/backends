@@ -5,6 +5,7 @@ const { lib: {
 } } = require('@orbiting/backend-modules-github')
 const { getRepos } = require('./getRepos')
 const uniqWith = require('lodash/uniqWith')
+const listFields = require('graphql-list-fields')
 const debug = require('debug')('publikator:github')
 
 const publicationVersionRegex = /^v(\d+)(-prepublication)?.*/
@@ -47,7 +48,7 @@ const normalizeGQLCommit = (repo, commit) => ({
   ...commit,
   id: commit.oid,
   date: commit.committedDate,
-  parentIds: commit.parents.nodes.map(v => v.oid),
+  parentIds: (commit.parents && commit.parents.nodes.map(v => v.oid)) || null,
   repo
 })
 
@@ -133,8 +134,10 @@ module.exports = {
     })
     return heads
   },
-  getCommit: async (repo, { id: sha }, { redis }) => {
+  getCommit: async (repo, { id: sha }, { redis }, info) => {
     const redisKey = `repos:${repo.id}/commits/${sha}`
+
+    const parentsRequested = listFields(info).indexOf('parentIds') > -1
     const redisCommit = await redis.getAsync(redisKey)
     if (redisCommit) {
       debug('commit: redis HIT (%s)', redisKey)
@@ -168,11 +171,14 @@ module.exports = {
                   email
                   name
                 }
-                parents (first: 100){
-                  nodes {
-                    oid
-                  }
-                }
+                ${parentsRequested
+    ? `parents (first: 5){
+                      nodes {
+                        oid
+                      }
+                    }`
+    : ''
+}
                 message
                 committedDate
               }
@@ -194,7 +200,9 @@ module.exports = {
     await redis.setAsync(redisKey, JSON.stringify(commit))
     return commit
   },
-  getCommits: async (repo, { first = 15, after, before }) => {
+  getCommits: async (repo, { first = 15, after, before }, _, info) => {
+    const parentsRequested = listFields(info).indexOf('nodes.parentIds') > -1
+
     const { githubApolloFetch } = await createGithubClients()
     const [login, repoName] = repo.id.split('/')
     const {
@@ -240,11 +248,14 @@ module.exports = {
                             email
                             name
                           }
-                          parents (first: 100){
-                            nodes {
-                              oid
-                            }
-                          }
+                          ${parentsRequested
+    ? `parents (first: 5){
+                                nodes {
+                                  oid
+                                }
+                              }`
+    : ''
+}
                           message
                           committedDate
                         }
