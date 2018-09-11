@@ -29,12 +29,14 @@ type Meta {
   image: String
   emailSubject: String
   description: String
+  subject: String
   facebookTitle: String
   facebookImage: String
   facebookDescription: String
   twitterTitle: String
   twitterImage: String
   twitterDescription: String
+  prepublication: Boolean
   publishDate: DateTime
   template: String
   feed: Boolean
@@ -51,18 +53,12 @@ type Meta {
   audioSource: AudioSource
 }
 
-# implements FileInterface
 input DocumentInput {
   # AST of /article.md
   content: JSON!
 }
 
-interface FileInterface {
-  content: JSON!
-  meta: Meta!
-}
-
-type Document implements FileInterface {
+type Document {
   id: ID!
   # AST of /article.md
   content: JSON!
@@ -73,6 +69,12 @@ type Document implements FileInterface {
     before: ID
     after: ID
   ): DocumentNodeConnection!
+  linkedDocuments(
+    first: Int
+    last: Int
+    before: ID
+    after: ID
+  ): DocumentConnection!
 }
 
 type DocumentNode {

@@ -7,6 +7,8 @@ const { graphql: documents } = require('@orbiting/backend-modules-documents')
 const { graphql: redirections } = require('@orbiting/backend-modules-redirections')
 const { graphql: search } = require('@orbiting/backend-modules-search')
 const { graphql: notifications } = require('@orbiting/backend-modules-notifications')
+const { accessScheduler, graphql: access } = require('@orbiting/backend-modules-access')
+const { previewScheduler, preview: previewLib } = require('@orbiting/backend-modules-preview')
 
 const sendPendingPledgeConfirmations = require('./modules/crowdfundings/lib/sendPendingPledgeConfirmations')
 const mail = require('./modules/crowdfundings/lib/Mail')
@@ -26,7 +28,18 @@ const start = async () => {
 // in cluster mode, this runs after runOnce otherwise before
 const run = async (workerId) => {
   const localModule = require('./graphql')
-  const executableSchema = makeExecutableSchema(merge(localModule, [documents, search, redirections, notifications]))
+  const executableSchema = makeExecutableSchema(
+    merge(
+      localModule,
+      [
+        documents,
+        search,
+        redirections,
+        notifications,
+        access
+      ]
+    )
+  )
 
   // middlewares
   const middlewares = [
@@ -43,8 +56,12 @@ const run = async (workerId) => {
 
   // signin hooks
   const signInHooks = [
-    async (userId, isNew, pgdb) =>
-      sendPendingPledgeConfirmations(userId, pgdb, t)
+    ({ userId, pgdb }) =>
+      sendPendingPledgeConfirmations(userId, pgdb, t),
+    ({ userId, isNew, pgdb }) =>
+      accessScheduler.signInHook(userId, isNew, pgdb, mail),
+    ({ userId, isNew, contexts, pgdb }) =>
+      previewLib.begin({ userId, contexts, pgdb, t })
   ]
 
   const createGraphQLContext = (defaultContext) => ({
@@ -64,7 +81,7 @@ const run = async (workerId) => {
 }
 
 // in cluster mode, this runs before run otherwise after
-const runOnce = (...args) => {
+const runOnce = async (...args) => {
   if (cluster.isWorker) {
     throw new Error('runOnce must only be called on cluster.isMaster')
   }
@@ -73,6 +90,9 @@ const runOnce = (...args) => {
   if (SEARCH_PG_LISTENER) {
     require('@orbiting/backend-modules-search').notifyListener.run()
   }
+
+  await accessScheduler.init({ mail })
+  await previewScheduler.init({ mail })
 }
 
 const close = () => {
