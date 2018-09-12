@@ -1,0 +1,3677 @@
+[
+  {
+    "code": "AD",
+    "name": "Andorra",
+    "searchNames": [
+      "ad",
+      "principat d’andorra",
+      "andorra",
+      "principality of andorra"
+    ],
+    "lat": "42.50779",
+    "lon": "1.52109"
+  },
+  {
+    "code": "AE",
+    "name": "Vereinigte Arabische Emirate",
+    "searchNames": [
+      "ae",
+      "الامارات العربية المتحدة",
+      "vereinigte arabische emirate",
+      "united arab emirates",
+      "امارات متحدهٔ عربی",
+      "संयुक्त अरब अमीरात",
+      "الإمارات العربية المتحدة",
+      "امارات متحده عربی",
+      "عمارات متحده ی عربی",
+      "متحدہ عرب امارات"
+    ],
+    "lat": "23.75",
+    "lon": "54.5"
+  },
+  {
+    "code": "AF",
+    "name": "Afghanistan",
+    "searchNames": [
+      "af",
+      "afghanistan",
+      "افغانستان",
+      "афғонистон",
+      "دولتٔ اسلامئ افغانستان",
+      "owganystan",
+      "afgʻoniston",
+      "جمهورئ اسلامئ افغانستان",
+      "islamic republic of afghanistan",
+      "د افغانستان اسلامی جمهوریت",
+      "jamhūrī-ye islāmī-ye afghānistān",
+      "dê afghānistān islāmī jumhūriyat"
+    ],
+    "lat": "33",
+    "lon": "66"
+  },
+  {
+    "code": "AG",
+    "name": "Antigua und Barbuda",
+    "searchNames": [
+      "ag",
+      "antigua und barbuda",
+      "antigua and barbuda"
+    ],
+    "lat": "17.05",
+    "lon": "-61.8"
+  },
+  {
+    "code": "AI",
+    "name": "Anguilla",
+    "searchNames": [
+      "ai",
+      "anguilla"
+    ],
+    "lat": "18.21667",
+    "lon": "-63.05"
+  },
+  {
+    "code": "AL",
+    "name": "Albanien",
+    "searchNames": [
+      "al",
+      "republika e shqipërisë",
+      "albanien",
+      "αλβανία",
+      "albania",
+      "shqipëria",
+      "republic of albania"
+    ],
+    "lat": "41",
+    "lon": "20"
+  },
+  {
+    "code": "AM",
+    "name": "Armenien",
+    "searchNames": [
+      "am",
+      "hayastani hanrapetut’yun",
+      "armenien",
+      "armenia",
+      "հայաստանի հանրապետութիւն",
+      "հայաստան",
+      "republic of armenia"
+    ],
+    "lat": "40.25",
+    "lon": "45"
+  },
+  {
+    "code": "AO",
+    "name": "Angola",
+    "searchNames": [
+      "ao",
+      "república de angola",
+      "angola",
+      "republic of angola"
+    ],
+    "lat": "-12.5",
+    "lon": "18.5"
+  },
+  {
+    "code": "AQ",
+    "name": "Antarktis",
+    "searchNames": [
+      "aq",
+      "antarktis",
+      "antarctica"
+    ],
+    "lat": "-90",
+    "lon": "0"
+  },
+  {
+    "code": "AR",
+    "name": "Argentinien",
+    "searchNames": [
+      "ar",
+      "república argentina",
+      "argentinien",
+      "argentina",
+      "argentine",
+      "argentine republic"
+    ],
+    "lat": "-34",
+    "lon": "-64"
+  },
+  {
+    "code": "AS",
+    "name": "Amerikanisch-Samoa",
+    "searchNames": [
+      "as",
+      "american samoa",
+      "amerikanisch-samoa",
+      "haʻamoa ʻamelika"
+    ],
+    "lat": "-11.056",
+    "lon": "-171.082"
+  },
+  {
+    "code": "AT",
+    "name": "Österreich",
+    "searchNames": [
+      "at",
+      "republik österreich",
+      "österreich",
+      "austria",
+      "austrija",
+      "ausztria",
+      "avstrija",
+      "republic of austria"
+    ],
+    "lat": "47.33333",
+    "lon": "13.33333"
+  },
+  {
+    "code": "AU",
+    "name": "Australien",
+    "searchNames": [
+      "au",
+      "australien",
+      "australia"
+    ],
+    "lat": "-25",
+    "lon": "135"
+  },
+  {
+    "code": "AW",
+    "name": "Aruba",
+    "searchNames": [
+      "aw",
+      "aruba"
+    ],
+    "lat": "12.5",
+    "lon": "-69.96667"
+  },
+  {
+    "code": "AX",
+    "name": "Alandinseln",
+    "searchNames": [
+      "ax",
+      "province of åland",
+      "ålands län",
+      "åland",
+      "alandinseln",
+      "åland islands",
+      "aland islands"
+    ],
+    "lat": 0,
+    "lon": 0
+  },
+  {
+    "code": "AZ",
+    "name": "Aserbaidschan",
+    "searchNames": [
+      "az",
+      "azərbaycan respublikası",
+      "azərbaycan",
+      "aserbaidschan",
+      "azerbaijan",
+      "ադրբեջան",
+      "азербайджан",
+      "republic of azerbaijan"
+    ],
+    "lat": "40.5",
+    "lon": "47.5"
+  },
+  {
+    "code": "BA",
+    "name": "Bosnien und Herzegowina",
+    "searchNames": [
+      "ba",
+      "bosna i hercegovina",
+      "bosnien und herzegowina",
+      "bosnia and herzegovina",
+      "босна и херцеговина"
+    ],
+    "lat": "44.25",
+    "lon": "17.83333"
+  },
+  {
+    "code": "BB",
+    "name": "Barbados",
+    "searchNames": [
+      "bb",
+      "barbados"
+    ],
+    "lat": "13.16453",
+    "lon": "-59.55165"
+  },
+  {
+    "code": "BD",
+    "name": "Bangladesch",
+    "searchNames": [
+      "bd",
+      "বাংলাদেশ",
+      "bangladesch",
+      "bangladesh",
+      "gonaoprojatontri bangladesh"
+    ],
+    "lat": "24",
+    "lon": "90"
+  },
+  {
+    "code": "BE",
+    "name": "Königreich Belgien",
+    "searchNames": [
+      "be",
+      "royaume de belgique",
+      "koninkrijk belgië",
+      "belgien",
+      "belgium",
+      "belgique",
+      "belgië",
+      "kingdom of belgium",
+      "königreich belgien"
+    ],
+    "lat": "50.75",
+    "lon": "4.5"
+  },
+  {
+    "code": "BF",
+    "name": "Burkina Faso",
+    "searchNames": [
+      "bf",
+      "burkina faso"
+    ],
+    "lat": "12.5",
+    "lon": "-1.66667"
+  },
+  {
+    "code": "BG",
+    "name": "Bulgarien",
+    "searchNames": [
+      "bg",
+      "българия",
+      "bulgarien",
+      "bulgaria",
+      "bulgaristan",
+      "булгария",
+      "република българия",
+      "republic of bulgaria",
+      "republika bŭlgariya",
+      "republika bulgaria"
+    ],
+    "lat": "42.66667",
+    "lon": "25.25"
+  },
+  {
+    "code": "BH",
+    "name": "Bahrain",
+    "searchNames": [
+      "bh",
+      "البحرين",
+      "bahrain",
+      "بحرین",
+      "دَوْلَة اَلْبَحْرَيْن",
+      "kingdom of bahrain",
+      "مملكة البحرين"
+    ],
+    "lat": "26.03333",
+    "lon": "50.55"
+  },
+  {
+    "code": "BI",
+    "name": "Burundi",
+    "searchNames": [
+      "bi",
+      "république du burundi",
+      "republika y’u burundi",
+      "burundi",
+      "uburundi",
+      "republic of burundi"
+    ],
+    "lat": "-3.5",
+    "lon": "30"
+  },
+  {
+    "code": "BJ",
+    "name": "Benin",
+    "searchNames": [
+      "bj",
+      "république du bénin",
+      "benin",
+      "bénin",
+      "republic of benin"
+    ],
+    "lat": "9.5",
+    "lon": "2.25"
+  },
+  {
+    "code": "BL",
+    "name": "Saint-Barthélemy",
+    "searchNames": [
+      "bl",
+      "saint-barthélemy",
+      "saint barthélemy",
+      "sankt bartholomäus",
+      "st. barthélemy",
+      "saint-barthélémy"
+    ],
+    "lat": 0,
+    "lon": 0
+  },
+  {
+    "code": "BM",
+    "name": "Bermudas",
+    "searchNames": [
+      "bm",
+      "bermuda",
+      "bermudas"
+    ],
+    "lat": "32.2949",
+    "lon": "-64.78303"
+  },
+  {
+    "code": "BN",
+    "name": "Brunei",
+    "searchNames": [
+      "bn",
+      "brunei darussalam",
+      "brunei"
+    ],
+    "lat": "4.5",
+    "lon": "114.66667"
+  },
+  {
+    "code": "BO",
+    "name": "Bolivien",
+    "searchNames": [
+      "bo",
+      "república de bolivia",
+      "bolivien",
+      "bolivia",
+      "wuliwya",
+      "bulibiya",
+      "puliwya",
+      "plurinational state of bolivia",
+      "estado plurinacional de bolivia",
+      "republic of bolivia",
+      "bolivia, plurinational state of"
+    ],
+    "lat": "-17",
+    "lon": "-65"
+  },
+  {
+    "code": "BQ",
+    "name": "Bonaire",
+    "searchNames": [
+      "bq",
+      "bonaire, saint eustatius and saba",
+      "bonaire, sint eustatius, and saba",
+      "bonaire, saint eustatius, and saba",
+      "bes islands",
+      "bonaire, sint eustatius en saba",
+      "bonaire",
+      "bonaire, sint eustatius and saba",
+      "caribbean netherlands",
+      "caribisch nederland",
+      "bes-eilanden"
+    ],
+    "lat": "12.21286",
+    "lon": "-68.29445"
+  },
+  {
+    "code": "BR",
+    "name": "Brasilien",
+    "searchNames": [
+      "br",
+      "república federativa do brasil",
+      "brasilien",
+      "brazil",
+      "brasil",
+      "brésil",
+      "federative republic of brazil"
+    ],
+    "lat": "-10",
+    "lon": "-55"
+  },
+  {
+    "code": "BS",
+    "name": "Bahamas",
+    "searchNames": [
+      "bs",
+      "bahamas",
+      "the bahamas"
+    ],
+    "lat": "25.04082",
+    "lon": "-77.37122"
+  },
+  {
+    "code": "BT",
+    "name": "Bhutan",
+    "searchNames": [
+      "bt",
+      "bhutan",
+      "འབྲུག",
+      "འབྲུག་ཡུལ་"
+    ],
+    "lat": "27.5",
+    "lon": "90.5"
+  },
+  {
+    "code": "BV",
+    "name": "Bouvetinsel",
+    "searchNames": [
+      "bv",
+      "bouvetinsel",
+      "bouvet island"
+    ],
+    "lat": "-54.43333",
+    "lon": "3.4"
+  },
+  {
+    "code": "BW",
+    "name": "Botswana",
+    "searchNames": [
+      "bw",
+      "botsuana",
+      "botswana"
+    ],
+    "lat": "-22",
+    "lon": "24"
+  },
+  {
+    "code": "BY",
+    "name": "Belarus",
+    "searchNames": [
+      "by",
+      "respublika byelarus’",
+      "беларусь",
+      "belarus",
+      "weißrussland",
+      "weissrussland",
+      "белоруссия",
+      "republic of belarus",
+      "respublika belarus’",
+      "рэспубліка беларусь",
+      "республика беларусь",
+      "belarus’"
+    ],
+    "lat": "53",
+    "lon": "28"
+  },
+  {
+    "code": "BZ",
+    "name": "Belize",
+    "searchNames": [
+      "bz",
+      "belize",
+      "belice"
+    ],
+    "lat": "17.49952",
+    "lon": "-88.19756"
+  },
+  {
+    "code": "CA",
+    "name": "Kanada",
+    "searchNames": [
+      "ca",
+      "kanada",
+      "canada"
+    ],
+    "lat": "60.10867",
+    "lon": "-113.64258"
+  },
+  {
+    "code": "CC",
+    "name": "Kokosinseln",
+    "searchNames": [
+      "cc",
+      "kokosinseln",
+      "cocos [keeling] islands"
+    ],
+    "lat": "-12.1642",
+    "lon": "96.87332"
+  },
+  {
+    "code": "CD",
+    "name": "Kongo",
+    "searchNames": [
+      "cd",
+      "république démocratique du congo",
+      "belgian congo",
+      "belgisch congo",
+      "belgisch kongo",
+      "congo belge",
+      "demokratische republik kongo",
+      "democratic republic of the congo",
+      "repubilika ya kôngo ya dimokalasi",
+      "kongó-kinsásá",
+      "jamhuri ya kidemokrasia ya kongo",
+      "zaire",
+      "congo [drc]",
+      "congo-kinshasa",
+      "repibiki demokratiki ya kongó",
+      "democratic republic of congo",
+      "république du zaïre",
+      "republic of zaire",
+      "congo",
+      "ditunga wa kongu",
+      "kongo [jamhuri ya kidemokrasia]",
+      "rdc",
+      "congo, the democratic republic of",
+      "dr congo",
+      "kongo"
+    ],
+    "lat": "-2.5",
+    "lon": "23.5"
+  },
+  {
+    "code": "CF",
+    "name": "Zentralafrikanische Republik",
+    "searchNames": [
+      "cf",
+      "république centrafricaine",
+      "zentralafrikanische republik",
+      "central african republic",
+      "centrafrique",
+      "centrafricaine, république",
+      "repibiki ya afríka ya káti",
+      "ködörösêse tî bêafrîka",
+      "santrafríka",
+      "repubilika ya afelika ya kati"
+    ],
+    "lat": "7",
+    "lon": "21"
+  },
+  {
+    "code": "CG",
+    "name": "Kongo (Republik Kongo)",
+    "searchNames": [
+      "cg",
+      "république du congo",
+      "kongo",
+      "congo (brazzaville)",
+      "republik kongo",
+      "republic of the congo",
+      "repubilika ya kongo",
+      "republiki ya kɔ́ngɔ",
+      "kongo (republik kongo)",
+      "congo-brazzaville",
+      "congo"
+    ],
+    "lat": "-1",
+    "lon": "15.5"
+  },
+  {
+    "code": "CH",
+    "name": "Schweiz",
+    "searchNames": [
+      "ch",
+      "schweizerische eidgenossenschaft",
+      "confédération suisse",
+      "confederazione svizzera",
+      "schweiz",
+      "switzerland",
+      "suisse",
+      "svizzera",
+      "svizra"
+    ],
+    "lat": "47.00016",
+    "lon": "8.01427"
+  },
+  {
+    "code": "CI",
+    "name": "Elfenbeinküste",
+    "searchNames": [
+      "ci",
+      "république de côte d’ivoire",
+      "côte d'ivoire",
+      "ivory coast",
+      "elfenbeinküste",
+      "côte d’ivoire",
+      "republic of côte d’ivoire"
+    ],
+    "lat": "8",
+    "lon": "-5.5"
+  },
+  {
+    "code": "CK",
+    "name": "Cookinseln",
+    "searchNames": [
+      "ck",
+      "cookinseln",
+      "cook islands",
+      "kuki airani"
+    ],
+    "lat": "-21.24842",
+    "lon": "-159.78516"
+  },
+  {
+    "code": "CL",
+    "name": "Chile",
+    "searchNames": [
+      "cl",
+      "chile",
+      "republic of chile",
+      "república de chile"
+    ],
+    "lat": "-33.45694",
+    "lon": "-70.64827"
+  },
+  {
+    "code": "CM",
+    "name": "Kamerun",
+    "searchNames": [
+      "cm",
+      "république du cameroun",
+      "kamerun",
+      "cameroon",
+      "cameroun",
+      "republic of cameroon"
+    ],
+    "lat": "6",
+    "lon": "12.5"
+  },
+  {
+    "code": "CN",
+    "name": "Volksrepublik China",
+    "searchNames": [
+      "cn",
+      "china",
+      "中国",
+      "people's republic of china",
+      "volksrepublik china",
+      "جۇڭخۇا خەلق جۇمھۇرىيىتى",
+      "cunghvaz yinzminz gunghozgoz",
+      "中华人民共和国",
+      "中華人民共和國",
+      "people’s republic of china"
+    ],
+    "lat": "35",
+    "lon": "105"
+  },
+  {
+    "code": "CO",
+    "name": "Kolumbien",
+    "searchNames": [
+      "co",
+      "kolumbien",
+      "colombia",
+      "republic of colombia",
+      "república de colombia"
+    ],
+    "lat": "4",
+    "lon": "-73.25"
+  },
+  {
+    "code": "CR",
+    "name": "Costa Rica",
+    "searchNames": [
+      "cr",
+      "república de costa rica",
+      "costa rica",
+      "republic of costa rica"
+    ],
+    "lat": "10",
+    "lon": "-84"
+  },
+  {
+    "code": "CU",
+    "name": "Kuba",
+    "searchNames": [
+      "cu",
+      "república de cuba",
+      "kuba",
+      "cuba",
+      "isla juana",
+      "republic of cuba"
+    ],
+    "lat": "22",
+    "lon": "-79.5"
+  },
+  {
+    "code": "CV",
+    "name": "Kapverdische Inseln",
+    "searchNames": [
+      "cv",
+      "república de cabo verde",
+      "kap verde",
+      "cape verde",
+      "republic of cape verde",
+      "republic of cabo verde",
+      "cabo verde",
+      "kapverden",
+      "kapverdische inseln"
+    ],
+    "lat": "16",
+    "lon": "-24"
+  },
+  {
+    "code": "CW",
+    "name": "Curaçao",
+    "searchNames": [
+      "cw",
+      "curaçao",
+      "country of curaçao"
+    ],
+    "lat": "12.16667",
+    "lon": "-68.96667"
+  },
+  {
+    "code": "CX",
+    "name": "Weihnachtsinsel",
+    "searchNames": [
+      "cx",
+      "weihnachtsinsel",
+      "christmas island",
+      "圣诞岛"
+    ],
+    "lat": "-10.5",
+    "lon": "105.66667"
+  },
+  {
+    "code": "CY",
+    "name": "Zypern",
+    "searchNames": [
+      "cy",
+      "kypriakí dimokratía",
+      "kipriakí dhimokratía",
+      "zypern",
+      "κύπρος",
+      "cyprus",
+      "kıbrıs",
+      "güney kıbrıs rum kesimi",
+      "kıbrıs cumhuriyeti",
+      "kýpros",
+      "κυπριακή δημοκρατία"
+    ],
+    "lat": "35",
+    "lon": "33"
+  },
+  {
+    "code": "CZ",
+    "name": "Tschechien",
+    "searchNames": [
+      "cz",
+      "czechia",
+      "česká republika",
+      "tschechische republik",
+      "czech republic",
+      "česko",
+      "tschechien",
+      "bohemia"
+    ],
+    "lat": "49.75",
+    "lon": "15"
+  },
+  {
+    "code": "DE",
+    "name": "Deutschland",
+    "searchNames": [
+      "de",
+      "bundesrepublik deutschland",
+      "deutschland",
+      "germany",
+      "federal republic of germany",
+      "west germany",
+      "brd",
+      "d"
+    ],
+    "lat": "51.5",
+    "lon": "10.5"
+  },
+  {
+    "code": "DJ",
+    "name": "Dschibuti",
+    "searchNames": [
+      "dj",
+      "république de djibouti",
+      "yabuuti",
+      "جيبوتي",
+      "dschibuti",
+      "djibouti",
+      "jabuuti",
+      "republic of djibouti"
+    ],
+    "lat": "11.58901",
+    "lon": "43.14503"
+  },
+  {
+    "code": "DK",
+    "name": "Dänemark",
+    "searchNames": [
+      "dk",
+      "kongeriget danmark",
+      "danmark",
+      "dänemark",
+      "denmark",
+      "danmørk",
+      "kingdom of denmark",
+      "daenemark"
+    ],
+    "lat": "56",
+    "lon": "10"
+  },
+  {
+    "code": "DM",
+    "name": "Dominica",
+    "searchNames": [
+      "dm",
+      "dominica",
+      "commonwealth of dominica"
+    ],
+    "lat": "15.5",
+    "lon": "-61.33333"
+  },
+  {
+    "code": "DO",
+    "name": "Dom. Republik",
+    "searchNames": [
+      "do",
+      "república dominicana",
+      "santo domingo",
+      "dominikanische republik",
+      "dominican republic",
+      "república de santo domingo",
+      "haití español",
+      "spanish haiti",
+      "quisqueya",
+      "dom. republik"
+    ],
+    "lat": "19",
+    "lon": "-70.66667"
+  },
+  {
+    "code": "DZ",
+    "name": "Algerien",
+    "searchNames": [
+      "dz",
+      "algerien",
+      "algeria",
+      "people’s democratic republic of algeria",
+      "الجزائر",
+      "الجمهورية الجزائرية الديمقراطية الشعبية"
+    ],
+    "lat": "28",
+    "lon": "3"
+  },
+  {
+    "code": "EC",
+    "name": "Ecuador",
+    "searchNames": [
+      "ec",
+      "república del ecuador",
+      "ecuador",
+      "republic of ecuador"
+    ],
+    "lat": "-1.25",
+    "lon": "-78.25"
+  },
+  {
+    "code": "EE",
+    "name": "Estland",
+    "searchNames": [
+      "ee",
+      "eesti vabariik",
+      "eesti nõukogude sotsialistlik vabariik",
+      "estland",
+      "estonia",
+      "eesti",
+      "эстония",
+      "republic of estonia"
+    ],
+    "lat": "59",
+    "lon": "26"
+  },
+  {
+    "code": "EG",
+    "name": "Ägypten",
+    "searchNames": [
+      "eg",
+      "مصر",
+      "ägypten",
+      "egypt",
+      "égypte",
+      "arab republic of egypt",
+      "جمهورية مصر العربية",
+      "mişr"
+    ],
+    "lat": "27",
+    "lon": "30"
+  },
+  {
+    "code": "EH",
+    "name": "Westsahara",
+    "searchNames": [
+      "eh",
+      "spanish western sahara",
+      "spanish sahara",
+      "لصحراء الغربية",
+      "الصحراء الغربية",
+      "westsahara",
+      "western sahara"
+    ],
+    "lat": "24.49215",
+    "lon": "-12.65625"
+  },
+  {
+    "code": "ER",
+    "name": "Eritrea",
+    "searchNames": [
+      "er",
+      "hagere ērtra",
+      "eretria",
+      "ارتيريا",
+      "eritrea",
+      "إريتريا",
+      "erîtrea",
+      "ኤርትራ",
+      "اريتريا",
+      "state of eritrea",
+      "hagere iertra",
+      "ئەریتریا",
+      "iertra"
+    ],
+    "lat": "15",
+    "lon": "39"
+  },
+  {
+    "code": "ES",
+    "name": "Spanien",
+    "searchNames": [
+      "es",
+      "reino de españa",
+      "spanish state",
+      "estado español",
+      "espanya",
+      "spanien",
+      "spain",
+      "españa",
+      "espainia",
+      "la piel de toro",
+      "la pell de brau",
+      "regne d'espanya",
+      "la madre patria",
+      "espanha",
+      "kingdom of spain",
+      "españa / cádiz"
+    ],
+    "lat": "40",
+    "lon": "-4"
+  },
+  {
+    "code": "ET",
+    "name": "Äthiopien",
+    "searchNames": [
+      "et",
+      "yeītyop’iya fēdēralawī dēmokrasīyawī rīpeblīk",
+      "yeītyop’iya hizbawī dīmokrasīyawī rīpublīk",
+      "ኢትዮጵያ",
+      "äthiopien",
+      "ethiopia",
+      "itoophiyaa",
+      "itoobiya",
+      "itoobbiya",
+      "federal democratic republic of ethiopia",
+      "ඉතියෝපියාව",
+      "ītyop’iya"
+    ],
+    "lat": "9",
+    "lon": "39.5"
+  },
+  {
+    "code": "FI",
+    "name": "Finnland",
+    "searchNames": [
+      "fi",
+      "suomen tasavalta",
+      "republiken finland",
+      "finnland",
+      "finland",
+      "suomi",
+      "republic of finland"
+    ],
+    "lat": "64",
+    "lon": "26"
+  },
+  {
+    "code": "FJ",
+    "name": "Fidschi",
+    "searchNames": [
+      "fj",
+      "fidschi",
+      "fiji",
+      "viti"
+    ],
+    "lat": "-18",
+    "lon": "178"
+  },
+  {
+    "code": "FK",
+    "name": "Falklandinseln",
+    "searchNames": [
+      "fk",
+      "falkland islands",
+      "colony of the falkland islands",
+      "falklandinseln",
+      "falkland islands (malvinas)"
+    ],
+    "lat": "-51.75",
+    "lon": "-59.16667"
+  },
+  {
+    "code": "FM",
+    "name": "Mikronesien",
+    "searchNames": [
+      "fm",
+      "federated states of micronesia",
+      "föderierte staaten von mikronesien",
+      "미크로네시아 연방",
+      "mikronesien",
+      "micronesia",
+      "미크로네시아",
+      "micronesia, federated states of",
+      "réew yu bennoo yu mikronesi"
+    ],
+    "lat": "6.924",
+    "lon": "158.162"
+  },
+  {
+    "code": "FO",
+    "name": "Färöer-Inseln",
+    "searchNames": [
+      "fo",
+      "føroyar",
+      "færøerne",
+      "färöer",
+      "faroe islands",
+      "färöer-inseln"
+    ],
+    "lat": "62",
+    "lon": "-7"
+  },
+  {
+    "code": "FR",
+    "name": "Frankreich",
+    "searchNames": [
+      "fr",
+      "république française",
+      "frança",
+      "frankreich",
+      "france",
+      "frantzia",
+      "bro-c'hall",
+      "francia",
+      "frañs"
+    ],
+    "lat": "46",
+    "lon": "2"
+  },
+  {
+    "code": "GA",
+    "name": "Gabun",
+    "searchNames": [
+      "ga",
+      "république gabonaise",
+      "gabun",
+      "gabon",
+      "gabonese republic"
+    ],
+    "lat": "-1",
+    "lon": "11.75"
+  },
+  {
+    "code": "GB",
+    "name": "Grossbritannien und Nordirland",
+    "searchNames": [
+      "gb",
+      "great britain",
+      "britain",
+      "prydain fawr",
+      "vereinigtes königreich",
+      "united kingdom",
+      "großbritannien",
+      "grossbritannien",
+      "y deyrnas unedig",
+      "an rìoghachd aonaichte",
+      "uk",
+      "großbritannien und nordirland",
+      "grossbritannien und nordirland",
+      "u.k.",
+      "united kingdom of great britain and northern ireland",
+      "uk"
+    ],
+    "lat": "54.75844",
+    "lon": "-2.69531"
+  },
+  {
+    "code": "GD",
+    "name": "Grenada",
+    "searchNames": [
+      "gd",
+      "grenada"
+    ],
+    "lat": "12.11667",
+    "lon": "-61.66667"
+  },
+  {
+    "code": "GE",
+    "name": "Georgien",
+    "searchNames": [
+      "ge",
+      "sakartvelo",
+      "georgian soviet socialist republic",
+      "georgien",
+      "georgia",
+      "վրաստան",
+      "საქართველო",
+      "грузия",
+      "gürcüstan"
+    ],
+    "lat": "41.99998",
+    "lon": "43.4999"
+  },
+  {
+    "code": "GF",
+    "name": "Französisch-Guayana",
+    "searchNames": [
+      "gf",
+      "guyane",
+      "french guiana",
+      "französisch-guayana",
+      "guyane française"
+    ],
+    "lat": "4",
+    "lon": "-53"
+  },
+  {
+    "code": "GG",
+    "name": "Guernsey",
+    "searchNames": [
+      "gg",
+      "guernsey"
+    ],
+    "lat": "49.45474",
+    "lon": "-2.57629"
+  },
+  {
+    "code": "GH",
+    "name": "Ghana",
+    "searchNames": [
+      "gh",
+      "ghana",
+      "gaana",
+      "ghana nutome"
+    ],
+    "lat": "8.1",
+    "lon": "-1.2"
+  },
+  {
+    "code": "GI",
+    "name": "Gibraltar",
+    "searchNames": [
+      "gi",
+      "gibraltar",
+      "gibilterra"
+    ],
+    "lat": "36.14474",
+    "lon": "-5.35257"
+  },
+  {
+    "code": "GL",
+    "name": "Grönland",
+    "searchNames": [
+      "gl",
+      "kalaallit nunaat",
+      "grønland",
+      "grönland",
+      "greenland"
+    ],
+    "lat": "72",
+    "lon": "-40"
+  },
+  {
+    "code": "GM",
+    "name": "Gambia",
+    "searchNames": [
+      "gm",
+      "gambia",
+      "the gambia",
+      "gàmbi",
+      "islamic republic of the gambia",
+      "gammbi",
+      "гамби"
+    ],
+    "lat": "13.5",
+    "lon": "-15.5"
+  },
+  {
+    "code": "GN",
+    "name": "Guinea",
+    "searchNames": [
+      "gn",
+      "république de guinée",
+      "guinea",
+      "guinée",
+      "guinée-conakry",
+      "republic of guinea"
+    ],
+    "lat": "10.83333",
+    "lon": "-10.66667"
+  },
+  {
+    "code": "GP",
+    "name": "Guadeloupe",
+    "searchNames": [
+      "gp",
+      "guadeloupe"
+    ],
+    "lat": "16.25",
+    "lon": "-61.58333"
+  },
+  {
+    "code": "GQ",
+    "name": "Äquatorialguinea",
+    "searchNames": [
+      "gq",
+      "república de guinea ecuatorial",
+      "spanish guinea",
+      "guinea española",
+      "territorios españoles del golfo de guinea",
+      "posesiones españolas del golfo de guinea",
+      "provincia de la guinea ecuatorial",
+      "äquatorialguinea",
+      "equatorial guinea",
+      "guinea ecuatorial",
+      "guinée équatoriale",
+      "republic of equatorial guinea"
+    ],
+    "lat": "1.7",
+    "lon": "10.5"
+  },
+  {
+    "code": "GR",
+    "name": "Griechenland",
+    "searchNames": [
+      "gr",
+      "ellinikí dhimokratía",
+      "vasilion tis ellados",
+      "griechenland",
+      "ελλάδα",
+      "greece",
+      "grèce",
+      "hellenic republic",
+      "ellinikí dimokratía",
+      "ελληνική δημοκρατία",
+      "ellás",
+      "elláda",
+      "ελλάς"
+    ],
+    "lat": "39",
+    "lon": "22"
+  },
+  {
+    "code": "GS",
+    "name": "Südgeorgien und die Südlichen Sandwichinseln",
+    "searchNames": [
+      "gs",
+      "südgeorgien und die südlichen sandwichinseln",
+      "south georgia and the south sandwich islands",
+      "south georgia and south sandwich islands",
+      "falkland islands dependencies"
+    ],
+    "lat": "-56",
+    "lon": "-33"
+  },
+  {
+    "code": "GT",
+    "name": "Guatemala",
+    "searchNames": [
+      "gt",
+      "república de guatemala",
+      "guatemala",
+      "republic of guatemala"
+    ],
+    "lat": "14.64072",
+    "lon": "-90.51327"
+  },
+  {
+    "code": "GU",
+    "name": "Guam",
+    "searchNames": [
+      "gu",
+      "guam",
+      "guåhan",
+      "islan guåhan",
+      "guahan"
+    ],
+    "lat": "13.47861",
+    "lon": "144.81834"
+  },
+  {
+    "code": "GW",
+    "name": "Guinea-Bissau",
+    "searchNames": [
+      "gw",
+      "república da guiné-bissau",
+      "guinea-bissau",
+      "guiné bissau",
+      "guiné-bissau",
+      "republic of guinea-bissau"
+    ],
+    "lat": "12",
+    "lon": "-15"
+  },
+  {
+    "code": "GY",
+    "name": "Guyana",
+    "searchNames": [
+      "gy",
+      "guyana"
+    ],
+    "lat": "5",
+    "lon": "-59"
+  },
+  {
+    "code": "HK",
+    "name": "Hongkong",
+    "searchNames": [
+      "hk",
+      "hongkong",
+      "hong kong",
+      "香港",
+      "hong kong special administrative region"
+    ],
+    "lat": "22.28552",
+    "lon": "114.15769"
+  },
+  {
+    "code": "HM",
+    "name": "Heard und McDonaldinseln",
+    "searchNames": [
+      "hm",
+      "heard- und mcdonald-inseln",
+      "heard island and mcdonald islands",
+      "heard und mcdonaldinseln"
+    ],
+    "lat": "-53.11711",
+    "lon": "73.50952"
+  },
+  {
+    "code": "HN",
+    "name": "Honduras",
+    "searchNames": [
+      "hn",
+      "república de honduras",
+      "hondures",
+      "honduras",
+      "republic of honduras"
+    ],
+    "lat": "15",
+    "lon": "-86.5"
+  },
+  {
+    "code": "HR",
+    "name": "Kroatien",
+    "searchNames": [
+      "hr",
+      "kroatien",
+      "croatia",
+      "hrvatska",
+      "хрватска",
+      "republic of croatia",
+      "republika hrvatska"
+    ],
+    "lat": "45.16667",
+    "lon": "15.5"
+  },
+  {
+    "code": "HT",
+    "name": "Haiti",
+    "searchNames": [
+      "ht",
+      "république d’haïti",
+      "haiti",
+      "haïti",
+      "ayiti",
+      "republic of haiti",
+      "repiblik d ayiti"
+    ],
+    "lat": "19",
+    "lon": "-72.41667"
+  },
+  {
+    "code": "HU",
+    "name": "Ungarn",
+    "searchNames": [
+      "hu",
+      "magyar köztársaság",
+      "a magyar népköztársaság",
+      "magyar népköztársaság",
+      "a magyar köztársaság",
+      "ungarn",
+      "hungary",
+      "magyarország",
+      "republic of hungary"
+    ],
+    "lat": "47",
+    "lon": "20"
+  },
+  {
+    "code": "ID",
+    "name": "Indonesien",
+    "searchNames": [
+      "id",
+      "nederlandsch-indië",
+      "indonesien",
+      "indonesia",
+      "indonesië",
+      "republic of indonesia",
+      "nederlands-indië",
+      "oost-indien"
+    ],
+    "lat": "-5",
+    "lon": "120"
+  },
+  {
+    "code": "IE",
+    "name": "Irland",
+    "searchNames": [
+      "ie",
+      "ireland",
+      "irland",
+      "éire",
+      "republic of ireland",
+      "poblacht na héireann"
+    ],
+    "lat": "53",
+    "lon": "-8"
+  },
+  {
+    "code": "IL",
+    "name": "Israel",
+    "searchNames": [
+      "il",
+      "medinat yisra’el",
+      "ereẕ yisra’el",
+      "اسرائيل",
+      "israel",
+      "ישראל",
+      "إسرائيل",
+      "state of israel",
+      "מדינת ישראל",
+      "دولة إسرائيل"
+    ],
+    "lat": "31.5",
+    "lon": "34.75"
+  },
+  {
+    "code": "IM",
+    "name": "Insel Man",
+    "searchNames": [
+      "im",
+      "isle of man",
+      "mannin",
+      "insel man"
+    ],
+    "lat": "54.15",
+    "lon": "-4.48333"
+  },
+  {
+    "code": "IN",
+    "name": "Indien",
+    "searchNames": [
+      "in",
+      "ভাৰত",
+      "ভারত",
+      "indien",
+      "india",
+      "inde",
+      "ભારત",
+      "भारत",
+      "ಭಾರತ",
+      "인도",
+      "ഇന്ത്യ",
+      "ଭାରତ",
+      "ਭਾਰਤ",
+      "भारतम्",
+      "இந்தியா",
+      "భారత దేశం",
+      "ہِندوستان",
+      "энэтхэг",
+      "ඉන්දියාව",
+      "భారత దేశము",
+      "بھارت",
+      "انڈیا"
+    ],
+    "lat": "22",
+    "lon": "79"
+  },
+  {
+    "code": "IO",
+    "name": "Britisches Territorium im Indischen Ozean",
+    "searchNames": [
+      "io",
+      "britisches territorium im indischen ozean",
+      "british indian ocean territory"
+    ],
+    "lat": "-6",
+    "lon": "72"
+  },
+  {
+    "code": "IQ",
+    "name": "Irak",
+    "searchNames": [
+      "iq",
+      "العراق",
+      "irak",
+      "iraq",
+      "իրաք",
+      "republic of iraq",
+      "جمهورية العراق",
+      "عێراق",
+      "komar-î ‘êraq",
+      "‘êraq",
+      "كۆمارى عێراق"
+    ],
+    "lat": "33",
+    "lon": "44"
+  },
+  {
+    "code": "IR",
+    "name": "Persien",
+    "searchNames": [
+      "ir",
+      "jomhūrī-ye eslāmī-ye īrān",
+      "empire of iran",
+      "iran",
+      "ایران",
+      "جُمهورئ اِسلامئ ايران",
+      "كِشوَرِ شاهَنشاهئ ايران",
+      "îran",
+      "iran (islamische republik)",
+      "islamic republic of iran",
+      "ئێران",
+      "iran, islamic republic of",
+      "persian",
+      "persien"
+    ],
+    "lat": "32",
+    "lon": "53"
+  },
+  {
+    "code": "IS",
+    "name": "Island",
+    "searchNames": [
+      "is",
+      "lýðveldið ísland",
+      "island",
+      "iceland",
+      "ísland",
+      "republic of iceland"
+    ],
+    "lat": "65",
+    "lon": "-18"
+  },
+  {
+    "code": "IT",
+    "name": "Italien",
+    "searchNames": [
+      "it",
+      "repubblica italiana",
+      "republic of italy",
+      "itàlia",
+      "italien",
+      "italy",
+      "italie",
+      "italia",
+      "italija",
+      "il bel paese",
+      "italian republic"
+    ],
+    "lat": "42.83333",
+    "lon": "12.83333"
+  },
+  {
+    "code": "JE",
+    "name": "Jersey",
+    "searchNames": [
+      "je",
+      "jersey",
+      "bailliage de jersey"
+    ],
+    "lat": "49.21667",
+    "lon": "-2.11667"
+  },
+  {
+    "code": "JM",
+    "name": "Jamaika",
+    "searchNames": [
+      "jm",
+      "jamaika",
+      "jamaica"
+    ],
+    "lat": "18.16667",
+    "lon": "-77.25"
+  },
+  {
+    "code": "JO",
+    "name": "Jordanien",
+    "searchNames": [
+      "jo",
+      "الاردن",
+      "jordanien",
+      "jordan",
+      "الأردن",
+      "hashemite kingdom of jordan",
+      "المملكة الاردنية الهاشمية"
+    ],
+    "lat": "31",
+    "lon": "36"
+  },
+  {
+    "code": "JP",
+    "name": "Japan",
+    "searchNames": [
+      "jp",
+      "japan",
+      "日本"
+    ],
+    "lat": "35.68536",
+    "lon": "139.75309"
+  },
+  {
+    "code": "KE",
+    "name": "Kenia",
+    "searchNames": [
+      "ke",
+      "kenia",
+      "kenya"
+    ],
+    "lat": "1",
+    "lon": "38"
+  },
+  {
+    "code": "KG",
+    "name": "Kirgistan",
+    "searchNames": [
+      "kg",
+      "kyrgyz respublikasy",
+      "kirgisistan",
+      "kyrgyzstan",
+      "кыргызстан",
+      "киргизия",
+      "qirgʻiziston",
+      "kirgistan",
+      "кыргызской республики",
+      "kyrgyz republic",
+      "kyrgyzstan respublikasy",
+      "кыргызская республика",
+      "кыргыз республикасы"
+    ],
+    "lat": "41.5",
+    "lon": "75"
+  },
+  {
+    "code": "KH",
+    "name": "Kambodscha",
+    "searchNames": [
+      "kh",
+      "république khmère",
+      "royaume du cambodge",
+      "kampuchea démocratique",
+      "democratic cambodia",
+      "république du cambodge",
+      "khmer republic",
+      "democratic kampuchea",
+      "kambodscha",
+      "cambodia",
+      "cambodge",
+      "កម្ពុជា",
+      "ព្រះរាជាណាចក្រកម្ពុជា",
+      "kingdom of cambodia"
+    ],
+    "lat": "13",
+    "lon": "105"
+  },
+  {
+    "code": "KI",
+    "name": "Kiribati",
+    "searchNames": [
+      "ki",
+      "kiribati"
+    ],
+    "lat": "1.421",
+    "lon": "172.984"
+  },
+  {
+    "code": "KM",
+    "name": "Komoren",
+    "searchNames": [
+      "km",
+      "union des comores",
+      "جزر القمر",
+      "komoren",
+      "comoros",
+      "comores",
+      "comores (archipel)",
+      "union of the comoros",
+      "جمهورية القمر المتحدة",
+      "إتَّحَاد اَلْقَمَر",
+      "اتحاد جزر القمر",
+      "جمهورية جزرالقمر المتحدة",
+      "جمهورية جزر القمر الاتحادية الإسلامية",
+      "republic of the comoros",
+      "federal islamic republic of the comoros",
+      "état comorien",
+      "territoire des comores",
+      "république fédérale islamique des comores",
+      "république fédérale et islamique des comores",
+      "république des comores"
+    ],
+    "lat": "-12.23333",
+    "lon": "44.44553"
+  },
+  {
+    "code": "KN",
+    "name": "Saint Kitts und Nevis",
+    "searchNames": [
+      "kn",
+      "st. kitts und nevis",
+      "saint kitts and nevis",
+      "saint kitts und nevis"
+    ],
+    "lat": "17.33333",
+    "lon": "-62.75"
+  },
+  {
+    "code": "KP",
+    "name": "Korea (Demokratische Volksrepublik, Nordkorea)",
+    "searchNames": [
+      "kp",
+      "chosŏn-minjujuŭi-inmin-konghwaguk",
+      "demokratische volksrepublik korea",
+      "north korea",
+      "nordkorea",
+      "조선민주주의인민공화국",
+      "korea (demokratische volksrepublik, nordkorea)",
+      "democratic people’s republic of korea",
+      "korea, democratic people’s republic of",
+      "북한",
+      "북조선"
+    ],
+    "lat": "40",
+    "lon": "127"
+  },
+  {
+    "code": "KR",
+    "name": "Südkorea",
+    "searchNames": [
+      "kr",
+      "taehan-min’guk",
+      "republik korea",
+      "south korea",
+      "대한민국",
+      "südkorea",
+      "korea (republik korea, südkorea)",
+      "한국",
+      "republic of korea",
+      "korea, republic of",
+      "남한",
+      "남조선",
+      "korea"
+    ],
+    "lat": "36.5",
+    "lon": "127.75"
+  },
+  {
+    "code": "KW",
+    "name": "Kuwait",
+    "searchNames": [
+      "kw",
+      "الكويت",
+      "kuwait",
+      "دَوْلَة اَلْكُوَيْت",
+      "state of kuwait"
+    ],
+    "lat": "29.36972",
+    "lon": "47.97833"
+  },
+  {
+    "code": "KY",
+    "name": "Kaimaninseln",
+    "searchNames": [
+      "ky",
+      "kaimaninseln",
+      "cayman islands"
+    ],
+    "lat": "19.5",
+    "lon": "-80.66667"
+  },
+  {
+    "code": "KZ",
+    "name": "Kasachstan",
+    "searchNames": [
+      "kz",
+      "qazaqstan respūblīkasy",
+      "kasachstan",
+      "kazakhstan",
+      "қазақстан",
+      "казахстан",
+      "republic of kazakhstan",
+      "qazaqstan",
+      "республика казахстан",
+      "қазақстан республикасы"
+    ],
+    "lat": "48",
+    "lon": "68"
+  },
+  {
+    "code": "LA",
+    "name": "Laos",
+    "searchNames": [
+      "la",
+      "sathalanalat paxathipatai paxaxôn lao",
+      "laos",
+      "ລາວ",
+      "ປະເທດລາວ",
+      "lao people’s democratic republic",
+      "lao",
+      "lao pdr"
+    ],
+    "lat": "18",
+    "lon": "105"
+  },
+  {
+    "code": "LB",
+    "name": "Libanon",
+    "searchNames": [
+      "lb",
+      "لبنان",
+      "libanon",
+      "lebanon",
+      "liban",
+      "լիբանան",
+      "اَلْجُمْهُورِيَّة اَللُّبْنَانِيَّة",
+      "republic of lebanon",
+      "lubnān"
+    ],
+    "lat": "33.83333",
+    "lon": "35.83333"
+  },
+  {
+    "code": "LC",
+    "name": "St. Lucia",
+    "searchNames": [
+      "lc",
+      "st. lucia",
+      "saint lucia"
+    ],
+    "lat": "13.88333",
+    "lon": "-60.96667"
+  },
+  {
+    "code": "LI",
+    "name": "Liechtenstein",
+    "searchNames": [
+      "li",
+      "fürstentum liechtenstein",
+      "liechtenstein",
+      "principality of liechtenstein"
+    ],
+    "lat": "47.16667",
+    "lon": "9.53333"
+  },
+  {
+    "code": "LK",
+    "name": "Sri Lanka",
+    "searchNames": [
+      "lk",
+      "sri lanka",
+      "இலங்கை",
+      "prajatantravadi samajavadi janarajaya sri lanka",
+      "ilankaic cananayaka cocalicak kutiyarcu",
+      "lankāva",
+      "ශ්‍රී ලංකාව"
+    ],
+    "lat": "7.75",
+    "lon": "80.75"
+  },
+  {
+    "code": "LR",
+    "name": "Liberia",
+    "searchNames": [
+      "lr",
+      "liberia"
+    ],
+    "lat": "6.5",
+    "lon": "-9.5"
+  },
+  {
+    "code": "LS",
+    "name": "Lesotho",
+    "searchNames": [
+      "ls",
+      "lesotho",
+      "i-lesotho"
+    ],
+    "lat": "-29.5",
+    "lon": "28.25"
+  },
+  {
+    "code": "LT",
+    "name": "Litauen",
+    "searchNames": [
+      "lt",
+      "lietuvos respublika",
+      "lithuanian soviet socialist republic",
+      "litauen",
+      "lithuania",
+      "lietuva",
+      "litwa",
+      "литва",
+      "republic of lithuania"
+    ],
+    "lat": "55.41667",
+    "lon": "24"
+  },
+  {
+    "code": "LU",
+    "name": "Grossherzogtum Luxemburg",
+    "searchNames": [
+      "lu",
+      "grand-duché de luxembourg",
+      "luxemburg",
+      "luxembourg",
+      "lëtzebuerg",
+      "grand duchy of luxembourg",
+      "groussherzogtum lëtzebuerg",
+      "großherzogtum luxemburg",
+      "grossherzogtum luxemburg"
+    ],
+    "lat": "49.61167",
+    "lon": "6.13"
+  },
+  {
+    "code": "LV",
+    "name": "Lettland",
+    "searchNames": [
+      "lv",
+      "latvijas republika",
+      "lettland",
+      "latvia",
+      "latvija",
+      "латвия",
+      "republic of latvia"
+    ],
+    "lat": "57",
+    "lon": "25"
+  },
+  {
+    "code": "LY",
+    "name": "Libysch-Arabische Dschamahirija",
+    "searchNames": [
+      "ly",
+      "ليبيا",
+      "libyen",
+      "libya",
+      "libia",
+      "اَلْجَمَاهِيرِيَّة اَلْعَرَبِيَّة اَللِّيبِيَّة اَلشَّعْبِيَّة اَلإِشْتِرَاكِيَّة",
+      "libysch-arabische dschamahirija",
+      "libia, repubblica araba",
+      "great socialist people’s libyan arab jamahiriya",
+      "lībiyā"
+    ],
+    "lat": "28",
+    "lon": "17"
+  },
+  {
+    "code": "MA",
+    "name": "Marokko",
+    "searchNames": [
+      "ma",
+      "royaume du maroc",
+      "المغرب",
+      "marokko",
+      "morocco",
+      "maroc",
+      "марока",
+      "kingdom of morocco"
+    ],
+    "lat": "32",
+    "lon": "-6"
+  },
+  {
+    "code": "MC",
+    "name": "Monaco",
+    "searchNames": [
+      "mc",
+      "principauté de monaco",
+      "monaco",
+      "principato di monaco"
+    ],
+    "lat": "43.73333",
+    "lon": "7.41667"
+  },
+  {
+    "code": "MD",
+    "name": "Moldau (Republik Moldau)",
+    "searchNames": [
+      "md",
+      "republica moldova",
+      "republik moldau",
+      "moldova",
+      "an mholdóiv",
+      "moldova, republica",
+      "молдова",
+      "moldovya cumhuriyeti",
+      "moldawien",
+      "молдавия",
+      "moldau (republik moldau)",
+      "moldovya",
+      "republic of moldova",
+      "moldova, republic of"
+    ],
+    "lat": "47.25",
+    "lon": "28.58333"
+  },
+  {
+    "code": "ME",
+    "name": "Montenegro",
+    "searchNames": [
+      "me",
+      "socialist republic of montenegro",
+      "montenegro",
+      "montenegró",
+      "crna gora",
+      "muntenegru",
+      "црна гора",
+      "republic of montenegro",
+      "republika crna gora",
+      "mali i zi"
+    ],
+    "lat": "42.75",
+    "lon": "19.25"
+  },
+  {
+    "code": "MF",
+    "name": "St. Martin",
+    "searchNames": [
+      "mf",
+      "saint martin",
+      "collectivité de saint-martin",
+      "saint-martin",
+      "st martin",
+      "st. martin",
+      "saint martin (french part)",
+      "saint-martin (antilles françaises)",
+      "saint-martin collectivity"
+    ],
+    "lat": "18.06667",
+    "lon": "-63.06667"
+  },
+  {
+    "code": "MG",
+    "name": "Madagaskar",
+    "searchNames": [
+      "mg",
+      "repoblikan’i madagasikara",
+      "république de madagascar",
+      "madagaskar",
+      "madagascar",
+      "madagasikara",
+      "republic of madagascar"
+    ],
+    "lat": "-20",
+    "lon": "47"
+  },
+  {
+    "code": "MH",
+    "name": "Marshall-Inseln",
+    "searchNames": [
+      "mh",
+      "marshall islands",
+      "marshallinseln",
+      "marshall-inseln"
+    ],
+    "lat": "7.113",
+    "lon": "171.236"
+  },
+  {
+    "code": "MK",
+    "name": "Ehemalige jugoslawische Republik Mazedonien",
+    "searchNames": [
+      "mk",
+      "mazedonien",
+      "macedonia (fyr)",
+      "македонија",
+      "maqedoni",
+      "makedonya",
+      "republic of macedonia",
+      "република македонија",
+      "republika e maqedonisë",
+      "ehemalige jugoslawische republik mazedonien",
+      "macedonia",
+      "macedonia, the former yugoslav republic of"
+    ],
+    "lat": "41.66667",
+    "lon": "21.75"
+  },
+  {
+    "code": "ML",
+    "name": "Mali",
+    "searchNames": [
+      "ml",
+      "république du mali",
+      "mali"
+    ],
+    "lat": "18",
+    "lon": "-2"
+  },
+  {
+    "code": "MM",
+    "name": "Burma (Myanmar)",
+    "searchNames": [
+      "mm",
+      "pyidaungzu myanma naingngandaw",
+      "myanmar",
+      "myanmar [burma]",
+      "မြန်မာပြည်",
+      "birma (myanmar)",
+      "union of burma",
+      "မြန်မာ",
+      "pyidaungzu thammada myanma naingngandaw"
+    ],
+    "lat": "21",
+    "lon": "96"
+  },
+  {
+    "code": "MN",
+    "name": "Mongolei",
+    "searchNames": [
+      "mn",
+      "mongol uls",
+      "монгоп улс",
+      "bügd nayramdah mongol ard uls",
+      "mongolian people’s republic",
+      "mongol peoples republic",
+      "mongolei",
+      "mongolia",
+      "монгол улс",
+      "монголия"
+    ],
+    "lat": "46",
+    "lon": "105"
+  },
+  {
+    "code": "MO",
+    "name": "Macau",
+    "searchNames": [
+      "mo",
+      "região administrativa especial de macau",
+      "macao",
+      "macau",
+      "澳門",
+      "澳门特别行政区",
+      "澳门",
+      "macau special administrative region"
+    ],
+    "lat": "22.20056",
+    "lon": "113.54611"
+  },
+  {
+    "code": "MP",
+    "name": "Nördliche Marianen",
+    "searchNames": [
+      "mp",
+      "northern mariana islands",
+      "北马里亚纳",
+      "nördliche marianen",
+      "pohjois-mariaanit",
+      "北马里亚纳群岛"
+    ],
+    "lat": "18.7676",
+    "lon": "145.673"
+  },
+  {
+    "code": "MQ",
+    "name": "Martinique",
+    "searchNames": [
+      "mq",
+      "martinique"
+    ],
+    "lat": "14.66667",
+    "lon": "-61"
+  },
+  {
+    "code": "MR",
+    "name": "Mauretanien",
+    "searchNames": [
+      "mr",
+      "موريتانيا",
+      "mauretanien",
+      "mauritania",
+      "mauritanie",
+      "islamic republic of mauritania",
+      "mūrītāniyā",
+      "الجمهورية الإسلامية الموريتانية"
+    ],
+    "lat": "20.25",
+    "lon": "-10.5"
+  },
+  {
+    "code": "MS",
+    "name": "Montserrat",
+    "searchNames": [
+      "ms",
+      "montserrat"
+    ],
+    "lat": "16.75",
+    "lon": "-62.2"
+  },
+  {
+    "code": "MT",
+    "name": "Malta",
+    "searchNames": [
+      "mt",
+      "republic of malta",
+      "malta",
+      "malta island"
+    ],
+    "lat": "35.91667",
+    "lon": "14.43333"
+  },
+  {
+    "code": "MU",
+    "name": "Mauritius",
+    "searchNames": [
+      "mu",
+      "île de france",
+      "mauritius",
+      "maurice",
+      "île maurice",
+      "republic of mauritius"
+    ],
+    "lat": "-20.3",
+    "lon": "57.58333"
+  },
+  {
+    "code": "MV",
+    "name": "Malediven",
+    "searchNames": [
+      "mv",
+      "malediven",
+      "ދިވެހި ރާއްޖެ",
+      "maldives",
+      "ދިވެހިރާއްޖެ",
+      "republic of maldives",
+      "dhivehi raajjeyge jumhooriyyaa"
+    ],
+    "lat": "3.2",
+    "lon": "73"
+  },
+  {
+    "code": "MW",
+    "name": "Malawi",
+    "searchNames": [
+      "mw",
+      "malawi",
+      "malaŵi"
+    ],
+    "lat": "-13.5",
+    "lon": "34"
+  },
+  {
+    "code": "MX",
+    "name": "Mexiko",
+    "searchNames": [
+      "mx",
+      "estados unidos mexicanos",
+      "united mexican states",
+      "república mejicana",
+      "mexican republic",
+      "méjico",
+      "mexiko",
+      "mexico",
+      "méxico",
+      "el país azteca",
+      "nueva españa"
+    ],
+    "lat": "19.42847",
+    "lon": "-99.12766"
+  },
+  {
+    "code": "MY",
+    "name": "Malaysien",
+    "searchNames": [
+      "my",
+      "malaysia",
+      "மலேஷியா",
+      "มาเลเซีย",
+      "马来西亚",
+      "മലേഷ്യ",
+      "மலேசியா",
+      "ประเทศมาเลเซีย",
+      "malaysien",
+      "మలేషియా"
+    ],
+    "lat": "2.5",
+    "lon": "112.5"
+  },
+  {
+    "code": "MZ",
+    "name": "Mosambik",
+    "searchNames": [
+      "mz",
+      "república de moçambique",
+      "mosambik",
+      "mozambique",
+      "moçambique",
+      "republic of mozambique"
+    ],
+    "lat": "-18.25",
+    "lon": "35"
+  },
+  {
+    "code": "NA",
+    "name": "Namibia",
+    "searchNames": [
+      "na",
+      "namibië",
+      "namibia"
+    ],
+    "lat": "-22",
+    "lon": "17"
+  },
+  {
+    "code": "NC",
+    "name": "Neukaledonien",
+    "searchNames": [
+      "nc",
+      "territoire des nouvelle-calédonie et dépendances",
+      "nouvelle-calédonie",
+      "neukaledonien",
+      "new caledonia"
+    ],
+    "lat": "-21.5",
+    "lon": "165.5"
+  },
+  {
+    "code": "NE",
+    "name": "Niger",
+    "searchNames": [
+      "ne",
+      "république du niger",
+      "niger",
+      "republic of niger",
+      "nijar"
+    ],
+    "lat": "18",
+    "lon": "9"
+  },
+  {
+    "code": "NF",
+    "name": "Norfolkinsel",
+    "searchNames": [
+      "nf",
+      "norfolkinsel",
+      "norfolk island"
+    ],
+    "lat": "-29.03333",
+    "lon": "167.95"
+  },
+  {
+    "code": "NG",
+    "name": "Nigeria",
+    "searchNames": [
+      "ng",
+      "nigeria",
+      "nijeriya",
+      "naigeria",
+      "naijiriya",
+      "nàìjíríà",
+      "nijeriyaa",
+      "najeriya",
+      "orílẹ́ède nàìjíríà",
+      "naija"
+    ],
+    "lat": "10",
+    "lon": "8"
+  },
+  {
+    "code": "NI",
+    "name": "Nikaragua",
+    "searchNames": [
+      "ni",
+      "república de nicaragua",
+      "nicaragua",
+      "nikaragua",
+      "republic of nicaragua"
+    ],
+    "lat": "13",
+    "lon": "-85"
+  },
+  {
+    "code": "NL",
+    "name": "Niederlande",
+    "searchNames": [
+      "nl",
+      "koninkrijk der nederlanden",
+      "niederlande",
+      "netherlands",
+      "nederland",
+      "nederlân",
+      "holland",
+      "the netherlands",
+      "kingdom of the netherlands",
+      "nederlandt",
+      "hollandt",
+      "die niederlande"
+    ],
+    "lat": "52.25",
+    "lon": "5.75"
+  },
+  {
+    "code": "NO",
+    "name": "Norwegen",
+    "searchNames": [
+      "no",
+      "kongeriket norge",
+      "norwegen",
+      "norway",
+      "norja",
+      "norge",
+      "noreg",
+      "norga",
+      "norgga",
+      "kingdom of norway",
+      "kongeriket noreg"
+    ],
+    "lat": "62",
+    "lon": "10"
+  },
+  {
+    "code": "NP",
+    "name": "Nepal",
+    "searchNames": [
+      "np",
+      "nepal",
+      "संघीय लोकतान्त्रिक गणतन्त्र नेपाल",
+      "nepāl",
+      "federal democratic republic of nepal",
+      "sańghīya loktāntrik gaṇatantra nepāl",
+      "नेपाल"
+    ],
+    "lat": "28",
+    "lon": "84"
+  },
+  {
+    "code": "NR",
+    "name": "Nauru",
+    "searchNames": [
+      "nr",
+      "republic of nauru",
+      "nauru",
+      "naoero"
+    ],
+    "lat": "-0.517",
+    "lon": "166.933"
+  },
+  {
+    "code": "NU",
+    "name": "Niue",
+    "searchNames": [
+      "nu",
+      "niue"
+    ],
+    "lat": "-19.03333",
+    "lon": "-169.86667"
+  },
+  {
+    "code": "NZ",
+    "name": "Neuseeland",
+    "searchNames": [
+      "nz",
+      "neuseeland",
+      "new zealand",
+      "aotearoa"
+    ],
+    "lat": "-27.83908",
+    "lon": "143.26172"
+  },
+  {
+    "code": "OM",
+    "name": "Oman",
+    "searchNames": [
+      "om",
+      "عمان",
+      "oman",
+      "عُمان",
+      "sultanate of oman",
+      "سلطنة عمان",
+      "‘umān"
+    ],
+    "lat": "21",
+    "lon": "57"
+  },
+  {
+    "code": "PA",
+    "name": "Panama",
+    "searchNames": [
+      "pa",
+      "república de panamá",
+      "panama",
+      "panamá",
+      "republic of panama"
+    ],
+    "lat": "9",
+    "lon": "-80"
+  },
+  {
+    "code": "PE",
+    "name": "Peru",
+    "searchNames": [
+      "pe",
+      "peru",
+      "perú",
+      "piruw",
+      "republic of peru",
+      "república del perú"
+    ],
+    "lat": "-10",
+    "lon": "-75.25"
+  },
+  {
+    "code": "PF",
+    "name": "Französisch-Polynesien",
+    "searchNames": [
+      "pf",
+      "territoire de la polynésie française",
+      "polynésie française",
+      "französisch-polynesien",
+      "french polynesia"
+    ],
+    "lat": "-15",
+    "lon": "-140"
+  },
+  {
+    "code": "PG",
+    "name": "Papua-Neuguinea",
+    "searchNames": [
+      "pg",
+      "papua-neuguinea",
+      "papua new guinea"
+    ],
+    "lat": "-6",
+    "lon": "147"
+  },
+  {
+    "code": "PH",
+    "name": "Philippinen",
+    "searchNames": [
+      "ph",
+      "philippinen",
+      "philippines",
+      "filippiinit",
+      "फिलीपिंस",
+      "filipina",
+      "filippini",
+      "फिलिपिन्स",
+      "pilipinas",
+      "फिलिपींस",
+      "republic of the philippines",
+      "फिलीपिन्स",
+      "filipîni"
+    ],
+    "lat": "13",
+    "lon": "122"
+  },
+  {
+    "code": "PK",
+    "name": "Pakistan",
+    "searchNames": [
+      "pk",
+      "pākistān",
+      "pakistan",
+      "پاکستان",
+      "islamic republic of pakistan"
+    ],
+    "lat": "30",
+    "lon": "70"
+  },
+  {
+    "code": "PL",
+    "name": "Polen",
+    "searchNames": [
+      "pl",
+      "rzeczpospolita polska",
+      "polen",
+      "poland",
+      "polska",
+      "republic of poland"
+    ],
+    "lat": "52",
+    "lon": "20"
+  },
+  {
+    "code": "PM",
+    "name": "St. Pierre und Miquelon",
+    "searchNames": [
+      "pm",
+      "collectivité territoriale de saint-pierre et miquelon",
+      "saint-pierre et miquelon",
+      "st. pierre und miquelon",
+      "saint pierre and miquelon",
+      "saint-pierre-et-miquelon",
+      "st-pierre et miquelon"
+    ],
+    "lat": "46.83333",
+    "lon": "-56.33333"
+  },
+  {
+    "code": "PN",
+    "name": "Pitcairn",
+    "searchNames": [
+      "pn",
+      "pitcairn",
+      "pitcairn islands"
+    ],
+    "lat": "-25.06667",
+    "lon": "-130.1"
+  },
+  {
+    "code": "PR",
+    "name": "Puerto Rico",
+    "searchNames": [
+      "pr",
+      "commonwealth of puerto rico",
+      "puerto rico",
+      "estado libre asociado de puerto rico",
+      "borinquen"
+    ],
+    "lat": "18.46633",
+    "lon": "-66.10572"
+  },
+  {
+    "code": "PS",
+    "name": "Palästinensische Autonomiegebiete",
+    "searchNames": [
+      "ps",
+      "فلسطين",
+      "palästinensische autonomiegebiete",
+      "palestinian territories",
+      "palestine",
+      "palestinian territory (the occupied)",
+      "the occupied palestinian territory",
+      "palestinian territory, occupied",
+      "palestinian territory"
+    ],
+    "lat": "31.92157",
+    "lon": "35.20329"
+  },
+  {
+    "code": "PT",
+    "name": "Portugal",
+    "searchNames": [
+      "pt",
+      "república portuguesa",
+      "portugal",
+      "portuguese republic"
+    ],
+    "lat": "39.6945",
+    "lon": "-8.13057"
+  },
+  {
+    "code": "PW",
+    "name": "Palau",
+    "searchNames": [
+      "pw",
+      "palau",
+      "パラオ",
+      "帛琉",
+      "帕劳"
+    ],
+    "lat": "7.503",
+    "lon": "134.621"
+  },
+  {
+    "code": "PY",
+    "name": "Paraguay",
+    "searchNames": [
+      "py",
+      "república del paraguay",
+      "paraguay",
+      "paraguái",
+      "republic of paraguay"
+    ],
+    "lat": "-23.33333",
+    "lon": "-58"
+  },
+  {
+    "code": "QA",
+    "name": "Katar",
+    "searchNames": [
+      "qa",
+      "قطر",
+      "katar",
+      "qatar",
+      "دَوْلَة قَطَر",
+      "state of qatar"
+    ],
+    "lat": "25.5",
+    "lon": "51.25"
+  },
+  {
+    "code": "RE",
+    "name": "La Reunion",
+    "searchNames": [
+      "re",
+      "réunion",
+      "la réunion",
+      "la reunion"
+    ],
+    "lat": 0,
+    "lon": 0
+  },
+  {
+    "code": "RO",
+    "name": "Rumänien",
+    "searchNames": [
+      "ro",
+      "românia",
+      "rumänien",
+      "romania",
+      "románia"
+    ],
+    "lat": "46",
+    "lon": "25"
+  },
+  {
+    "code": "RS",
+    "name": "Serbien",
+    "searchNames": [
+      "rs",
+      "serbia",
+      "serbien",
+      "srbija",
+      "szerbia",
+      "србија"
+    ],
+    "lat": "44.81892",
+    "lon": "20.45998"
+  },
+  {
+    "code": "RU",
+    "name": "Russland",
+    "searchNames": [
+      "ru",
+      "russian soviet federated socialist republic",
+      "russian soviet federative socialist republic",
+      "russian socialist federative soviet republic",
+      "rússia",
+      "russische föderation",
+      "russia",
+      "россия",
+      "российская федерация",
+      "russland",
+      "орос",
+      "russian federation",
+      "ရုရှ"
+    ],
+    "lat": "60",
+    "lon": "100"
+  },
+  {
+    "code": "RW",
+    "name": "Ruanda",
+    "searchNames": [
+      "rw",
+      "république du rwanda",
+      "ruanda",
+      "rwanda",
+      "republic of rwanda",
+      "republika y’u rwanda"
+    ],
+    "lat": "-2",
+    "lon": "30"
+  },
+  {
+    "code": "SA",
+    "name": "Saudi-Arabien",
+    "searchNames": [
+      "sa",
+      "العربية السعودية",
+      "saudi-arabien",
+      "saudi arabia",
+      "السعودية",
+      "المملكة العربية السعودية",
+      "kingdom of saudi arabia"
+    ],
+    "lat": "25",
+    "lon": "45"
+  },
+  {
+    "code": "SB",
+    "name": "Salomoninseln",
+    "searchNames": [
+      "sb",
+      "salomonen",
+      "solomon islands",
+      "solomon-inseln",
+      "salomoninseln"
+    ],
+    "lat": "-8",
+    "lon": "159"
+  },
+  {
+    "code": "SC",
+    "name": "Seychellen",
+    "searchNames": [
+      "sc",
+      "seychellen",
+      "seychelles"
+    ],
+    "lat": "-4.58333",
+    "lon": "55.66667"
+  },
+  {
+    "code": "SD",
+    "name": "Sudan",
+    "searchNames": [
+      "sd",
+      "السودان",
+      "sudan",
+      "as sūdān",
+      "جمهورية السودان"
+    ],
+    "lat": "16",
+    "lon": "30"
+  },
+  {
+    "code": "SE",
+    "name": "Schweden",
+    "searchNames": [
+      "se",
+      "konungariket sverige",
+      "schweden",
+      "sweden",
+      "ruotsi",
+      "sverige",
+      "ruoŧŧa",
+      "kingdom of sweden"
+    ],
+    "lat": "62",
+    "lon": "15"
+  },
+  {
+    "code": "SG",
+    "name": "Singapur",
+    "searchNames": [
+      "sg",
+      "singapur",
+      "singapore",
+      "singapura",
+      "சிங்கப்பூர்",
+      "新加坡"
+    ],
+    "lat": "1.28967",
+    "lon": "103.85007"
+  },
+  {
+    "code": "SH",
+    "name": "St. Helena",
+    "searchNames": [
+      "sh",
+      "st. helena",
+      "saint helena",
+      "saint helena, ascension and tristan da cunha"
+    ],
+    "lat": "-15.95",
+    "lon": "-5.7"
+  },
+  {
+    "code": "SI",
+    "name": "Slowenien",
+    "searchNames": [
+      "si",
+      "slowenien",
+      "slovenia",
+      "slovenija",
+      "republic of slovenia",
+      "republika slovenija"
+    ],
+    "lat": "46.08333",
+    "lon": "15"
+  },
+  {
+    "code": "SJ",
+    "name": "Svalbard und Jan Mayen",
+    "searchNames": [
+      "sj",
+      "svalbard und jan mayen",
+      "svalbard and jan mayen",
+      "свальбард и ян-майен",
+      "svalbard og jan mayen"
+    ],
+    "lat": "78",
+    "lon": "20"
+  },
+  {
+    "code": "SK",
+    "name": "Slowakei (Slowakische Republik)",
+    "searchNames": [
+      "sk",
+      "slowakei",
+      "slovakia",
+      "szlovákia",
+      "slovenská republika",
+      "slovensko",
+      "slowakei (slowakische republik)",
+      "slovak republic"
+    ],
+    "lat": "48.66667",
+    "lon": "19.5"
+  },
+  {
+    "code": "SL",
+    "name": "Sierra Leone",
+    "searchNames": [
+      "sl",
+      "sierra leone",
+      "సియెర్రా లియాన్"
+    ],
+    "lat": "8.5",
+    "lon": "-11.5"
+  },
+  {
+    "code": "SM",
+    "name": "San Marino",
+    "searchNames": [
+      "sm",
+      "repubblica di san marino",
+      "san marino"
+    ],
+    "lat": "43.93667",
+    "lon": "12.44639"
+  },
+  {
+    "code": "SN",
+    "name": "Senegal",
+    "searchNames": [
+      "sn",
+      "république du sénégal",
+      "senegal",
+      "sénégal",
+      "senegaal",
+      "republic of senegal"
+    ],
+    "lat": "14.5",
+    "lon": "-14.25"
+  },
+  {
+    "code": "SO",
+    "name": "Somalia",
+    "searchNames": [
+      "so",
+      "somalia",
+      "الصومال",
+      "soomaaliya",
+      "federal republic of somalia",
+      "jamhuuriyadda federaalka soomaaliya",
+      "the somali republic",
+      "jamhuuriyadda soomaaliyeed",
+      "aş şūmāl",
+      "جمهورية الصومال الفيدرالية"
+    ],
+    "lat": "6",
+    "lon": "48"
+  },
+  {
+    "code": "SR",
+    "name": "Suriname",
+    "searchNames": [
+      "sr",
+      "republiek suriname",
+      "suriname",
+      "суринам",
+      "суринами",
+      "republic of suriname"
+    ],
+    "lat": "4",
+    "lon": "-56"
+  },
+  {
+    "code": "SS",
+    "name": "Südsudan",
+    "searchNames": [
+      "ss",
+      "südsudan",
+      "republic of south sudan",
+      "south sudan"
+    ],
+    "lat": "7.5",
+    "lon": "30"
+  },
+  {
+    "code": "ST",
+    "name": "Sao Tomé und Principe",
+    "searchNames": [
+      "st",
+      "república democrática de são tomé e príncipe",
+      "são tomé und príncipe",
+      "sao tome and principe",
+      "são tomé e príncipe",
+      "são tomé and príncipe",
+      "sao tomé und principe",
+      "democratic republic of sao tome and principe"
+    ],
+    "lat": 0,
+    "lon": 0
+  },
+  {
+    "code": "SV",
+    "name": "El Salvador",
+    "searchNames": [
+      "sv",
+      "república de el salvador",
+      "el salvador",
+      "republic of el salvador"
+    ],
+    "lat": "13.83333",
+    "lon": "-88.91667"
+  },
+  {
+    "code": "SX",
+    "name": "Sint Maarten",
+    "searchNames": [
+      "sx",
+      "land sint maarten",
+      "country of sint maarten",
+      "sint maarten",
+      "sint maarten (dutch part)"
+    ],
+    "lat": "18.04167",
+    "lon": "-63.06667"
+  },
+  {
+    "code": "SY",
+    "name": "Syrien",
+    "searchNames": [
+      "sy",
+      "سورية",
+      "syrien",
+      "syria",
+      "syrie",
+      "սիրիա",
+      "سوريا",
+      "sûrî",
+      "syrian arab republic",
+      "الجمهورية العربية السورية",
+      "سووریا",
+      "surie",
+      "sūriyā",
+      "ash shām",
+      "الشام",
+      "république arabe syrienne"
+    ],
+    "lat": "35",
+    "lon": "38"
+  },
+  {
+    "code": "SZ",
+    "name": "Swasiland",
+    "searchNames": [
+      "sz",
+      "swasiland",
+      "swaziland",
+      "umbuso weswatini"
+    ],
+    "lat": "-26.5",
+    "lon": "31.5"
+  },
+  {
+    "code": "TC",
+    "name": "Turks- und Caicosinseln",
+    "searchNames": [
+      "tc",
+      "turks- und caicosinseln",
+      "turks and caicos islands"
+    ],
+    "lat": "21.73333",
+    "lon": "-71.58333"
+  },
+  {
+    "code": "TD",
+    "name": "Tschad",
+    "searchNames": [
+      "td",
+      "république du tchad",
+      "تشاد",
+      "tschad",
+      "chad",
+      "tchad",
+      "чад",
+      "republic of chad"
+    ],
+    "lat": "15",
+    "lon": "19"
+  },
+  {
+    "code": "TF",
+    "name": "Französische Süd- und Antarktisgebiete",
+    "searchNames": [
+      "tf",
+      "territoire des terres australes et antarctiques françaises",
+      "terres australes et antarctiques françaises",
+      "französische süd- und antarktisgebiete",
+      "french southern territories",
+      "terres australes françaises (les)",
+      "terres australes françaises"
+    ],
+    "lat": "-43",
+    "lon": "67"
+  },
+  {
+    "code": "TG",
+    "name": "Togo",
+    "searchNames": [
+      "tg",
+      "république togolaise",
+      "togo",
+      "togolese republic",
+      "togo nutome"
+    ],
+    "lat": "8.66667",
+    "lon": "1.08333"
+  },
+  {
+    "code": "TH",
+    "name": "Thailand",
+    "searchNames": [
+      "th",
+      "thailand",
+      "ไทย",
+      "kingdom of thailand",
+      "ประเทศไทย",
+      "ราชอาณาจักรไทย"
+    ],
+    "lat": "15.5",
+    "lon": "101"
+  },
+  {
+    "code": "TJ",
+    "name": "Tadschikistan",
+    "searchNames": [
+      "tj",
+      "jumhurii tojikiston",
+      "tadschikistan",
+      "tajikistan",
+      "таджикистан",
+      "тоҷикистон",
+      "republic of tajikistan"
+    ],
+    "lat": "39",
+    "lon": "71"
+  },
+  {
+    "code": "TK",
+    "name": "Tokelau",
+    "searchNames": [
+      "tk",
+      "tokelau"
+    ],
+    "lat": "-9.167",
+    "lon": "-171.83"
+  },
+  {
+    "code": "TL",
+    "name": "Timor-Leste",
+    "searchNames": [
+      "tl",
+      "osttimor",
+      "east timor",
+      "timor leste",
+      "timor timur",
+      "timor-leste",
+      "democratic republic of timor-leste",
+      "república democrática de timor-leste",
+      "తూర్పు టిమోర్"
+    ],
+    "lat": "-8.83333",
+    "lon": "125.75"
+  },
+  {
+    "code": "TM",
+    "name": "Turkmenistan",
+    "searchNames": [
+      "tm",
+      "türkmenistan",
+      "turkmenistan",
+      "туркменистан",
+      "туркмения",
+      "turkmaniston"
+    ],
+    "lat": "39.75",
+    "lon": "59.66667"
+  },
+  {
+    "code": "TN",
+    "name": "Tunesien",
+    "searchNames": [
+      "tn",
+      "تونس",
+      "tunesien",
+      "tunisia",
+      "tunisie",
+      "tunisian republic",
+      "tūnis"
+    ],
+    "lat": "34",
+    "lon": "9"
+  },
+  {
+    "code": "TO",
+    "name": "Tonga",
+    "searchNames": [
+      "to",
+      "tonga"
+    ],
+    "lat": "-20",
+    "lon": "-175"
+  },
+  {
+    "code": "TR",
+    "name": "Türkei",
+    "searchNames": [
+      "tr",
+      "türkiye cumhuriyeti",
+      "türkei",
+      "turkey",
+      "türkiye",
+      "türkiyə",
+      "tirkiye",
+      "تورکیا",
+      "republic of turkey",
+      "türkiya"
+    ],
+    "lat": "39",
+    "lon": "35"
+  },
+  {
+    "code": "TT",
+    "name": "Trinidad und Tobago",
+    "searchNames": [
+      "tt",
+      "trinidad und tobago",
+      "trinidad and tobago",
+      "trinité-et-tobago",
+      "特立尼达和多巴哥",
+      "trinidad y tobago",
+      "千里達及托巴哥",
+      "trinidad et tobago"
+    ],
+    "lat": "11",
+    "lon": "-61"
+  },
+  {
+    "code": "TV",
+    "name": "Tuwalu",
+    "searchNames": [
+      "tv",
+      "tuvalu",
+      "tuwalu"
+    ],
+    "lat": "-8.51719",
+    "lon": "179.14478"
+  },
+  {
+    "code": "TW",
+    "name": "Taiwan",
+    "searchNames": [
+      "tw",
+      "taiwan",
+      "中華民國",
+      "台湾",
+      "republik tsiene",
+      "jamhuriyar sin"
+    ],
+    "lat": "24",
+    "lon": "121"
+  },
+  {
+    "code": "TZ",
+    "name": "Tansania",
+    "searchNames": [
+      "tz",
+      "تانزانيا",
+      "tansania",
+      "tanzania",
+      "تنزانيا"
+    ],
+    "lat": "-6",
+    "lon": "35"
+  },
+  {
+    "code": "UA",
+    "name": "Ukraine",
+    "searchNames": [
+      "ua",
+      "ukraine",
+      "ukrajna",
+      "ukraina",
+      "ucraina",
+      "украина",
+      "україна",
+      "ukrayina"
+    ],
+    "lat": "49",
+    "lon": "32"
+  },
+  {
+    "code": "UG",
+    "name": "Uganda",
+    "searchNames": [
+      "ug",
+      "اوغندا",
+      "uganda",
+      "أوغندا",
+      "yuganda"
+    ],
+    "lat": "1.25",
+    "lon": "32.5"
+  },
+  {
+    "code": "UM",
+    "name": "Amerikanisch-Ozeanien",
+    "searchNames": [
+      "um",
+      "amerikanisch-ozeanien",
+      "u.s. minor outlying islands"
+    ],
+    "lat": "5.875",
+    "lon": "-162.057"
+  },
+  {
+    "code": "US",
+    "name": "USA",
+    "searchNames": [
+      "us",
+      "vereinigte staaten",
+      "united states",
+      "estados unidos",
+      "états-unis",
+      "usa",
+      "america",
+      "united states of america",
+      "amurka"
+    ],
+    "lat": "39.76",
+    "lon": "-98.5"
+  },
+  {
+    "code": "UY",
+    "name": "Uruguay",
+    "searchNames": [
+      "uy",
+      "república oriental del uruguay",
+      "uruguay",
+      "oriental republic of uruguay"
+    ],
+    "lat": "-33",
+    "lon": "-56"
+  },
+  {
+    "code": "UZ",
+    "name": "Usbekistan",
+    "searchNames": [
+      "uz",
+      "ŭzbekiston respublikasi",
+      "usbekistan",
+      "uzbekistan",
+      "узбекистан",
+      "ўзбекистон",
+      "ӯзбакистон",
+      "oʻzbekiston",
+      "republic of uzbekistan",
+      "o‘zbekiston",
+      "o‘zbekiston respublikasi"
+    ],
+    "lat": "41.66667",
+    "lon": "63.83333"
+  },
+  {
+    "code": "VA",
+    "name": "Staat der Vatikanstadt",
+    "searchNames": [
+      "va",
+      "stato della città del vaticano",
+      "vatican city",
+      "holy see",
+      "città del vaticano",
+      "città vaticano",
+      "vatican city state",
+      "vatikanstadt",
+      "vatican",
+      "saint-siège (etat de la cité du vatican)",
+      "vaticano",
+      "vatican hill",
+      "colle vaticano",
+      "staat der vatikanstadt",
+      "saint-siège (état de la cité du vatican)",
+      "santa sede (città del vaticano)",
+      "holy see (vatican city state)",
+      "vatican city state (holy see)"
+    ],
+    "lat": "41.90268",
+    "lon": "12.45414"
+  },
+  {
+    "code": "VC",
+    "name": "St. Vincent und die Grenadinen",
+    "searchNames": [
+      "vc",
+      "st. vincent und die grenadinen",
+      "saint vincent and the grenadines",
+      "saint-vincent-et-les grenadines",
+      "saint-vincent-et-les-grenadines"
+    ],
+    "lat": "13.08333",
+    "lon": "-61.2"
+  },
+  {
+    "code": "VE",
+    "name": "Venezuela",
+    "searchNames": [
+      "ve",
+      "república bolivariana de venezuela",
+      "estados unidos de venezuela",
+      "united states of venezuela",
+      "republic of venezuela",
+      "república de venezuela",
+      "venezuela",
+      "bolivarian republic of venezuela",
+      "venezuela, bolivarian republic of"
+    ],
+    "lat": "8",
+    "lon": "-66"
+  },
+  {
+    "code": "VG",
+    "name": "Britische Jungferninseln",
+    "searchNames": [
+      "vg",
+      "britische jungferninseln",
+      "british virgin islands",
+      "virgin islands (british)"
+    ],
+    "lat": "18.5",
+    "lon": "-64.5"
+  },
+  {
+    "code": "VI",
+    "name": "Amerikanische Jungferninseln",
+    "searchNames": [
+      "vi",
+      "amerikanische jungferninseln",
+      "u.s. virgin islands",
+      "virgin islands (us)"
+    ],
+    "lat": "18.34829",
+    "lon": "-64.98348"
+  },
+  {
+    "code": "VN",
+    "name": "Vietnam",
+    "searchNames": [
+      "vn",
+      "công hòa xã hội chủ nghĩa việt nam",
+      "vietnam",
+      "viet nam",
+      "វៀតណាម",
+      "việt nam",
+      "越南",
+      "viêt nam",
+      "socialist republic of vietnam"
+    ],
+    "lat": "16.16667",
+    "lon": "107.83333"
+  },
+  {
+    "code": "VU",
+    "name": "Vanuatu",
+    "searchNames": [
+      "vu",
+      "république de vanuatu",
+      "ripablik blong vanuatu",
+      "vanuatu",
+      "republic of vanuatu"
+    ],
+    "lat": "-16",
+    "lon": "167"
+  },
+  {
+    "code": "WF",
+    "name": "Wallis und Futuna",
+    "searchNames": [
+      "wf",
+      "territoire des îles wallis et futuna",
+      "wallis and futuna",
+      "wallis und futuna",
+      "wallis-et-futuna",
+      "wallis et futuna"
+    ],
+    "lat": "-13.3",
+    "lon": "-176.2"
+  },
+  {
+    "code": "WS",
+    "name": "Samoa",
+    "searchNames": [
+      "ws",
+      "malo sa’oloto tuto’atasi o samoa",
+      "samoa",
+      "independent state of samoa"
+    ],
+    "lat": "-13.8",
+    "lon": "-172.13333"
+  },
+  {
+    "code": "XK",
+    "name": "Kosovo",
+    "searchNames": [
+      "xk",
+      "kosovo",
+      "kosova",
+      "republic of kosovo",
+      "republika e kosovës",
+      "republika kosova",
+      "република косово",
+      "косово",
+      "република косова",
+      "autonomna pokrajina kosovo i metohija",
+      "kosovo i metohija",
+      "socijalistička autonomna pokrajina kosovo"
+    ],
+    "lat": "42.58333",
+    "lon": "20.91667"
+  },
+  {
+    "code": "YE",
+    "name": "Jemen",
+    "searchNames": [
+      "ye",
+      "اليمن",
+      "jemen",
+      "yemen",
+      "republic of yemen",
+      "الجمهورية اليمنية"
+    ],
+    "lat": "15.5",
+    "lon": "47.5"
+  },
+  {
+    "code": "YT",
+    "name": "Mayotte",
+    "searchNames": [
+      "yt",
+      "mayotte"
+    ],
+    "lat": "-12.83333",
+    "lon": "45.16667"
+  },
+  {
+    "code": "ZA",
+    "name": "Republik Südafrika",
+    "searchNames": [
+      "za",
+      "republiek van suid-afrika",
+      "unie van suid-afrika",
+      "südafrika",
+      "republic of south africa",
+      "aferika borwa",
+      "umzantsi afrika",
+      "iriphabliki yaseningizimu afrika",
+      "republik südafrika",
+      "iningizimu afrika",
+      "iriphabliki yom zantsi afrika",
+      "iriphabhuliki yase ningizimu afrika",
+      "iriphabhulikhi ye ningizimu afrika",
+      "rephaboliki ya afrika borwa",
+      "rephaboliki ya aforika borwa",
+      "riphabliki ra afrika dzonga",
+      "south africa",
+      "suid-afrika",
+      "afrika borwa",
+      "aforika borwa",
+      "afrika dzonga"
+    ],
+    "lat": "-29",
+    "lon": "24"
+  },
+  {
+    "code": "ZM",
+    "name": "Nordrhodesien",
+    "searchNames": [
+      "zm",
+      "sambia",
+      "ແຊມເບຍ",
+      "nordrhodesien",
+      "northern rhodesia",
+      "zambia",
+      "замбія",
+      "republic of zambia",
+      "zambi",
+      "semipia"
+    ],
+    "lat": "-14.33333",
+    "lon": "28.5"
+  },
+  {
+    "code": "ZW",
+    "name": "Südrhodesien",
+    "searchNames": [
+      "zw",
+      "simbabwe",
+      "zimbabwe",
+      "südrhodesien",
+      "southern rhodesia"
+    ],
+    "lat": "-19",
+    "lon": "29.75"
+  }
+]

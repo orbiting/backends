@@ -13,10 +13,12 @@ const { previewScheduler, preview: previewLib } = require('@orbiting/backend-mod
 const sendPendingPledgeConfirmations = require('./modules/crowdfundings/lib/sendPendingPledgeConfirmations')
 const mail = require('./modules/crowdfundings/lib/Mail')
 const cluster = require('cluster')
+const LRU = require('lru-cache')
 
 const {
   LOCAL_ASSETS_SERVER,
-  SEARCH_PG_LISTENER
+  SEARCH_PG_LISTENER,
+  MSTATS_COUNTRIES_CACHE_TIMEOUT_SECS
 } = process.env
 
 const start = async () => {
@@ -64,11 +66,20 @@ const run = async (workerId) => {
       previewLib.begin({ userId, contexts, pgdb, t })
   ]
 
+  const caches = {
+    // no args, thus max 1
+    membershipStatsCountries: LRU({
+      max: 1,
+      maxAge: (MSTATS_COUNTRIES_CACHE_TIMEOUT_SECS || 30) * 1000
+    })
+  }
+
   const createGraphQLContext = (defaultContext) => ({
     ...defaultContext,
     t,
     signInHooks,
-    mail
+    mail,
+    caches
   })
 
   return server.start(

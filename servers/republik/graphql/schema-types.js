@@ -359,10 +359,6 @@ type MutationResult {
   success: Boolean!
 }
 
-type MembershipStats {
-  count: Int!
-  monthlys: [MonthlyMembershipStat!]!
-}
 type MemberStats {
   count: Int!
 }
@@ -374,4 +370,53 @@ type MonthlyMembershipStat {
   renewedCount: Int!
   renewedRatio: Float!
 }
+
+type MembershipStats {
+  count: Int!
+  monthlys: [MonthlyMembershipStat!]!
+  createdAts(interval: TimeInterval!): [TimeCount!]!
+  ages: [AgeCount!]!
+  countries: [CountryCount!]!
+}
+
+enum TimeInterval {
+  hour
+  day
+  week
+  month
+  quarter
+  year
+}
+
+type TimeCount {
+  datetime: DateTime!
+  count: Int!
+}
+
+type AgeCount {
+  age: Int
+  count: Int!
+}
+
+type CountryCount {
+  name: String
+  count: Int!
+  states: [StateCount!]!
+  postalCodes: [PostalCodeCount!]!
+}
+
+type StateCount {
+  name: String
+  abbr: String
+  count: Int!
+}
+
+type PostalCodeCount {
+  postalCode: String
+  name: String
+  lat: Float!
+  lon: Float!
+  count: Int!
+}
+
 `
