@@ -345,11 +345,12 @@
     "name": "Saint-Barthélemy",
     "searchNames": [
       "bl",
-      "saint-barthélemy",
       "saint barthélemy",
+      "saint-barthélemy",
       "sankt bartholomäus",
       "st. barthélemy",
-      "saint-barthélémy"
+      "collectivité territoriale de saint-barthélemy",
+      "territorial collectivity of saint-barthélemy"
     ],
     "lat": 0,
     "lon": 0
@@ -390,7 +391,8 @@
       "plurinational state of bolivia",
       "estado plurinacional de bolivia",
       "republic of bolivia",
-      "bolivia, plurinational state of"
+      "bolivia, plurinational state of",
+      "bolivia (plurinational state of)"
     ],
     "lat": "-17",
     "lon": "-65"
@@ -826,7 +828,8 @@
       "dschibuti",
       "djibouti",
       "jabuuti",
-      "republic of djibouti"
+      "republic of djibouti",
+      "جمهورية جيبوتي"
     ],
     "lat": "11.58901",
     "lon": "43.14503"
@@ -1377,8 +1380,8 @@
       "香港",
       "hong kong special administrative region"
     ],
-    "lat": "22.28552",
-    "lon": "114.15769"
+    "lat": "22.27832",
+    "lon": "114.17469"
   },
   {
     "code": "HM",
@@ -1463,7 +1466,8 @@
       "indonesië",
       "republic of indonesia",
       "nederlands-indië",
-      "oost-indien"
+      "oost-indien",
+      "republiek indonesië"
     ],
     "lat": "-5",
     "lon": "120"
@@ -1774,7 +1778,8 @@
       "kn",
       "st. kitts und nevis",
       "saint kitts and nevis",
-      "saint kitts und nevis"
+      "saint kitts und nevis",
+      "st kitts and nevis"
     ],
     "lat": "17.33333",
     "lon": "-62.75"
@@ -1829,8 +1834,8 @@
       "دَوْلَة اَلْكُوَيْت",
       "state of kuwait"
     ],
-    "lat": "29.36972",
-    "lon": "47.97833"
+    "lat": "29.5",
+    "lon": "47.75"
   },
   {
     "code": "KY",
@@ -1900,7 +1905,8 @@
     "searchNames": [
       "lc",
       "st. lucia",
-      "saint lucia"
+      "saint lucia",
+      "st lucia"
     ],
     "lat": "13.88333",
     "lon": "-60.96667"
@@ -2127,7 +2133,8 @@
       "mh",
       "marshall islands",
       "marshallinseln",
-      "marshall-inseln"
+      "marshall-inseln",
+      "aolepān aorōkin m̧ajeļ"
     ],
     "lat": "7.113",
     "lon": "171.236"
@@ -2170,7 +2177,6 @@
       "mm",
       "pyidaungzu myanma naingngandaw",
       "myanmar",
-      "myanmar [burma]",
       "မြန်မာပြည်",
       "birma (myanmar)",
       "union of burma",
@@ -2225,8 +2231,8 @@
       "pohjois-mariaanit",
       "北马里亚纳群岛"
     ],
-    "lat": "18.7676",
-    "lon": "145.673"
+    "lat": "15.214",
+    "lon": "145.756"
   },
   {
     "code": "MQ",
@@ -2737,7 +2743,8 @@
       "república del paraguay",
       "paraguay",
       "paraguái",
-      "republic of paraguay"
+      "republic of paraguay",
+      "tetã paraguái"
     ],
     "lat": "-23.33333",
     "lon": "-58"
@@ -3119,7 +3126,8 @@
       "sz",
       "swasiland",
       "swaziland",
-      "umbuso weswatini"
+      "umbuso weswatini",
+      "eswatini"
     ],
     "lat": "-26.5",
     "lon": "31.5"
@@ -3269,7 +3277,8 @@
     "name": "Tonga",
     "searchNames": [
       "to",
-      "tonga"
+      "tonga",
+      "pule‘anga fakatu‘i ‘o tonga"
     ],
     "lat": "-20",
     "lon": "-175"
@@ -3328,7 +3337,9 @@
       "中華民國",
       "台湾",
       "republik tsiene",
-      "jamhuriyar sin"
+      "jamhuriyar sin",
+      "taiwan, republic of china",
+      "taiwan, roc"
     ],
     "lat": "24",
     "lon": "121"
@@ -3400,8 +3411,8 @@
       "united states of america",
       "amurka"
     ],
-    "lat": "39.76",
-    "lon": "-98.5"
+    "lat": "33.45876",
+    "lon": "-90.15081"
   },
   {
     "code": "UY",
@@ -3455,10 +3466,11 @@
       "saint-siège (état de la cité du vatican)",
       "santa sede (città del vaticano)",
       "holy see (vatican city state)",
-      "vatican city state (holy see)"
+      "vatican city state (holy see)",
+      "status civitatis vaticanæ"
     ],
-    "lat": "41.90268",
-    "lon": "12.45414"
+    "lat": "41.90225",
+    "lon": "12.4533"
   },
   {
     "code": "VC",
@@ -3467,8 +3479,9 @@
       "vc",
       "st. vincent und die grenadinen",
       "saint vincent and the grenadines",
-      "saint-vincent-et-les grenadines",
-      "saint-vincent-et-les-grenadines"
+      "saint-vincent-et-les grenadines_dupl",
+      "saint-vincent-et-les-grenadines",
+      "st vincent and grenadines"
     ],
     "lat": "13.08333",
     "lon": "-61.2"

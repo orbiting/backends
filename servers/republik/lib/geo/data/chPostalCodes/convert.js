@@ -7,6 +7,7 @@
 const rw = require('rw')
 const path = require('path')
 const nest = require('d3-collection').nest
+const { ascending } = require('d3-array')
 
 const input = rw.readFileSync(
   path.join(__dirname, 'PLZO_CSV_WGS84.csv'),
@@ -14,9 +15,10 @@ const input = rw.readFileSync(
 )
 
 const chPostalCodes = require('d3-dsv')
-  .dsvFormat(';').parse(input)
+  .tsvParse(input)
+  .sort((a, b) => ascending(a.PLZ, b.PLZ) || ascending(a.Ortschaftsname, b.Ortschaftsname))
   .map(d => ({
-    ortschaft: d['﻿Ortschaftsname'],
+    ortschaft: d.Ortschaftsname,
     gemeinde: d.Gemeindename,
     bfs: d['BFS-Nr'],
     postalCode: d.PLZ,

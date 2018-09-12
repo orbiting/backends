@@ -10,6 +10,7 @@
 const rw = require('rw')
 const path = require('path')
 const nest = require('d3-collection').nest
+const { ascending } = require('d3-array')
 
 // EU + CH
 const countriesOfInterest = [
@@ -45,28 +46,31 @@ const countries = require('d3-dsv')
 
 const result = nest()
   .key(d => d.country)
-  .key(d => d.code)
+  .key(d => d.code) // TODO: separate by stateAbbr too, handle multiple zips
   .entries(countries)
   .map(n => ({
     country: n.key,
-    postalCodes: n.values.map(d => ({
-      code: d.key,
-      name: d.values
-        .map(x => x.name)
-        .filter((x, i, array) => array.indexOf(x) === i)
-        .join(' / '),
-      state: d.values[0].state,
-      stateAbbr: d.values[0].stateAbbr,
-      lat: d.values[0].lat,
-      lon: d.values[0].lon
-      // values: d.values.map( v => ({
-      //  name: v.name,
-      //  state: v.state,
-      //  stateAbbr: v.stateAbbr,
-      //  lat: v.lat,
-      //  lon: v.lon
-      // }))
-    }))
+    postalCodes: n.values.map(d => {
+      const values = d.values.sort((a, b) => ascending(a.name, b.name))
+      return {
+        code: d.key,
+        name: values
+          .map(x => x.name)
+          .filter((x, i, array) => array.indexOf(x) === i)
+          .join(' / '),
+        state: values[0].state,
+        stateAbbr: values[0].stateAbbr,
+        lat: values[0].lat,
+        lon: values[0].lon
+        // values: values.map( v => ({
+        //  name: v.name,
+        //  state: v.state,
+        //  stateAbbr: v.stateAbbr,
+        //  lat: v.lat,
+        //  lon: v.lon
+        // }))
+      }
+    })
   }))
 
 rw.writeFileSync(`${__dirname}/postalCodesByCountries.json`,
