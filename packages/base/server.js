@@ -6,6 +6,7 @@ const checkEnv = require('check-env')
 const compression = require('compression')
 const timeout = require('connect-timeout')
 const cluster = require('cluster')
+const helmet = require('helmet')
 
 const DEV = process.env.NODE_ENV && process.env.NODE_ENV !== 'production'
 
@@ -123,6 +124,17 @@ const start = async (
 
   server = express()
   httpServer = createServer(server)
+
+  server.use(helmet({
+    hsts: {
+      maxAge: 60 * 60 * 24 * 365, // 1 year to get preload approval
+      preload: true,
+      includeSubDomains: true
+    },
+    referrerPolicy: {
+      policy: 'no-referrer'
+    }
+  }))
 
   // prod only
   if (!DEV) {
