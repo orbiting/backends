@@ -24,12 +24,14 @@ const {
   COOKIE_NAME,
   ENGINE_API_KEY,
   IGNORE_SSL_HOSTNAME,
-  REQ_TIMEOUT
+  REQ_TIMEOUT,
+  RATE_LIMIT_DISABLE
 } = process.env
 
 // middlewares
 const { express: { auth } } = require('@orbiting/backend-modules-auth')
 const requestLog = require('./express/requestLog')
+const rateLimit = require('./express/rateLimit')
 
 const CLUSTER_LISTEN_MESSAGE = 'http-server-listening'
 
@@ -186,6 +188,10 @@ const start = async (
     dev: DEV,
     pgdb: pgdb
   })
+
+  if (!RATE_LIMIT_DISABLE) {
+    server.use(rateLimit)
+  }
 
   if (executableSchema) {
     const graphql = require('./express/graphql')
