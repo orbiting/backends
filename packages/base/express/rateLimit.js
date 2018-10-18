@@ -48,8 +48,7 @@ module.exports = new RateLimit({
   windowMs,
   max: 1200, // 2rps max over 10mins
   keyGenerator (req) {
-    const asf = generateKey(req)
-    return asf
+    return generateKey(req)
   },
   onLimitReached (req, res, options) {
     const user = req.user && req.user.id
