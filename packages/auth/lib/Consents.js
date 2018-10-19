@@ -78,7 +78,7 @@ const saveConsents = async ({ userId, consents = [], req, pgdb }) => {
       pgdb.public.consents.insert({
         userId,
         policy: consent,
-        ip: req.ip
+        ip: req._ip()
       })
     )
   )

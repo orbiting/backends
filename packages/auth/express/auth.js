@@ -58,11 +58,6 @@ exports.configure = ({
     }
   }))
 
-  // trust first proxy
-  if (!dev) {
-    server.set('trust proxy', 1)
-  }
-
   // Tell Passport how to seralize/deseralize user accounts
   passport.serializeUser(function (user, next) {
     next(null, user.id)

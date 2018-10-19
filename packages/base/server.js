@@ -25,11 +25,13 @@ const {
   ENGINE_API_KEY,
   IGNORE_SSL_HOSTNAME,
   REQ_TIMEOUT,
-  RATE_LIMIT_DISABLE
+  RATE_LIMIT_DISABLE,
+  TRUST_PROXIES = 1
 } = process.env
 
 // middlewares
 const { express: { auth } } = require('@orbiting/backend-modules-auth')
+const ipMiddleware = require('./express/ip')
 const requestLog = require('./express/requestLog')
 const rateLimit = require('./express/rateLimit')
 
@@ -143,7 +145,7 @@ const start = async (
     // enable compression
     server.use(compression())
     // trust first proxy
-    server.enable('trust proxy')
+    server.set('trust proxy', TRUST_PROXIES)
     // redirect to https
     server.use((req, res, next) => {
       if (!req.secure && (!IGNORE_SSL_HOSTNAME || req.hostname !== IGNORE_SSL_HOSTNAME)) {
@@ -153,6 +155,9 @@ const start = async (
       }
     })
   }
+
+  // add req._ip()
+  server.use(ipMiddleware)
 
   // add req._log()
   server.use(requestLog)

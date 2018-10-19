@@ -2,41 +2,15 @@ const RateLimit = require('express-rate-limit')
 const RedisStore = require('rate-limit-redis')
 const redis = require('../lib/redis')
 const { publish } = require('@orbiting/backend-modules-slack')
-const crypto = require('crypto')
 
 const {
-  SLACK_CHANNEL_IT_ALERTS,
-  IP_HMAC_KEY
+  SLACK_CHANNEL_IT_ALERTS
 } = process.env
 
-if (!IP_HMAC_KEY) {
-  console.warn('missing IP_HMAC_KEY, X-SSR-FOR header will not be honoured!')
-}
-
-const windowMs = 10 * 60 * 1000 // 10 minutes
-
-const authenticateIP = IP_HMAC_KEY
-  ? ip =>
-    crypto
-      .createHmac('sha256', IP_HMAC_KEY)
-      .update(ip)
-      .digest('hex')
-  : null
+const windowMs = 10 * 60 * 1000 // 10min
 
 const generateKey = (req) => {
-  let ip
-  const ssrFor = req.headers['X-SSR-FOR'] || req.headers['x-ssr-for']
-  if (ssrFor && authenticateIP) {
-    try {
-      const [_ip, hmac] = ssrFor.split(',')
-      if (_ip && hmac && authenticateIP(_ip) === hmac) {
-        ip = _ip
-      }
-    } catch (e) {
-      console.log(e)
-    }
-  }
-  ip = ip || req.ip
+  const ip = req._ip()
   return (req.user ? `${req.user.id}_${ip}` : ip)
 }
 
@@ -46,7 +20,7 @@ module.exports = new RateLimit({
     expiry: windowMs / 1000 // https://github.com/wyattjoh/rate-limit-redis/issues/12
   }),
   windowMs,
-  max: 1200, // 2rps max over 10mins
+  max: 2 * (windowMs / 1000), // 2rps over 10mins = 1200req over 10min
   keyGenerator (req) {
     return generateKey(req)
   },
