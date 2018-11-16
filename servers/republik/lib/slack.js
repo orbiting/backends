@@ -1,5 +1,4 @@
 const { publish } = require('@orbiting/backend-modules-slack')
-
 const { transformUser } = require('@orbiting/backend-modules-auth')
 const { formatPrice } = require('@orbiting/backend-modules-formats')
 const {
