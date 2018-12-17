@@ -4,7 +4,7 @@ const fs = require('fs')
 const path = require('path')
 const mysql = require('mysql2')
 const { parse } = require('url')
-const { ascending, range, sum } = require('d3-array')
+const { ascending, descending, range, sum } = require('d3-array')
 
 // node --max-old-space-size=4096 script/piwik/visits.js
 
@@ -19,6 +19,37 @@ const redirections = require('./redirections.json')
 
 // https://ultradashboard.republik.ch/question/182
 const pledges = require('./pledges.json')
+
+const referrerNames = {
+  'm.facebook.com': 'Facebook',
+  'l.facebook.com': 'Facebook',
+  'lm.facebook.com': 'Facebook',
+  'www.facebook.com': 'Facebook',
+  't.co': 'Twitter',
+  'twitter.com': 'Twitter',
+  'mobile.twitter.com': 'Twitter',
+  'com.twitter.android': 'Twitter',
+  'com.samruston.twitter': 'Twitter',
+  'tweetdeck.twitter.com': 'Twitter',
+  'en.m.wikipedia.org': 'Wikipedia',
+  'en.wikipedia.org': 'Wikipedia',
+  'de.m.wikipedia.org': 'Wikipedia',
+  'de.wikipedia.org': 'Wikipedia',
+  'com.google.android.gm': 'GMail Android App',
+  'deref-gmx.net': 'Webmail',
+  'deref-web-02.de': 'Webmail',
+  'rich-v01.bluewin.ch': 'Webmail',
+  'rich-v02.bluewin.ch': 'Webmail',
+  'mail.yahoo.com': 'Webmail',
+  'outlook.live.com': 'Webmail',
+  'webmail1.sunrise.ch': 'Webmail',
+  'office.hostpoint.ch': 'Webmail',
+  'mail.zhaw.ch': 'Webmail',
+  'mail.google.com': 'Webmail',
+  'idlmail04.lotus.uzh.ch': 'Webmail',
+  'com.google.android.googlequicksearchbox': 'Google'
+}
+const shortDays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
 const getCurrentPath = path => {
   let currentPath = path
@@ -143,6 +174,7 @@ const analyse = async () => {
       hours: new Map(range(24).map(h => [h, 0])),
       hoursTimeSpent: new Map(range(24).map(h => [h, 0])),
       minutesSpent: new Map(),
+      daysTimeSpend: new Map(range(7).map(d => [d, 0])),
       pledgeIds: new Set(),
       chf: 0,
       referrer: new Map()
@@ -184,10 +216,32 @@ const analyse = async () => {
       incrementMap(rec.hoursTimeSpent, hour)
       const minutesSpent = Math.floor(docAction.time_spent / 60)
       incrementMap(rec.minutesSpent, minutesSpent)
+      const day = docAction.server_time.getDay()
+      incrementMap(rec.daysTimeSpend, day)
     }
 
+    let referrer
+    switch (visit.referer_type) {
+      case 6:
+        referrer = visit.referer_name.startsWith('republik/newsletter-editorial')
+          ? 'Republik-Newsletter'
+          : `Kampagne ${visit.referer_name}`
+        break
+      case 3:
+      case 2:
+        referrer = referrerNames[visit.referer_name] || visit.referer_name
+        break
+      case 1:
+        referrer = 'Direkt / Keine Angabe'
+        break
+      default:
+        referrer = 'Unbekannt'
+        break
+    }
+    incrementMap(rec.referrer, referrer)
+
     if (pledgeAction) {
-      const { pledge, server_time } = pledgeAction
+      const { pledge } = pledgeAction
       if (rec.pledgeIds.has(pledge.id)) {
         return
       }
@@ -253,18 +307,27 @@ const analyse = async () => {
     .on('end', () => resolve())
   )
 
+  const mapToJs = (
+    map,
+    compare = (a, b) => ascending(a[0], b[0])
+  ) => Array.from(map)
+    .sort(compare)
+    .map(d => ({key: d[0], count: d[1]}))
+
   const toJS = stat => Object.keys(stat).map(key => {
     const segment = stat[key]
     return {
       segment: key,
       visitors: segment.visitors.size,
       chf: segment.chf,
-      hours: Array.from(segment.hours)
-        .sort((a, b) => ascending(a[0], b[0]))
-        .map(d => ({key: d[0], count: d[1]})),
-      minutesSpent: Array.from(segment.minutesSpent)
-        .sort((a, b) => ascending(a[0], b[0]))
-        .map(d => ({key: d[0], count: d[1]}))
+      referrer: mapToJs(
+        segment.referrer,
+        (a, b) => descending(a[1], b[1])
+      ),
+      hours: mapToJs(segment.hours),
+      minutesSpent: mapToJs(segment.minutesSpent),
+      daysTimeSpend: mapToJs(segment.daysTimeSpend)
+        .map(d => ({key: shortDays[d.key], count: d.count}))
     }
   })
 
