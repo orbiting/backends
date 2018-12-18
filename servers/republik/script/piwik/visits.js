@@ -5,6 +5,7 @@ const path = require('path')
 const mysql = require('mysql2')
 const { parse } = require('url')
 const { ascending, descending, range, sum } = require('d3-array')
+const { timeFormat } = require('d3-time-format')
 
 // node --max-old-space-size=4096 script/piwik/visits.js
 
@@ -13,12 +14,21 @@ const { ascending, descending, range, sum } = require('d3-array')
 // documents.json
 // https://api.republik.ch/graphiql?query=%7B%0A%20%20documents%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
 const documents = require('./documents.json').data.documents.nodes
+  .filter(doc => doc.meta.template !== 'front')
 
 // https://ultradashboard.republik.ch/question/181
 const redirections = require('./redirections.json')
 
 // https://ultradashboard.republik.ch/question/182
 const pledges = require('./pledges.json')
+  .filter(p => p.name !== 'PROLONG')
+const pledgeIndex = pledges.reduce((index, pledge) => {
+  index[pledge.id] = pledge
+  return index
+})
+
+const getWeek = timeFormat('%W')
+const getMonth = timeFormat('%m')
 
 const referrerNames = {
   'm.facebook.com': 'Facebook',
@@ -92,8 +102,7 @@ const analyse = async () => {
   const actionIdToPledgeId = urlActions.reduce((agg, d) => {
     if (d.name.startsWith('republik.ch/konto')) {
       const url = parse(
-        d.name
-          .replace('republik.ch', ''),
+        d.name.replace('republik.ch', ''),
         true
       )
       if (url.query.id) {
@@ -106,7 +115,7 @@ const analyse = async () => {
 
   console.log('pledge actions', Object.keys(actionIdToPledgeId).length)
   console.log('chf total', sum(Array.from(pledgeIds), pledgeId => {
-    const pledge = pledges.find(p => p.id === pledgeId)
+    const pledge = pledgeIndex[pledgeId]
     if (pledge) {
       return pledge.total
     }
@@ -172,9 +181,8 @@ const analyse = async () => {
     return {
       visitors: new Set(),
       hours: new Map(range(24).map(h => [h, 0])),
-      hoursTimeSpent: new Map(range(24).map(h => [h, 0])),
       minutesSpent: new Map(),
-      daysTimeSpend: new Map(range(7).map(d => [d, 0])),
+      days: new Map(range(7).map(d => [d, 0])),
       pledgeIds: new Set(),
       chf: 0,
       referrer: new Map()
@@ -210,14 +218,13 @@ const analyse = async () => {
     const rec = stat[key] = stat[key] || createRecord()
 
     rec.visitors.add(visit.idvisitor)
+    const day = docAction.server_time.getDay()
+    incrementMap(rec.days, day)
     const hour = docAction.server_time.getHours()
     incrementMap(rec.hours, hour)
     if (docAction.time_spent) {
-      incrementMap(rec.hoursTimeSpent, hour)
       const minutesSpent = Math.floor(docAction.time_spent / 60)
       incrementMap(rec.minutesSpent, minutesSpent)
-      const day = docAction.server_time.getDay()
-      incrementMap(rec.daysTimeSpend, day)
     }
 
     let referrer
@@ -241,12 +248,8 @@ const analyse = async () => {
     incrementMap(rec.referrer, referrer)
 
     if (pledgeAction) {
-      const { pledge } = pledgeAction
-      if (rec.pledgeIds.has(pledge.id)) {
-        return
-      }
-      rec.chf += pledge.total / 100
-      rec.pledgeIds.add(pledge.id)
+      const { pledgeId } = pledgeAction
+      rec.pledgeIds.add(pledgeId)
     }
   }
   const record = (visit, docAction, pledgeAction) => {
@@ -281,12 +284,9 @@ const analyse = async () => {
         }
         const pledgeId = actionIdToPledgeId[idaction_url]
         if (pledgeId) {
-          const pledge = pledges.find(p => p.id === pledgeId)
-          if (pledge) {
-            return {
-              server_time: new Date(server_time),
-              pledge
-            }
+          return {
+            server_time: new Date(server_time),
+            pledgeId
           }
         }
       })
@@ -298,7 +298,7 @@ const analyse = async () => {
           return
         }
         const pledgeAction = actions
-          .find((action, i) => i > docI && action.pledge)
+          .find((action, i) => i > docI && action.pledgeId)
 
         record(visit, docAction, pledgeAction)
       })
@@ -314,22 +314,43 @@ const analyse = async () => {
     .sort(compare)
     .map(d => ({key: d[0], count: d[1]}))
 
-  const toJS = stat => Object.keys(stat).map(key => {
+  const missingPledges = new Set()
+  const toJS = stat => Object.keys(stat).reduce((agg, key) => {
     const segment = stat[key]
-    return {
+
+    const segmentPledges = Array.from(segment.pledgeIds).map(id => {
+      const pledge = pledgeIndex[id]
+      if (!pledge) {
+        missingPledges.add(id)
+      }
+      return pledge
+    }).filter(Boolean)
+
+    agg[key] = {
       segment: key,
       visitors: segment.visitors.size,
-      chf: segment.chf,
+      chf: sum(segmentPledges, p => p.total) / 100,
+      pledgeMonths: mapToJs(segmentPledges
+        .map(p => getMonth(new Date(p.createdAt)))
+        .reduce(
+          (map, month) => {
+            incrementMap(map, month)
+            return map
+          },
+          new Map()
+        )
+      ),
       referrer: mapToJs(
         segment.referrer,
         (a, b) => descending(a[1], b[1])
       ),
       hours: mapToJs(segment.hours),
-      minutesSpent: mapToJs(segment.minutesSpent),
-      daysTimeSpend: mapToJs(segment.daysTimeSpend)
-        .map(d => ({key: shortDays[d.key], count: d.count}))
+      days: mapToJs(segment.days)
+        .map(d => ({key: shortDays[d.key], count: d.count})),
+      minutesSpent: mapToJs(segment.minutesSpent)
     }
-  })
+    return agg
+  }, {})
 
   console.log('visitors', stat.all.visitors.size)
   fs.writeFileSync(
@@ -338,12 +359,14 @@ const analyse = async () => {
       segments: segments.map(segment => segment.key),
       total: toJS(stat),
       docs: Array.from(docStats).map(([doc, stat]) => ({
+        publishDate: doc.meta.publishDate,
         title: doc.meta.title,
         path: doc.meta.path,
         stats: toJS(stat)
       }))
     }, undefined, 2)
   )
+  console.log('unmatched pledges', missingPledges.size, '(e.g. prolong, canceled)')
 
   connection.end()
 }
