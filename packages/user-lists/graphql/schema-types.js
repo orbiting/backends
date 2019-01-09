@@ -35,4 +35,12 @@ type DocumentPosition {
   updatedAt: DateTime!
   deleted: Boolean!
 }
+
+type MediaPosition {
+  id: ID!
+  msecs: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deleted: Boolean!
+}
 `

@@ -24,5 +24,15 @@ type mutations {
   removeDocumentPosition(
     documentId: ID!
   ): Document!
+
+
+  upsertMediaPosition(
+    id: ID!
+    msecs: Int!
+  ): MediaPosition!
+
+  removeMediaPosition(
+    id: ID!
+  ): MediaPosition!
 }
 `

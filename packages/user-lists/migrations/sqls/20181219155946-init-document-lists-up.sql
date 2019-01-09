@@ -17,5 +17,16 @@ CREATE TABLE "userListDocumentItems" (
   unique("userListId", "userId", "repoId")
 );
 
+CREATE TABLE "userListMediaItems" (
+  "id"              uuid primary key not null default uuid_generate_v4(),
+  "userListId"  uuid not null references "userLists" on update cascade,
+  "userId"          uuid not null references "users" on update cascade on delete set null,
+  "mediaId"         text not null,
+  "data"            jsonb,
+  "createdAt"       timestamptz default now(),
+  "updatedAt"       timestamptz default now(),
+  unique("userListId", "userId", "mediaId")
+);
+
 INSERT INTO "userLists" ("name") VALUES ('bookmarks');
 INSERT INTO "userLists" ("name", "hidden") VALUES ('positions', true);
