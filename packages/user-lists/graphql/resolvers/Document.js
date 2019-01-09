@@ -11,5 +11,16 @@ module.exports = {
       repoId,
       userId: me.id
     }, context)
+  },
+  async userPosition ({ meta: { repoId } }, args, context) {
+    const { user: me } = context
+    if (!Roles.userIsInRoles(me, ['member']) || !repoId) {
+      return []
+    }
+    return UserList.getDocumentPositionItem(
+      repoId,
+      me.id,
+      context
+    )
   }
 }

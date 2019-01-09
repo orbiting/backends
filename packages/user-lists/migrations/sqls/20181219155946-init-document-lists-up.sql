@@ -13,7 +13,9 @@ CREATE TABLE "userListDocumentItems" (
   "repoId"          text not null,
   "data"            jsonb,
   "createdAt"       timestamptz default now(),
+  "updatedAt"       timestamptz default now(),
   unique("userListId", "userId", "repoId")
 );
 
 INSERT INTO "userLists" ("name") VALUES ('bookmarks');
+INSERT INTO "userLists" ("name", "hidden") VALUES ('positions', true);

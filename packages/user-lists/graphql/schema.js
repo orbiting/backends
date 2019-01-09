@@ -1,6 +1,5 @@
 module.exports = `
 schema {
-  query: queries
   mutation: mutations
 }
 
@@ -14,5 +13,16 @@ type mutations {
     documentId: ID!
     listName: ID!
   ): Document
+
+
+  upsertDocumentPosition(
+    documentId: ID!
+    percentage: Int!
+    nodeId: ID!
+  ): Document!
+
+  removeDocumentPosition(
+    documentId: ID!
+  ): Document!
 }
 `

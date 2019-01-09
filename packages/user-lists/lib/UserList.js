@@ -1,3 +1,5 @@
+const POSITIONS_LIST_NAME = 'positions'
+
 const findForUser = (userId, { pgdb }) =>
   pgdb.public.userLists.find({
     hidden: false
@@ -22,8 +24,52 @@ const byIdForUser = (id, userId, { loaders }) =>
       : null
     )
 
-const findDocumentItems = (args, { pgdb }) =>
-  pgdb.public.userListDocumentItems.find(args)
+const findDocumentItems = (query, { pgdb }) => {
+  const where = Object.keys(query)
+    .map(key => `di."${key}" = :${key}`)
+    .join(' AND ')
+  return pgdb.public.query(`
+    SELECT
+      di.*
+    FROM
+      "userListDocumentItems" di
+    WHERE
+      ${where} AND
+      di."userListId" IN (
+        SELECT id
+        FROM "userLists" ul
+        WHERE ul.hidden = false
+      )
+  `,
+  query
+  )
+}
+
+const getDocumentPositionItem = (repoId, userId, { pgdb }) =>
+  pgdb.public.query(`
+    SELECT
+      di.*
+    FROM
+      "userListDocumentItems" di
+    WHERE
+      di."repoId" = :repoId AND
+      di."userId" = :userId AND
+      di."userListId" = (
+        SELECT id
+        FROM "userLists" ul
+        WHERE ul."name" = :listName
+      )
+  `, {
+    repoId,
+    userId,
+    listName: POSITIONS_LIST_NAME
+  })
+    .then(items => items[0])
+    .then(item => item && ({
+      ...item.data,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    }))
 
 const upsertDocumentItem = async (userId, userListId, repoId, data, pgdb) => {
   const query = {
@@ -31,8 +77,7 @@ const upsertDocumentItem = async (userId, userListId, repoId, data, pgdb) => {
     userListId,
     repoId
   }
-  const existingItem =
-    await pgdb.public.userListDocumentItems.findOne(query)
+  const existingItem = await pgdb.public.userListDocumentItems.findOne(query)
   if (!existingItem) {
     return pgdb.public.userListDocumentItems.insert(
       {
@@ -47,6 +92,7 @@ const upsertDocumentItem = async (userId, userListId, repoId, data, pgdb) => {
         id: existingItem.id
       },
       {
+        updatedAt: new Date(),
         ...query,
         data
       },
@@ -63,10 +109,12 @@ const deleteDocumentItem = (userId, userListId, repoId, pgdb) =>
   })
 
 module.exports = {
+  POSITIONS_LIST_NAME,
   findForUser,
   byNameForUser,
   byIdForUser,
   findDocumentItems,
+  getDocumentPositionItem,
   upsertDocumentItem,
   deleteDocumentItem
 }
