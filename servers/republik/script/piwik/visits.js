@@ -12,9 +12,9 @@ const { timeFormat } = require('d3-time-format')
 // https://developer.matomo.org/guides/persistence-and-the-mysql-backend
 
 // documents.json
-// https://api.republik.ch/graphiql?query=%7B%0A%20%20documents%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
+// https://api.republik.ch/graphiql?query=%7B%0A%20%20documents(first%3A%202000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
 const documents = require('./documents.json').data.documents.nodes
-  .filter(doc => doc.meta.template !== 'front')
+  .filter(doc => doc.meta.template === 'article')
 
 // https://ultradashboard.republik.ch/question/181
 const redirections = require('./redirections.json')
@@ -27,7 +27,7 @@ const pledgeIndex = pledges.reduce((index, pledge) => {
   return index
 })
 
-const getWeek = timeFormat('%W')
+// const getWeek = timeFormat('%W')
 const getMonth = timeFormat('%m')
 
 const referrerNames = {
@@ -74,7 +74,7 @@ const analyse = async () => {
   const con = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    database: 'piwik'
+    database: 'piwik190307'
   })
   const connection = con.promise()
 
