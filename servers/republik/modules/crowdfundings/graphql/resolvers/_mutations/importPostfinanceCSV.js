@@ -1,7 +1,13 @@
+
+const Promise = require('bluebird')
+const { dsvFormat } = require('d3-dsv')
+
 const { Roles } = require('@orbiting/backend-modules-auth')
-const logger = console
+
 const matchPayments = require('../../../lib/payments/matchPayments')
-const {dsvFormat} = require('d3-dsv')
+const matchPspId = require('../../../lib/payments/matchPspId')
+
+const logger = console
 const csvParse = dsvFormat(';').parse
 
 const parsePostfinanceExport = async (inputFile, pgdb) => {
@@ -40,16 +46,14 @@ const parsePostfinanceExport = async (inputFile, pgdb) => {
     )
   }
 
-  return csvParse(delimitedFile.slice(3).join('\n'))
+  return csvParse(delimitedFile.slice(5).join('\n'))
     .filter(row => row.Gutschrift) // trash rows without gutschrift (such as lastschrift and footer)
-    .filter(row => !/^EINZAHLUNGSSCHEIN/g.exec(row.Avisierungstext)) // trash useless EINZAHLUNGSSCHEIN
-    .filter(row => !/^GUTSCHRIFT E-PAYMENT TRANSAKTION POSTFINANCE CARD/g.exec(row.Avisierungstext)) // trash PF CARD
-    .filter(row => !/^GUTSCHRIFT VON FREMDBANK AUFTRAGGEBER: STRIPE/ig.exec(row.Avisierungstext)) // trash stripe payments
+    .filter(row => !String(row.Avisierungstext).match(/^GUTSCHRIFT VON FREMDBANK AUFTRAGGEBER: (STRIPE|PAYPAL)/m))
     .map(row => {
       let newRow = {}
       Object.keys(row).forEach(key => {
         const value = row[key]
-        if (includeColumns.indexOf(key) > -1) {
+        if (includeColumns.includes(key)) {
           const newKey = key.toLowerCase()
           if (parseDate.indexOf(key) > -1) {
             newRow[newKey] = new Date(value) // dates are ISO Dates (2017-08-17)
@@ -57,65 +61,113 @@ const parsePostfinanceExport = async (inputFile, pgdb) => {
             newRow[newKey] = parseInt(parseFloat(value) * 100)
           } else {
             if (key === 'Avisierungstext') {
-              try {
-                newRow['mitteilung'] = /.*?MITTEILUNGEN:.*?\s([A-Za-z0-9]{6})(\s.*?|$)/g.exec(value)[1]
-              } catch (e) {
-                // console.log("Cloud not extract mitteilung from row:")
-                // console.log(row)
-              }
+              // e.g. "GIRO AUS KONTO CH860900000030055xxx ABSENDER: xxx MITTEILUNGEN: 35UX4D Abo Republik 2019"
+              // Can be multiline and highly individual text. Prefix "GIRO (...)" must not exist.
+              const matchMitteilung = String(value).match(/.*?MITTEILUNGEN:.*?\s([A-Za-z0-9]{6})(\s.*?|$)/m)
+              newRow['mitteilung'] = matchMitteilung && matchMitteilung[1]
+
+              // e.g. "GUTSCHRIFT E-PAYMENT TRANSAKTION POSTFINANCE CARD 30.11.2018 Project R Genossenschaft PFAQ01LS0000001 www.project-r.construction PAYMENT ID 4366370170 BESTELLNUMMER 4366370170"
+              const matchPspId = String(value).match(/PAYMENT ID (\d+) BESTELLNUMMER \d+/m)
+              newRow['pspId'] = matchPspId && matchPspId[1]
             }
+
             newRow[newKey] = value
           }
         }
       })
+
       newRow.bankAccountId = bankAccount.id
       return newRow
     })
-}
+    .map(row => {
+      if (row.pspId) {
+        row.hidden = true
+      }
 
-const LOG_FAILED_INSERTS = false
-
-const insertPayments = async (paymentsInput, tableName, pgdb) => {
-  const numPaymentsBefore = await pgdb.public[tableName].count()
-  let numFailed = 0
-  await Promise.all(
-    paymentsInput.map(payment => {
-      return pgdb.public[tableName].insert(payment)
-        .then(() => { return {payment, status: 'resolved'} })
-        .catch(e => { numFailed += 1; return {payment, e, status: 'rejected'} })
+      return row
     })
-  ).then(results => {
-    if (LOG_FAILED_INSERTS) {
-      const rejected = results.filter(x => x.status === 'rejected')
-      rejected.forEach(promise => {
-        console.log('could not insert row:')
-        console.log(promise.e.message)
-        console.log(promise.payment)
-        console.log('---------------------')
-      })
-    }
-  })
-  if (LOG_FAILED_INSERTS) {
-    console.log(`Failed to insert ${numFailed} payments.`)
-  }
-  return numPaymentsBefore
 }
 
-module.exports = async (_, args, {pgdb, req, t}) => {
-  Roles.ensureUserHasRole(req.user, 'accountant')
-  const { csv } = args
+const LOG_FAILED_INSERTS = true
 
-  const input = Buffer.from(csv, 'base64').toString()
-
-  const paymentsInput = await parsePostfinanceExport(input, pgdb)
-  if (paymentsInput.length === 0) {
-    return 'input empty. done nothing.'
+const insertPayments = async (payments, { pgdb, now = new Date() }) => {
+  const stats = {
+    all: payments.length,
+    inserts: 0,
+    updates: 0,
+    failures: 0
   }
+
+  await Promise.each(
+    payments,
+    async payment => {
+      const { buchungsdatum, valuta, avisierungstext, gutschrift } = payment
+      const conditions = { buchungsdatum, valuta, avisierungstext, gutschrift }
+      const siblingsCount = await pgdb.public.postfinancePayments.count(conditions)
+
+      if (siblingsCount === 1) {
+        const fields = { ...payment, updatedAt: now }
+        delete fields.mitteilung
+
+        await pgdb.public.postfinancePayments
+          .update(conditions, fields)
+          .then(() => { stats.updates++ })
+          .catch(({ message, detail }) => {
+            // swallow errornous uploads
+            stats.failures++
+
+            if (LOG_FAILED_INSERTS) {
+              console.warn({
+                payment,
+                error: { message, detail }
+              })
+            }
+          })
+
+        return
+      }
+
+      await pgdb.public.postfinancePayments
+        .insert(payment)
+        .then(() => { stats.inserts++ })
+        .catch(({ message, detail }) => {
+          // swallow errornous uploads
+          stats.failures++
+
+          if (LOG_FAILED_INSERTS) {
+            console.warn({
+              payment,
+              error: { message, detail }
+            })
+          }
+        })
+    }
+  )
+
+  return stats
+}
+
+module.exports = async (_, args, { pgdb, req, t }) => {
+  Roles.ensureUserHasRole(req.user, 'accountant')
+
+  const paymentsInput = await parsePostfinanceExport(
+    Buffer.from(args.csv, 'base64').toString(), // Buffer(...).toString('latin1') to prevent Umlaute issue
+    pgdb
+  )
+
+  if (paymentsInput.length < 1) {
+    console.log('no payments in input found. done nothing.')
+    return 'no payments in input found. done nothing.'
+  }
+
+  const now = new Date()
+  const numPaymentsBefore = await pgdb.public.postfinancePayments.count()
 
   // insert into db
   // this is done outside of transaction because it's
   // ment to throw on duplicate rows and doesn't change other records
-  const numPaymentsBefore = await insertPayments(paymentsInput, 'postfinancePayments', pgdb)
+  const insertSummary = await insertPayments(paymentsInput, { pgdb, now })
+
   const numPaymentsAfter = await pgdb.public.postfinancePayments.count()
 
   const transaction = await pgdb.transactionBegin()
@@ -126,10 +178,13 @@ module.exports = async (_, args, {pgdb, req, t}) => {
       numPaymentsSuccessful
     } = await matchPayments(transaction, t)
 
+    await matchPspId({ pgdb: transaction, now })
+
     await transaction.transactionCommit()
 
     const result = `
 importPostfinanceCSV result:
+CSV insert summary: ${JSON.stringify(insertSummary)}
 num new payments: ${numPaymentsAfter - numPaymentsBefore}
 num matched payments: ${numMatchedPayments}
 num updated pledges: ${numUpdatedPledges}
