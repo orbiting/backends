@@ -4,7 +4,7 @@ const { timeFormat, formatPrice } = require('@orbiting/backend-modules-formats')
 const { Roles } = require('@orbiting/backend-modules-auth')
 
 const csvFormat = dsvFormat(';').format
-const dateTimeFormat = timeFormat('%x %H:%M') // %x - the locale’s date
+const dateFormat = timeFormat('%x') // %x - the locale’s date
 
 const aggregatePackageOptions = (options) => {
   const amount = options.reduce((acc, { amount, periods }) => {
@@ -102,6 +102,7 @@ module.exports = async (_, args, {pgdb, user}) => {
       p.total AS "pledgeTotal",
       pay.total AS "paymentTotal",
       pay."updatedAt" AS "paymentUpdatedAt",
+      pay."receivedAt" AS "paymentReceivedAt",
       array_to_json(array_agg(po)) AS "pledgeOptions"
     FROM
       payments pay
@@ -127,63 +128,79 @@ module.exports = async (_, args, {pgdb, user}) => {
   `, {
     paymentIds,
     packageIds
-  })).map(result => {
-    const { pledgeOptions } = result
-
-    // the only way to determine if the abo was reduced
-    // is to check if pledge.donation is < 0
-    // If that's the case, it's the only product
-    // bought in that pledge.
-
-    const abos = filterPledgeOptions(pledgeOptions, aboPackageOptions)
-    const regularAbos = result.donation >= 0 ? abos : []
-    const reducedAbos = result.donation < 0 ? abos : []
-    const benefactorAbos = filterPledgeOptions(pledgeOptions, benefactorPackageOptions)
-    const aboGiveMonthsAbos = filterPledgeOptions(pledgeOptions, aboGiveMonthsPackageOptions)
-    const notebooks = filterPledgeOptions(pledgeOptions, notebookPackageOptions)
-    const totebags = filterPledgeOptions(pledgeOptions, totebagPackageOptions)
-
-    // if price changed during crowdfundings
-    // this is going to fuck up the "wert" column for old entries
-    const aboDefaultPrice = aboPackageOptions[0].price
-    const benefactorDefaultPrice = benefactorPackageOptions[0].price
-    const aboGiveMonthsDefaultPrice = aboGiveMonthsPackageOptions[0].price
-    const notebookDefaultPrice = notebookPackageOptions[0].price
-    const totebagDefaultPrice = totebagPackageOptions[0].price
-
-    const donations = pledgeOptions.filter(plo =>
-      !!donationPackageOptions.find(pko => pko.id === plo.templateId)
+  }))
+  /*
+  .filter(result => {
+    return (
+      result.pledgeCreatedAt > new Date('2018-12-30') &&
+      result.pledgeCreatedAt < new Date('2019-01-02')
+    ) || (
+      result.paymentUpdatedAt > new Date('2018-12-30') &&
+      result.paymentUpdatedAt < new Date('2019-01-02')
+    ) || (
+      result.receivedAt > new Date('2018-12-30') &&
+      result.receivedAt < new Date('2019-01-02')
     )
-    const numDonations = donations.reduce((sum, d) => sum + d.amount, 0)
-    const donation = numDonations > 0
-      ? result.donation + 100 // minPrice of donation is 1
-      : result.donation
-
-    return {
-      paymentId: result.paymentId.substring(0, 13),
-      pledgeId: result.pledgeId.substring(0, 13),
-      userId: result.userId.substring(0, 13),
-      email: result.email,
-      firstName: result.firstName,
-      lastName: result.lastName,
-      pledgeStatus: result.pledgeStatus,
-      pledgeCreatedAt: dateTimeFormat(result.pledgeCreatedAt),
-      pledgeTotal: formatPrice(result.pledgeTotal),
-      paymentMethod: result.paymentMethod,
-      paymentStatus: result.paymentStatus,
-      paymentTotal: formatPrice(result.paymentTotal),
-      paymentUpdatedAt: dateTimeFormat(result.paymentUpdatedAt),
-      ...(convertPackage('ABO', regularAbos, aboDefaultPrice)),
-      ...(convertPackage('ABO_REDUCED', reducedAbos, aboDefaultPrice)),
-      ...(convertPackage('ABO_BENEFACTOR', benefactorAbos, benefactorDefaultPrice)),
-      ...(convertPackage('ABO_GIVE_MONTHS', aboGiveMonthsAbos, aboGiveMonthsDefaultPrice)),
-      ...(convertPackage('NOTEBOOK', notebooks, notebookDefaultPrice)),
-      ...(convertPackage('TOTEBAG', totebags, totebagDefaultPrice)),
-      'DONATION #': numDonations,
-      // 'DONATION total': formatPrice(donations.reduce((sum, d) => sum + d.price, 0)),
-      donation: formatPrice(donation)
-    }
   })
+  */
+    .map(result => {
+      const { pledgeOptions } = result
+
+      // the only way to determine if the abo was reduced
+      // is to check if pledge.donation is < 0
+      // If that's the case, it's the only product
+      // bought in that pledge.
+
+      const abos = filterPledgeOptions(pledgeOptions, aboPackageOptions)
+      const regularAbos = result.donation >= 0 ? abos : []
+      const reducedAbos = result.donation < 0 ? abos : []
+      const benefactorAbos = filterPledgeOptions(pledgeOptions, benefactorPackageOptions)
+      const aboGiveMonthsAbos = filterPledgeOptions(pledgeOptions, aboGiveMonthsPackageOptions)
+      const notebooks = filterPledgeOptions(pledgeOptions, notebookPackageOptions)
+      const totebags = filterPledgeOptions(pledgeOptions, totebagPackageOptions)
+
+      // if price changed during crowdfundings
+      // this is going to fuck up the "wert" column for old entries
+      const aboDefaultPrice = aboPackageOptions[0].price
+      const benefactorDefaultPrice = benefactorPackageOptions[0].price
+      const aboGiveMonthsDefaultPrice = aboGiveMonthsPackageOptions[0].price
+      const notebookDefaultPrice = notebookPackageOptions[0].price
+      const totebagDefaultPrice = totebagPackageOptions[0].price
+
+      const donations = pledgeOptions.filter(plo =>
+        !!donationPackageOptions.find(pko => pko.id === plo.templateId)
+      )
+      const numDonations = donations.reduce((sum, d) => sum + d.amount, 0)
+      const donation = numDonations > 0
+        ? result.donation + 100 // minPrice of donation is 1
+        : result.donation
+
+      return {
+        paymentId: result.paymentId.substring(0, 13),
+        pledgeId: result.pledgeId.substring(0, 13),
+        userId: result.userId.substring(0, 13),
+        email: result.email,
+        firstName: result.firstName,
+        lastName: result.lastName,
+        pledgeStatus: result.pledgeStatus,
+        pledgeCreatedAt: dateFormat(result.pledgeCreatedAt),
+        pledgeTotal: formatPrice(result.pledgeTotal),
+        paymentMethod: result.paymentMethod,
+        paymentStatus: result.paymentStatus,
+        paymentTotal: formatPrice(result.paymentTotal),
+        paymentUpdatedAt: dateFormat(result.paymentUpdatedAt),
+        paymentReceivedAt: result.paymentReceivedAt && dateFormat(result.paymentReceivedAt),
+        ...(convertPackage('ABO', regularAbos, aboDefaultPrice)),
+        ...(convertPackage('ABO_REDUCED', reducedAbos, aboDefaultPrice)),
+        ...(convertPackage('ABO_BENEFACTOR', benefactorAbos, benefactorDefaultPrice)),
+        ...(convertPackage('ABO_GIVE_MONTHS', aboGiveMonthsAbos, aboGiveMonthsDefaultPrice)),
+        ...(convertPackage('NOTEBOOK', notebooks, notebookDefaultPrice)),
+        ...(convertPackage('TOTEBAG', totebags, totebagDefaultPrice)),
+        'DONATION #': numDonations,
+        // 'DONATION total': formatPrice(donations.reduce((sum, d) => sum + d.price, 0)),
+        donation: formatPrice(donation)
+      }
+    })
 
   const paymentsEnhancedWithSimulatedSuccessfulPaymentEntries = payments
     .reduce((result, payment) => {
@@ -194,6 +211,7 @@ module.exports = async (_, args, {pgdb, user}) => {
         const simulatedSuccessfulPayment = {
           type: 'verkauf',
           simulatedBookingDate: payment.pledgeCreatedAt,
+          simulatedReceivedDate: payment.paymentReceivedAt || payment.pledgeCreatedAt,
           ...payment,
           total: payment.paymentTotal
         }
@@ -211,6 +229,7 @@ module.exports = async (_, args, {pgdb, user}) => {
       const enhancedOriginalPayment = {
         type: 'verkauf',
         simulatedBookingDate: payment.pledgeCreatedAt,
+        simulatedReceivedDate: payment.paymentReceivedAt || payment.pledgeCreatedAt,
         ...payment,
         total: payment.paymentTotal
       }
