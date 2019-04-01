@@ -10,14 +10,14 @@ module.exports = async ({ pgdb, now = new Date() }) => {
   debug(`found ${unmatchedPayments.length} unmatched payments`)
 
   await Promise.each(unmatchedPayments, async ({ id, buchungsdatum, pspId }) => {
-    const hasUpdated = await pgdb.public.payments.update(
+    const wasUpdated = !!(await pgdb.public.payments.update(
       { pspId },
-      { receivedAt: buchungsdatum, updatedAt: now }
-    )
+      { receivedAt: buchungsdatum } // Unable to set updatedAt to now, since date is used to indicate storno
+    ))
 
-    debug({ id, pspId, buchungsdatum, hasUpdated })
+    debug({ id, pspId, buchungsdatum, wasUpdated })
 
-    if (hasUpdated > 0) {
+    if (wasUpdated) {
       await pgdb.public.postfinancePayments.update(
         { id },
         { matched: true, updatedAt: now }
