@@ -25,11 +25,6 @@ module.exports = async (_, args, {pgdb, req, t, mail, mail: {enforceSubscription
       throw new Error(t('api/membership/claim/invalidToken'))
     }
 
-    // A user can not claim a membership he owns.
-    if (membership.userId === req.user.id) {
-      throw new Error(t('api/membership/claim/ownerIsClaimer'))
-    }
-
     const now = new Date()
 
     pledgerId = membership.userId
