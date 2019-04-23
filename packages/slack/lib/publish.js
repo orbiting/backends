@@ -4,7 +4,7 @@ const {
 
 let SlackWebClient
 if (SLACK_API_TOKEN) {
-  SlackWebClient = new (require('@slack/client').WebClient)(SLACK_API_TOKEN)
+  SlackWebClient = new (require('@slack/web-api').WebClient)(SLACK_API_TOKEN)
 } else {
   console.warn('Posting to slack disabled: missing SLACK_API_TOKEN')
 }
@@ -25,4 +25,18 @@ const publish = async (channel, content) => {
   }
 }
 
+const postMessage = async (message) => {
+  if (SlackWebClient) {
+    await SlackWebClient.chat.postMessage(message)
+      .catch((e) => {
+        console.error(e)
+      })
+  } else {
+    console.warn(
+      `Slack cannot publish: missing SLACK_API_TOKEN or channel.`
+    )
+  }
+}
+
 module.exports = publish
+module.exports.postMessage = postMessage
