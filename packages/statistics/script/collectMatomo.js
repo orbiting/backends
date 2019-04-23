@@ -32,6 +32,12 @@ const argv = yargs
     coerce: moment,
     implies: 'firstDate'
   })
+  .option('rowConcurrency', {
+    alias: 'c',
+    describe: 'max oncurrent queries to API',
+    number: true,
+    default: 2
+  })
   .check(argv => {
     if (argv.firstDate > argv.lastDate) {
       return `Check --firstDate, --lastDate. Date in --firstDate must be before date in --lastDate.`
@@ -67,7 +73,7 @@ PgDb.connect().then(async pgdb => {
   const matomo = getInstance({
     endpoint: MATOMO_URL_BASE,
     tokenAuth: MATOMO_API_TOKEN_AUTH,
-    rowConcurrency: 2
+    rowConcurrency: argv.rowConcurrency
   })
 
   await Promise.each(

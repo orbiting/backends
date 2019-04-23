@@ -117,7 +117,6 @@ const getData = async ({ idSite, period, date, segment }, { matomo }) => {
     flat: 1,
     enhanced: 1
   }, {
-    limit: 10,
     rowCallback: async node => {
       node.parsedUrl = node.url && url.parse(node.url)
       if (!isPageUrlWanted(node)) {
