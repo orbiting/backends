@@ -70,6 +70,8 @@ PgDb.connect().then(async pgdb => {
     dates.push(argv.relativeDate.format('YYYY-MM-DD'))
   }
 
+  debug({ dates: dates.length })
+
   const matomo = getInstance({
     endpoint: MATOMO_URL_BASE,
     tokenAuth: MATOMO_API_TOKEN_AUTH,
@@ -79,6 +81,8 @@ PgDb.connect().then(async pgdb => {
   await Promise.each(
     dates,
     async (date) => {
+      debug({ idSite: MATOMO_SITE_ID, date })
+
       // Unsegmented
       await collect(
         { idSite: MATOMO_SITE_ID, period: 'day', date },
