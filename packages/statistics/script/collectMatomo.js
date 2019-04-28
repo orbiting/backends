@@ -8,6 +8,7 @@ const yargs = require('yargs')
 
 const PgDb = require('@orbiting/backend-modules-base/lib/pgdb')
 const { getInstance } = require('@orbiting/backend-modules-matomo')
+const elastic = require('@orbiting/backend-modules-base/lib/elastic').client()
 
 const collect = require('../lib/matomo/collect')
 
@@ -86,12 +87,12 @@ PgDb.connect().then(async pgdb => {
       // Unsegmented
       await collect(
         { idSite: MATOMO_SITE_ID, period: 'day', date },
-        { pgdb, matomo }
+        { pgdb, matomo, elastic }
       )
       // "Members" segment
       await collect(
         { idSite: MATOMO_SITE_ID, period: 'day', date, segment: 'dimension1=@member' },
-        { pgdb, matomo }
+        { pgdb, matomo, elastic }
       )
     }
   ).catch(err => {

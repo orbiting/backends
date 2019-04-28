@@ -2,6 +2,8 @@ const debug = require('debug')('statistics:lib:matomo:collect')
 const Promise = require('bluebird')
 const url = require('url')
 
+const documents = require('../elastic/documents')
+
 const EXCEPTIONAL_PATHNAMES = [
   '/',
   '/feuilleton',
@@ -131,7 +133,24 @@ const getData = async ({ idSite, period, date, segment }, { matomo }) => {
       const transformedDetails = await transformPageUrlDetails(details, { period, date })
 
       const pageUrl = url.format(Object.assign({}, node.parsedUrl, { search: null, hash: null }))
-      const result = { idSite, period, date, segment, url: pageUrl, ...transformedDetails }
+      const result = {
+        idSite,
+        period,
+        date,
+        segment,
+        url: pageUrl,
+        label: node.label,
+        nb_visits: node.nb_visits || 0,
+        nb_uniq_visitors: node.nb_uniq_visitors || 0,
+        nb_hits: node.nb_hits || 0,
+        entry_nb_uniq_visitors: node.entry_nb_uniq_visitors || 0,
+        entry_nb_visits: node.entry_nb_visits || 0,
+        entry_nb_actions: node.entry_nb_actions || 0,
+        entry_bounce_count: node.entry_bounce_count || 0,
+        exit_nb_uniq_visitors: node.exit_nb_uniq_visitors || 0,
+        exit_nb_visits: node.exit_nb_visits || 0,
+        ...transformedDetails
+      }
 
       const index = data.findIndex(row => row.url === pageUrl)
 
@@ -160,29 +179,55 @@ const getData = async ({ idSite, period, date, segment }, { matomo }) => {
   return data
 }
 
+const enrichData = async ({ data }, { elastic }) => {
+  const limit = 100
+  let offset = 0
+  let paths = []
+
+  do {
+    debug('enrichData', { limit, offset })
+
+    paths = data.slice(offset, limit).map(({ url }) => url.replace('https://www.republik.ch', ''))
+
+    const docs = await documents({ paths }, { elastic })
+
+    docs.map(doc => {
+      const index = data.findIndex(({ url }) => url.replace('https://www.republik.ch', '') === doc.path)
+      const { repoId, template, publishDate } = doc
+      data[index] = { ...data[index], repoId, template, publishDate }
+    })
+
+    offset += limit
+  } while (paths.length === limit)
+
+  return data
+}
+
 const insertRows = async ({ rows = [], pgdb }) =>
   Promise.map(rows, async row => {
-    const condition = { url: row.url, period: row.period, date: row.date, segment: row.segment }
-    const hasRow = !!(await pgdb.public.statisticsMatomo.count(condition, { skipUndefined: true }))
+    const condition = { url: row.url, period: row.period, date: row.date, segment: row.segment ? row.segment : null }
+    const hasRow = !!(await pgdb.public.statisticsMatomo.count(condition))
     if (hasRow) {
       await pgdb.public.statisticsMatomo.update(
         condition,
-        { ...row, updatedAt: new Date() },
-        { skipUndefined: true }
+        { ...row, updatedAt: new Date() }
       )
     } else {
       await pgdb.public.statisticsMatomo.insert(
-        row,
-        { skipUndefined: true }
+        row
       )
     }
   }, { concurrency: 1 })
 
-const collect = async ({ idSite, period, date, segment }, { pgdb, matomo }) => {
+const collect = async ({ idSite, period, date, segment }, { pgdb, matomo, elastic }) => {
   debug('collect %o', { idSite, period, date, segment })
-  const rows = await getData({ idSite, period, date, segment }, { matomo })
+  const data = await getData({ idSite, period, date, segment }, { matomo })
+
+  debug('enrich %o', { idSite, period, date, segment })
+  const rows = await enrichData({ data }, { elastic })
+
   await insertRows({ rows, pgdb })
-  debug('done with %o', { idSite, period, date, segment, rows: rows.lengt })
+  debug('done with %o', { idSite, period, date, segment, rows: rows.length })
 }
 
 module.exports = collect
