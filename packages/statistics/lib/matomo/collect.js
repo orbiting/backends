@@ -187,7 +187,7 @@ const enrichData = async ({ data }, { elastic }) => {
   do {
     debug('enrichData', { limit, offset })
 
-    paths = data.slice(offset, limit).map(({ url }) => url.replace('https://www.republik.ch', ''))
+    paths = data.slice(offset, offset + limit).map(({ url }) => url.replace('https://www.republik.ch', ''))
 
     const docs = await documents({ paths }, { elastic })
 
