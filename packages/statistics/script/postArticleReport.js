@@ -174,7 +174,7 @@ PgDb.connect().then(async pgdb => {
             `*<https://ultradashboard.republik.ch/public/dashboard/aa39d4c2-a4bc-4911-8a8d-7b23a1d82425?url=${document.path}|${document.title}>*`,
             `_${mdastToString({ children: document.credits })}_`,
             `*${Math.round(score.hits * 100)} % des täglichen Mittels* (${daysPublished}. Tag)`,
-            `via ` + [
+            [
               score.newsletter > 0 && `Newsletter: ${Math.round(score.newsletter * 100)} %`,
               score.campaigns > 0 && `Kampagne(n): ${Math.round(score.campaigns * 100)} %`,
               score.facebook > 0 && `Facebook: ${Math.round(score.facebook * 100)} %`,
@@ -223,7 +223,7 @@ PgDb.connect().then(async pgdb => {
 
     debug({ headerMrkdwn })
 
-    const contextMrkdwn = `Über diese Daten: Falls nicht anders vermerkt, beziehen sich die Zahlen auf das tägliche Mittel der Zugriffszahlen in ${indexYear.format('YYYY')}. Das Mittel der Zahlen aus sozialen Netzwerken basiert auf Daten von Januar bis April 2019. Alle Angaben ohne Gewähr.`
+    const contextMrkdwn = `Über diese Daten: Falls nicht anders vermerkt, beziehen sich die Zahlen auf das tägliche Mittel der Aufrufzahlen in ${indexYear.format('YYYY')}. Das Mittel der Zahlen aus sozialen Netzwerken basiert auf Daten von Januar bis April 2019. Alle Angaben ohne Gewähr.`
 
     if (!dryRun) {
       await postMessage({
