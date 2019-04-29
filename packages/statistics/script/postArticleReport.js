@@ -94,7 +94,7 @@ const getArticles = async ({ date, limit }, { pgdb }) =>
     SELECT
       sm.*,
       sm.entries + sm."previousPages.referrals" AS "relevant",
-      date_part('day', '${date.format('YYYY-MM-DD')}' - sm."publishDate") + 1 AS "daysPublished"
+      ('${date.format('YYYY-MM-DD')}' - sm."publishDate"::date) + 1 AS "daysPublished"
       
     FROM "statisticsMatomo" sm
     WHERE
@@ -116,7 +116,7 @@ const appendPercentiles = ({ row, index, percentile = 'p50', prop = 'p50' }) => 
 
   Object.keys(row).map(key => {
     if (index[`${key}.${percentile}`]) {
-      data[key] = (1 / index[`${key}.${percentile}`] * row[key]) - 1
+      data[key] = (1 / index[`${key}.${percentile}`] * row[key])
     }
   })
 
@@ -129,16 +129,6 @@ const appendDocumentMeta = async ({ row }, { elastic }) => {
   }, { elastic })
 
   return Object.assign({}, row, { document: document[0] })
-}
-
-const humanizeMedian = (score) => {
-  if (score > 0) {
-    return `${score}× über Jahresmittel`
-  } else if (score < 0) {
-    return `${score}× unter Jahresmittel`
-  }
-
-  return `genau Jahresmittel`
 }
 
 PgDb.connect().then(async pgdb => {
@@ -168,12 +158,12 @@ PgDb.connect().then(async pgdb => {
       const { document, daysPublished, p50, socialP50 } = article
 
       const score = {
-        hits: Math.round(p50.relevant * 10) / 10,
-        newsletter: Math.round(p50['campaign.newsletter.referrals'] * 10) / 10,
-        campaigns: Math.round(p50['campaign.referrals'] * 10) / 10,
-        facebook: Math.round(socialP50['social.facebook.referrals'] * 10) / 10,
-        twitter: Math.round(socialP50['social.twitter.referrals'] * 10) / 10,
-        websites: Math.round(p50['website.referrals'] * 10) / 10
+        hits: p50.relevant,
+        newsletter: p50['campaign.newsletter.referrals'],
+        campaigns: p50['campaign.referrals'],
+        facebook: socialP50['social.facebook.referrals'],
+        twitter: socialP50['social.twitter.referrals'],
+        websites: p50['website.referrals']
       }
 
       const block = {
@@ -183,13 +173,13 @@ PgDb.connect().then(async pgdb => {
           text: [
             `*<https://ultradashboard.republik.ch/public/dashboard/aa39d4c2-a4bc-4911-8a8d-7b23a1d82425?url=${document.path}|${document.title}>*`,
             `_${mdastToString({ children: document.credits })}_`,
-            `*${humanizeMedian(score.hits)}* (${daysPublished}. Tag)`,
+            `*${Math.round(score.hits * 100)} % des täglichen Mittels* (${daysPublished}. Tag)`,
             `via ` + [
-              score.newsletter !== -1 && `Newsletter: ${score.newsletter}`,
-              score.campaigns !== -1 && `Kampagne(n): ${score.campaigns}`,
-              score.facebook !== -1 && `Facebook: ${score.facebook}`,
-              score.twitter !== -1 && `Twitter: ${score.twitter}`,
-              score.websites !== -1 && `Dritte: ${score.websites}`
+              score.newsletter > 0 && `Newsletter: ${Math.round(score.newsletter * 100)} %`,
+              score.campaigns > 0 && `Kampagne(n): ${Math.round(score.campaigns * 100)} %`,
+              score.facebook > 0 && `Facebook: ${Math.round(score.facebook * 100)} %`,
+              score.twitter > 0 && `Twitter: ${Math.round(score.twitter * 100)} %`,
+              score.websites > 0 && `Dritte: ${Math.round(score.websites * 100)} %`
             ].filter(Boolean).join(', ')
           ].join('\n')
         }
@@ -227,20 +217,19 @@ PgDb.connect().then(async pgdb => {
 
     const headerMrkdwn = [
       `*Bericht zur Lage der Artikel vom ${date.format('DD.MM.YYYY')}*`,
-      `Artikel-Aufrufe *${humanizeMedian(Math.round(today.all.p50.relevant * 10) / 10)}*`,
-      `${Math.round(today.memberRatio * 100)} % angemeldete Nutzer`,
-      `Butterkekse für alle.`
+      `Artikel-Aufrufe *${Math.round(today.all.p50.relevant * 100)} % des täglichen Mittels*`,
+      `${Math.round(today.memberRatio * 100)} % angemeldete Nutzer`
     ].join('\n')
 
     debug({ headerMrkdwn })
 
-    const contextMrkdwn = `Über diese Daten: Falls nicht anders vermerkt, beziehen sich die Zahlen auf das «Jahresmittel» der Zugriffszahlen in ${indexYear.format('YYYY')}. «Mittel» der Zahlen von sozialen Netzwerke von Januar bis April 2019. Alle Angaben ohne Gewähr.`
+    const contextMrkdwn = `Über diese Daten: Falls nicht anders vermerkt, beziehen sich die Zahlen auf das tägliche Mittel der Zugriffszahlen in ${indexYear.format('YYYY')}. Das Mittel der Zahlen aus sozialen Netzwerken basiert auf Daten von Januar bis April 2019. Alle Angaben ohne Gewähr.`
 
     if (!dryRun) {
       await postMessage({
         channel: '#statistik-dev',
-        username: 'Egon Erwin Kisch',
-        icon_emoji: ':croissant:',
+        username: 'Carl Friedrich Gauß',
+        icon_emoji: ':male-scientist:',
         blocks: [
           { type: 'section', text: { type: 'mrkdwn', text: headerMrkdwn } },
           { type: 'divider' },
