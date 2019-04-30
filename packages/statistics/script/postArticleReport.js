@@ -283,8 +283,8 @@ PgDb.connect().then(async pgdb => {
             text: {
               type: 'mrkdwn',
               text: [
-                `*Artikel von ${date.format('dddd, DD.MM.YYYY')}*`,
-                `Alle Artikel, die veröffentlicht wurden.`
+                `*Beiträge von ${date.format('dddd, DD.MM.YYYY')}*`,
+                `Alle Beiträge, die veröffentlicht wurden.`
               ].join('\n')
             }
           }
@@ -302,8 +302,8 @@ PgDb.connect().then(async pgdb => {
             text: {
               type: 'mrkdwn',
               text: [
-                `*Frühere Artikel*`,
-                `Einige Artikel, die auch am ${date.format('DD.MM.')} aufgerufen, aber früher veröffentlicht wurden.`
+                `*Frühere Beiträge*`,
+                `Einige Beiträge, die auch am ${date.format('DD.MM.')} aufgerufen, aber früher veröffentlicht wurden.`
               ].join('\n')
             }
           }
@@ -319,7 +319,7 @@ PgDb.connect().then(async pgdb => {
           elements: [
             {
               type: 'mrkdwn',
-              text: `Über diese Daten: Ein Index von 100 Punkten entspricht dem Median aus der Anzahl von Besuchern am Veröffentlichungstag pro Artikel in ${indexYear.format('YYYY')}. Quellen: <https://piwik.project-r.construction|Matomo> und <https://api.republik.ch/graphiql|api.republik.ch>.`
+              text: `Über diese Daten: Ein Index von 100 Punkten entspricht dem Median aus der Anzahl von Besuchern eines Beitrags am Veröffentlichungstag in ${indexYear.format('YYYY')}. Quellen: <https://piwik.project-r.construction|Matomo> und <https://api.republik.ch/graphiql|api.republik.ch>.`
             }
           ]
         }
