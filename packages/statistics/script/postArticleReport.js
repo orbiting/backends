@@ -136,15 +136,15 @@ const appendDocumentMeta = async ({ row }, { elastic }) => {
   return Object.assign({}, row, { document: document[0] })
 }
 
-const getBlock = ({ daysPublished, document, indexes, distributions }, { date }) => {
+const getBlock = ({ url, daysPublished, document, indexes, distributions }, { date }) => {
   const block = {
     type: 'section',
     text: {
       type: 'mrkdwn',
       text: [
-        `*<${getUltradashboardUrlReportLink(document.url)}|${document.title}>*`,
+        `*<${getUltradashboardUrlReportLink(url)}|${document.title}>*`,
         `_${mdastToString({ children: document.credits }).replace(`, ${date.format('DD.MM.YYYY')}`, '')}_` + (daysPublished > 1 ? ` (${daysPublished}. Tag)` : ''),
-        `*Index ${Math.round(indexes.visitors * 100)}* ⋅ Abonennten-Index ${Math.round(indexes.memberVisitors * 100)}`,
+        `*Index ${Math.round(indexes.visitors * 100)}* ⋅ Abonnenten-Index ${Math.round(indexes.memberVisitors * 100)}`,
         'via ' + distributions
           .sort((a, b) => descending(a.percentage, b.percentage))
           .map(({ source, percentage }) => `${source}: ${percentage}%`)
