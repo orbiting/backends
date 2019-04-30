@@ -6,6 +6,7 @@ const moment = require('moment')
 const yargs = require('yargs')
 const Promise = require('bluebird')
 const mdastToString = require('mdast-util-to-string')
+const { ascending, descending } = require('d3-array')
 
 const PgDb = require('@orbiting/backend-modules-base/lib/pgdb')
 const { publish: { postMessage } } = require('@orbiting/backend-modules-slack')
@@ -66,31 +67,10 @@ const getMatomoIndex = async ({ year, groupBy = 'url' }, { pgdb }) => {
 }
 
 /**
- * Data for a whole day
- */
-const getDay = async ({ date, segment = null }, { pgdb }) => {
-  const segmentFragment = segment ? `sm.segment = '${segment}'` : 'sm.segment IS NULL'
-
-  return pgdb.query(`
-    SELECT
-      SUM(sm.entries + sm."previousPages.referrals") AS "relevant"
-      
-    FROM "statisticsMatomo" sm
-    WHERE
-      sm.date >= sm."publishDate"::date
-      AND sm.date = '${date.format('YYYY-MM-DD')}'
-      AND ${segmentFragment}
-      AND sm.template = 'article'
-
-    GROUP BY date
-  `)
-}
-
-/**
  * Data per URL
  */
-const getArticles = async ({ date, limit }, { pgdb }) =>
-  pgdb.query(`
+const getArticles = async ({ date, limit }, { pgdb }) => {
+  const articlesOnDate = await pgdb.query(`
     SELECT
       sm.*,
       sm.entries + sm."previousPages.referrals" AS "relevant",
@@ -98,14 +78,34 @@ const getArticles = async ({ date, limit }, { pgdb }) =>
       
     FROM "statisticsMatomo" sm
     WHERE
-      sm.date >= sm."publishDate"::date
+      sm."publishDate" BETWEEN '${date.format('YYYY-MM-DD')}' AND '${date.clone().add(1, 'day').format('YYYY-MM-DD')}'
       AND sm.date = '${date.format('YYYY-MM-DD')}'
       AND sm.segment IS NULL
       AND sm.template = 'article'
     
-    ORDER BY sm.entries + sm."previousPages.referrals" DESC
+    ORDER BY sm."publishDate"::date DESC
+  `)
+
+  const previousArticles = await pgdb.query(`
+    SELECT
+      sm.*,
+      ('${date.format('YYYY-MM-DD')}' - sm."publishDate"::date) + 1 AS "daysPublished"
+      
+    FROM "statisticsMatomo" sm
+    WHERE
+      sm."publishDate" < '${date.format('YYYY-MM-DD')}'
+      AND sm.date = '${date.format('YYYY-MM-DD')}'
+      AND sm.segment IS NULL
+      AND sm.template = 'article'
+    
+    ORDER BY sm.nb_uniq_visitors DESC
     LIMIT :limit
   `, { limit })
+
+  return [ ...articlesOnDate, ...previousArticles ]
+    .slice(0, limit)
+    .sort((a, b) => ascending(a.daysPublished, b.daysPublished))
+}
 
 /**
  * Finds values in {row} and calculates desired percentile usind
@@ -142,100 +142,119 @@ PgDb.connect().then(async pgdb => {
      * Articles
      */
     const index = await getMatomoIndex({ year: indexYear }, { pgdb })
-    const socialIndex = await getMatomoIndex({ year: moment('2019-01-01') }, { pgdb })
 
     const articles = await getArticles({ date, limit }, { pgdb })
       .then(articles => articles.map(row => appendPercentiles({ row, index, prop: 'p50' })))
-      .then(articles => articles.map(row => appendPercentiles({ row, index: socialIndex, prop: 'socialP50' })))
       .then(articles => Promise.map(
         articles,
         async row => appendDocumentMeta({ row }, { elastic }),
         { concurrency: 1 }
       ))
       .then(articles => articles.filter(({ document }) => !!document))
+      .then(articles => articles.map(article => {
+        const { document, daysPublished, p50 } = article
 
-    const blocks = articles.map(article => {
-      const { document, daysPublished, p50, socialP50 } = article
-
-      const score = {
-        hits: p50.relevant,
-        newsletter: p50['campaign.newsletter.referrals'],
-        campaigns: p50['campaign.referrals'],
-        facebook: socialP50['social.facebook.referrals'],
-        twitter: socialP50['social.twitter.referrals'],
-        websites: p50['website.referrals']
-      }
-
-      const block = {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: [
-            `*<https://ultradashboard.republik.ch/public/dashboard/aa39d4c2-a4bc-4911-8a8d-7b23a1d82425?url=${document.path}|${document.title}>*`,
-            `_${mdastToString({ children: document.credits })}_`,
-            `*${Math.round(score.hits * 100)} % des täglichen Mittels* (${daysPublished}. Tag)`,
-            [
-              score.newsletter > 0 && `Newsletter: ${Math.round(score.newsletter * 100)} %`,
-              score.campaigns > 0 && `Kampagne(n): ${Math.round(score.campaigns * 100)} %`,
-              score.facebook > 0 && `Facebook: ${Math.round(score.facebook * 100)} %`,
-              score.twitter > 0 && `Twitter: ${Math.round(score.twitter * 100)} %`,
-              score.websites > 0 && `Dritte: ${Math.round(score.websites * 100)} %`
-            ].filter(Boolean).join(', ')
-          ].join('\n')
+        const indexes = {
+          visitors: p50.nb_uniq_visitors
         }
-      }
 
-      if (document.image) {
-        block.accessory = {
-          type: 'image',
-          image_url: document.image,
-          alt_text: document.title
+        const sources = {
+          'via Newsletter': article['campaign.newsletter.referrals'],
+          'via Kampagnen': article['campaign.referrals'] - article['campaign.newsletter.referrals'],
+
+          'via Twitter': article['social.twitter.referrals'],
+          'via Facebook': article['social.facebook.referrals'],
+          'via Instagram': article['social.instagram.referrals'],
+          'via LinkedIn': article['social.linkedin.referrals'],
+          'via anderen sozialen Netwerken': article['social.referrals'] - article['social.twitter.referrals'] - article['social.facebook.referrals'] - article['social.instagram.referrals'] - article['social.linkedin.referrals'],
+
+          'via Suchmaschinen': article['search.visits'],
+          'via Dritt-Webseiten': article['website.referrals']
         }
-      }
 
-      return block
-    })
+        const allSources = Object.keys(sources).reduce((acc, curr) => acc + sources[curr], 0)
 
-    debug(JSON.stringify(blocks, null, 2))
+        const distributions = Object.keys(sources).map(key => {
+          const ratio = 1 / allSources * sources[key]
+          const percentage = Math.round(ratio * 1000) / 10
 
-    /**
-     * Today (all article data)
-     */
-    const todayAllIndex = await getMatomoIndex({ year: indexYear, groupBy: 'date', segment: null }, { pgdb })
-    const todayMemberIndex = await getMatomoIndex({ year: indexYear, groupBy: 'date', segment: 'dimension1=@member' }, { pgdb })
+          if (percentage === 0) {
+            return false
+          }
 
-    const today = {
-      all: await getDay({ date, segment: null }, { pgdb })
-        .then(rows => rows.map(row => appendPercentiles({ row, index: todayAllIndex, prop: 'p50' })))
-        .then(rows => rows.reduce((acc, curr) => curr)),
-      member: await getDay({ date, segment: 'dimension1=@member' }, { pgdb })
-        .then(rows => rows.map(row => appendPercentiles({ row, index: todayMemberIndex, prop: 'p50' })))
-        .then(rows => rows.reduce((acc, curr) => curr))
-    }
+          return { source: key, percentage }
+        }).filter(Boolean)
 
-    today.memberRatio = 1 / today.all.relevant * today.member.relevant
+        const block = {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: [
+              `*<https://ultradashboard.republik.ch/public/dashboard/aa39d4c2-a4bc-4911-8a8d-7b23a1d82425?url=${document.path}|${document.title}>*`,
+              `_${mdastToString({ children: document.credits }).replace(`, ${date.format('DD.MM.YYYY')}`, '')}_`,
+              `*Besucher-Index ${Math.round(indexes.visitors * 100)}*` + (daysPublished > 1 ? ` (${daysPublished}. Tag)` : ''),
+              distributions
+                .sort((a, b) => descending(a.percentage, b.percentage))
+                .map(({ source, percentage }) => `${source}: ${percentage}%`)
+                .join(' ⋅ ')
+            ].join('\n')
+          }
+        }
 
-    const headerMrkdwn = [
-      `*Bericht zur Lage der Artikel vom ${date.format('DD.MM.YYYY')}*`,
-      `Artikel-Aufrufe *${Math.round(today.all.p50.relevant * 100)} % des täglichen Mittels*`,
-      `${Math.round(today.memberRatio * 100)} % angemeldete Nutzer`
-    ].join('\n')
+        if (document.image) {
+          block.accessory = {
+            type: 'image',
+            image_url: document.image,
+            alt_text: document.title
+          }
+        }
 
-    debug({ headerMrkdwn })
+        return { ...article, block }
+      }))
 
-    const contextMrkdwn = `Über diese Daten: Falls nicht anders vermerkt, beziehen sich die Zahlen auf das tägliche Mittel der Aufrufzahlen in ${indexYear.format('YYYY')}. Das Mittel der Zahlen aus sozialen Netzwerken basiert auf Daten von Januar bis April 2019. Alle Angaben ohne Gewähr.`
+    console.log(JSON.stringify(articles.map(({ block }) => block), null, 2))
 
     if (!dryRun) {
+      const blocks = [
+        { type: 'section', text: { type: 'mrkdwn', text: `*Tagesrapport vom ${date.format('DD.MM.YYYY')}*` } }
+      ]
+
+      const today = articles.filter(b => b.daysPublished === 1)
+      if (today.length > 0) {
+        blocks.push({ type: 'divider' })
+        blocks.push(
+          { type: 'section', text: { type: 'mrkdwn', text: `*Artikel vom ${date.format('DD.MM.YYYY')}*` } }
+        )
+        today.forEach(({ block }) => blocks.push(block))
+      }
+
+      const earlier = articles.filter(b => b.daysPublished !== 1)
+      if (earlier.length > 0) {
+        blocks.push({ type: 'divider' })
+        blocks.push(
+          { type: 'section', text: { type: 'mrkdwn', text: `*Frühere Artikel*` } }
+        )
+        earlier.forEach(({ block }) => blocks.push(block))
+      }
+
+      blocks.push({ type: 'divider' })
+      blocks.push(
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `Über diese Daten: Ein Besucher-Index von 100 Punkten entspricht dem Median aus der Anzahl von Besuchern am Veröffentlichungstag pro Artikel in ${indexYear.format('YYYY')}. Quellen: <https://piwik.project-r.construction|Matomo> und <https://api.republik.ch/graphiql|api.republik.ch>.`
+            }
+          ]
+        }
+      )
+
       await postMessage({
         channel: '#statistik-dev',
         username: 'Carl Friedrich Gauß',
         icon_emoji: ':male-scientist:',
-        blocks: [
-          { type: 'section', text: { type: 'mrkdwn', text: headerMrkdwn } },
-          { type: 'divider' },
-          ...blocks,
-          { type: 'context', elements: [ { type: 'mrkdwn', text: contextMrkdwn } ] }
-        ]
+        blocks
       })
     }
   } catch (e) {
