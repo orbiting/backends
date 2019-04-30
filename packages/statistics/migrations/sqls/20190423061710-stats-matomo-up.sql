@@ -69,3 +69,13 @@ CREATE TABLE "statisticsIndexes" (
 );
 
 CREATE UNIQUE INDEX "statisticsIndexes_type_condition_idx" ON "statisticsIndexes"(type text_ops,condition text_ops);
+
+CREATE TABLE "statisticsQuotes" (
+    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    quote text NOT NULL,
+    author text NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL DEFAULT now(),
+    "updatedAt" timestamp with time zone NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX "statisticsQuotes_pkey" ON "statisticsQuotes"(id uuid_ops);

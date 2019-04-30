@@ -81,16 +81,17 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
     SELECT
       sm.*,
       1 AS "daysPublished"
-      
+
     FROM "statisticsMatomo" sm
     WHERE
       sm."publishDate" BETWEEN '${date.format('YYYY-MM-DD')}' AND '${date.clone().add(1, 'day').format('YYYY-MM-DD')}'
       AND sm.date = '${date.format('YYYY-MM-DD')}'
       AND sm.segment IS NULL
       AND sm.template = 'article'
-    
+
     ORDER BY sm."publishDate" DESC
-  `)
+    LIMIT :limit
+  `, { limit })
 
   const left = limit - articlesOnDate.length
 
@@ -98,14 +99,14 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
     SELECT
       sm.*,
       ('${date.format('YYYY-MM-DD')}' - sm."publishDate"::date) + 1 AS "daysPublished"
-      
+
     FROM "statisticsMatomo" sm
     WHERE
       sm."publishDate" < '${date.format('YYYY-MM-DD')}'
       AND sm.date = '${date.format('YYYY-MM-DD')}'
       AND sm.segment IS NULL
       AND sm.template = 'article'
-    
+
     ORDER BY sm.nb_uniq_visitors DESC
     LIMIT :limit
   `, { limit: left > 0 ? left : 0 })
@@ -147,7 +148,7 @@ const getBlock = ({ url, daysPublished, document, indexes, distributions }, { da
         `*<${getUltradashboardUrlReportLink(url)}|${document.title}>*`,
         `_${mdastToString({ children: document.credits }).replace(`, ${date.format('DD.MM.YYYY')}`, '')}_` + (daysPublished > 1 ? ` (${daysPublished}. Tag)` : ''),
         `*Index ${Math.round(indexes.visitors * 100)}* ⋅ Abonnenten-Index ${Math.round(indexes.memberVisitors * 100)}`,
-        'via ' + distributions
+        'Via ' + distributions
           .sort((a, b) => descending(a.percentage, b.percentage))
           .map(({ source, percentage }) => `${source}: ${percentage}%`)
           .join(' ⋅ ')
@@ -164,6 +165,16 @@ const getBlock = ({ url, daysPublished, document, indexes, distributions }, { da
   }
 
   return block
+}
+
+const getRandomQuote = async ({ pgdb }) => {
+  const results = await pgdb.query(`SELECT * FROM "statisticsQuotes" ORDER BY RANDOM() LIMIT 0`)
+
+  if (results.length !== 1) {
+    return {}
+  }
+  const { quote, author } = results[0]
+  return { quote, author }
 }
 
 const getUltradashboardDailyReportLink = (date) =>
@@ -237,6 +248,9 @@ PgDb.connect().then(async pgdb => {
         return { ...article, indexes, sources, distributions }
       }))
 
+    // Daily quote for amusement
+    const { quote, author } = await getRandomQuote({ pgdb })
+
     if (!dryRun) {
       // Header
       const blocks = [
@@ -244,10 +258,20 @@ PgDb.connect().then(async pgdb => {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `*<${getUltradashboardDailyReportLink(date)}|Besucher-Tagesrapport von ${date.format('dddd, DD.MM.YYYY')}>*`
+            text: `*<${getUltradashboardDailyReportLink(date)}|Besucher-Tagesrapport>*\n${date.format('dddd, DD.MM.YYYY')}`
           }
         }
       ]
+
+      if (quote && author) {
+        blocks.push({
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `«${quote}»\n– ${author}`
+          }
+        })
+      }
 
       // Articles published on <date>
       const recent = articles.filter(b => b.daysPublished === 1)
@@ -258,7 +282,10 @@ PgDb.connect().then(async pgdb => {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `*Artikel von ${date.format('dddd, DD.MM.YYYY')}*`
+              text: [
+                `*Artikel von ${date.format('dddd, DD.MM.YYYY')}*`,
+                `Alle Artikel, die veröffentlicht wurden.`
+              ].join('\n')
             }
           }
         )
@@ -274,7 +301,10 @@ PgDb.connect().then(async pgdb => {
             type: 'section',
             text: {
               type: 'mrkdwn',
-              text: `*Frühere Artikel*`
+              text: [
+                `*Frühere Artikel*`,
+                `Einige Artikel, die auch am ${date.format('DD.MM.')} aufgerufen, aber früher veröffentlicht wurden.`
+              ].join('\n')
             }
           }
         )
