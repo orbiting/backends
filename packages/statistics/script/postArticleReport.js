@@ -80,7 +80,7 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
   const articlesOnDate = await pgdb.query(`
     SELECT
       sm.*,
-      0 AS "daysPublished"
+      1 AS "daysPublished"
       
     FROM "statisticsMatomo" sm
     WHERE
@@ -91,6 +91,8 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
     
     ORDER BY sm."publishDate" DESC
   `)
+
+  const left = limit - articlesOnDate.length
 
   const previousArticles = await pgdb.query(`
     SELECT
@@ -106,7 +108,7 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
     
     ORDER BY sm.nb_uniq_visitors DESC
     LIMIT :limit
-  `, { limit })
+  `, { limit: left > 0 ? left : 0 })
 
   return [ ...articlesOnDate, ...previousArticles ]
     .sort((a, b) => descending(a.publishDate, b.publishDate))
