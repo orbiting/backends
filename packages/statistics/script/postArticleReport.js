@@ -6,13 +6,15 @@ const moment = require('moment')
 const yargs = require('yargs')
 const Promise = require('bluebird')
 const mdastToString = require('mdast-util-to-string')
-const { ascending, descending } = require('d3-array')
+const { descending } = require('d3-array')
 
 const PgDb = require('@orbiting/backend-modules-base/lib/pgdb')
 const { publish: { postMessage } } = require('@orbiting/backend-modules-slack')
 const elastic = require('@orbiting/backend-modules-base/lib/elastic').client()
 
 const getMeta = require('../lib/elastic/documents')
+
+moment.locale('de-CH')
 
 const argv = yargs
   .option('date', {
@@ -30,13 +32,18 @@ const argv = yargs
   .option('limit', {
     alias: 'l',
     number: true,
-    default: 5
+    default: 8
   })
   .option('index-year', {
     describe: 'Use <index-year>\'s median e.g. 2018',
     alias: 'y',
     default: moment().subtract(1, 'year').format('YYYY'),
     coerce: v => moment(`${v}-01-01`)
+  })
+  .option('channel', {
+    describe: 'Slack-Channel or user to post report to',
+    alias: 'c',
+    default: '#statistik'
   })
   .option('dry-run', {
     describe: 'Disable dry run to post to Slack',
@@ -57,10 +64,10 @@ const argv = yargs
 /**
  * Fetches index for a particular year.
  */
-const getMatomoIndex = async ({ year, groupBy = 'url' }, { pgdb }) => {
+const getMatomoIndex = async ({ year, segment = 'null', groupBy = 'url' }, { pgdb }) => {
   const index = await pgdb.public.statisticsIndexes.findOne({
     type: 'matomo',
-    condition: `date:${year.format('YYYY')},segment:null,groupBy:${groupBy}`
+    condition: `date:${year.format('YYYY')},segment:${segment},groupBy:${groupBy}`
   })
 
   return index.data
@@ -73,8 +80,7 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
   const articlesOnDate = await pgdb.query(`
     SELECT
       sm.*,
-      sm.entries + sm."previousPages.referrals" AS "relevant",
-      ('${date.format('YYYY-MM-DD')}' - sm."publishDate"::date) + 1 AS "daysPublished"
+      0 AS "daysPublished"
       
     FROM "statisticsMatomo" sm
     WHERE
@@ -83,7 +89,7 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
       AND sm.segment IS NULL
       AND sm.template = 'article'
     
-    ORDER BY sm."publishDate"::date DESC
+    ORDER BY sm."publishDate" DESC
   `)
 
   const previousArticles = await pgdb.query(`
@@ -103,8 +109,7 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
   `, { limit })
 
   return [ ...articlesOnDate, ...previousArticles ]
-    .slice(0, limit)
-    .sort((a, b) => ascending(a.daysPublished, b.daysPublished))
+    .sort((a, b) => descending(a.publishDate, b.publishDate))
 }
 
 /**
@@ -131,20 +136,53 @@ const appendDocumentMeta = async ({ row }, { elastic }) => {
   return Object.assign({}, row, { document: document[0] })
 }
 
+const getBlock = ({ daysPublished, document, indexes, distributions }, { date }) => {
+  const block = {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: [
+        `*<${getUltradashboardUrlReportLink(document.url)}|${document.title}>*`,
+        `_${mdastToString({ children: document.credits }).replace(`, ${date.format('DD.MM.YYYY')}`, '')}_` + (daysPublished > 1 ? ` (${daysPublished}. Tag)` : ''),
+        `*Index ${Math.round(indexes.visitors * 100)}* ⋅ Abonennten-Index ${Math.round(indexes.memberVisitors * 100)}`,
+        'via ' + distributions
+          .sort((a, b) => descending(a.percentage, b.percentage))
+          .map(({ source, percentage }) => `${source}: ${percentage}%`)
+          .join(' ⋅ ')
+      ].join('\n')
+    }
+  }
+
+  if (document.image || document.twitterImage || document.facebookImage) {
+    block.accessory = {
+      type: 'image',
+      image_url: document.image || document.twitterImage || document.facebookImage,
+      alt_text: document.title
+    }
+  }
+
+  return block
+}
+
+const getUltradashboardDailyReportLink = (date) =>
+  `https://ultradashboard.republik.ch/public/dashboard/fe40beaf-f7bb-49f1-900e-257785478f1d?datum=${date.format('YYYY-MM-DD')}`
+
+const getUltradashboardUrlReportLink = (url) =>
+  `https://ultradashboard.republik.ch/public/dashboard/aa39d4c2-a4bc-4911-8a8d-7b23a1d82425?url=${url}`
+
 PgDb.connect().then(async pgdb => {
-  const { limit, indexYear, dryRun } = argv
+  const { limit, indexYear, channel, dryRun } = argv
   const date = argv.date || argv.relativeDate
 
-  debug('Running query...', { date })
+  debug('Generate and post report %o', { date, limit, indexYear, dryRun })
 
   try {
-    /**
-     * Articles
-     */
     const index = await getMatomoIndex({ year: indexYear }, { pgdb })
+    const memberIndex = await getMatomoIndex({ year: indexYear, segment: 'dimension1=@member' }, { pgdb })
 
     const articles = await getArticles({ date, limit }, { pgdb })
-      .then(articles => articles.map(row => appendPercentiles({ row, index, prop: 'p50' })))
+      .then(articles => articles.map(row => appendPercentiles({ row, index, prop: 'p50a' })))
+      .then(articles => articles.map(row => appendPercentiles({ row, index: memberIndex, prop: 'p50m' })))
       .then(articles => Promise.map(
         articles,
         async row => appendDocumentMeta({ row }, { elastic }),
@@ -152,28 +190,35 @@ PgDb.connect().then(async pgdb => {
       ))
       .then(articles => articles.filter(({ document }) => !!document))
       .then(articles => articles.map(article => {
-        const { document, daysPublished, p50 } = article
+        const { p50a, p50m } = article
 
         const indexes = {
-          visitors: p50.nb_uniq_visitors
+          visitors: p50a.nb_uniq_visitors,
+          memberVisitors: p50m.nb_uniq_visitors
         }
 
         const sources = {
-          'via Newsletter': article['campaign.newsletter.referrals'],
-          'via Kampagnen': article['campaign.referrals'] - article['campaign.newsletter.referrals'],
+          'Newsletter': article['campaign.newsletter.referrals'],
+          'Kampagnen': article['campaign.referrals'] - article['campaign.newsletter.referrals'],
 
-          'via Twitter': article['social.twitter.referrals'],
-          'via Facebook': article['social.facebook.referrals'],
-          'via Instagram': article['social.instagram.referrals'],
-          'via LinkedIn': article['social.linkedin.referrals'],
-          'via anderen sozialen Netwerken': article['social.referrals'] - article['social.twitter.referrals'] - article['social.facebook.referrals'] - article['social.instagram.referrals'] - article['social.linkedin.referrals'],
+          'Twitter': article['social.twitter.referrals'],
+          'Facebook': article['social.facebook.referrals'],
+          'Instagram': article['social.instagram.referrals'],
+          'LinkedIn': article['social.linkedin.referrals'],
+          'andere sozialen Netwerke': article['social.referrals'] - article['social.twitter.referrals'] - article['social.facebook.referrals'] - article['social.instagram.referrals'] - article['social.linkedin.referrals'],
 
-          'via Suchmaschinen': article['search.visits'],
-          'via Dritt-Webseiten': article['website.referrals']
+          'Suchmaschinen': article['search.visits'],
+          'Dritt-Webseiten': article['website.referrals'],
+          'Republik-Webseite': article['previousPages.referrals'],
+
+          'Direkt': article['direct.visits']
         }
 
         const allSources = Object.keys(sources).reduce((acc, curr) => acc + sources[curr], 0)
 
+        /**
+         * [ { source: 'Foobar', percentage: 99.9 }, ... ]
+         */
         const distributions = Object.keys(sources).map(key => {
           const ratio = 1 / allSources * sources[key]
           const percentage = Math.round(ratio * 1000) / 10
@@ -185,58 +230,56 @@ PgDb.connect().then(async pgdb => {
           return { source: key, percentage }
         }).filter(Boolean)
 
-        const block = {
+        debug({ ...article, indexes, sources, distributions })
+
+        return { ...article, indexes, sources, distributions }
+      }))
+
+    if (!dryRun) {
+      // Header
+      const blocks = [
+        {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: [
-              `*<https://ultradashboard.republik.ch/public/dashboard/aa39d4c2-a4bc-4911-8a8d-7b23a1d82425?url=${document.path}|${document.title}>*`,
-              `_${mdastToString({ children: document.credits }).replace(`, ${date.format('DD.MM.YYYY')}`, '')}_`,
-              `*Besucher-Index ${Math.round(indexes.visitors * 100)}*` + (daysPublished > 1 ? ` (${daysPublished}. Tag)` : ''),
-              distributions
-                .sort((a, b) => descending(a.percentage, b.percentage))
-                .map(({ source, percentage }) => `${source}: ${percentage}%`)
-                .join(' ⋅ ')
-            ].join('\n')
+            text: `*<${getUltradashboardDailyReportLink(date)}|Besucher-Tagesrapport von ${date.format('dddd, DD.MM.YYYY')}>*`
           }
         }
-
-        if (document.image) {
-          block.accessory = {
-            type: 'image',
-            image_url: document.image,
-            alt_text: document.title
-          }
-        }
-
-        return { ...article, block }
-      }))
-
-    console.log(JSON.stringify(articles.map(({ block }) => block), null, 2))
-
-    if (!dryRun) {
-      const blocks = [
-        { type: 'section', text: { type: 'mrkdwn', text: `*Tagesrapport vom ${date.format('DD.MM.YYYY')}*` } }
       ]
 
-      const today = articles.filter(b => b.daysPublished === 1)
-      if (today.length > 0) {
+      // Articles published on <date>
+      const recent = articles.filter(b => b.daysPublished === 1)
+      if (recent.length > 0) {
         blocks.push({ type: 'divider' })
         blocks.push(
-          { type: 'section', text: { type: 'mrkdwn', text: `*Artikel vom ${date.format('DD.MM.YYYY')}*` } }
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*Artikel von ${date.format('dddd, DD.MM.YYYY')}*`
+            }
+          }
         )
-        today.forEach(({ block }) => blocks.push(block))
+        recent.forEach(article => blocks.push(getBlock(article, { date })))
       }
 
+      // Earlier articles
       const earlier = articles.filter(b => b.daysPublished !== 1)
       if (earlier.length > 0) {
         blocks.push({ type: 'divider' })
         blocks.push(
-          { type: 'section', text: { type: 'mrkdwn', text: `*Frühere Artikel*` } }
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*Frühere Artikel*`
+            }
+          }
         )
-        earlier.forEach(({ block }) => blocks.push(block))
+        earlier.forEach(article => blocks.push(getBlock(article, { date })))
       }
 
+      // Footer
       blocks.push({ type: 'divider' })
       blocks.push(
         {
@@ -244,14 +287,14 @@ PgDb.connect().then(async pgdb => {
           elements: [
             {
               type: 'mrkdwn',
-              text: `Über diese Daten: Ein Besucher-Index von 100 Punkten entspricht dem Median aus der Anzahl von Besuchern am Veröffentlichungstag pro Artikel in ${indexYear.format('YYYY')}. Quellen: <https://piwik.project-r.construction|Matomo> und <https://api.republik.ch/graphiql|api.republik.ch>.`
+              text: `Über diese Daten: Ein Index von 100 Punkten entspricht dem Median aus der Anzahl von Besuchern am Veröffentlichungstag pro Artikel in ${indexYear.format('YYYY')}. Quellen: <https://piwik.project-r.construction|Matomo> und <https://api.republik.ch/graphiql|api.republik.ch>.`
             }
           ]
         }
       )
 
       await postMessage({
-        channel: '#statistik-dev',
+        channel,
         username: 'Carl Friedrich Gauß',
         icon_emoji: ':male-scientist:',
         blocks
