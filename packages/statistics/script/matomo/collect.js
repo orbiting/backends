@@ -10,7 +10,7 @@ const PgDb = require('@orbiting/backend-modules-base/lib/pgdb')
 const { getInstance } = require('@orbiting/backend-modules-matomo')
 const elastic = require('@orbiting/backend-modules-base/lib/elastic').client()
 
-const collect = require('../lib/matomo/collect')
+const collect = require('../../lib/matomo/collect')
 
 const argv = yargs
   .option('relativeDate', {
