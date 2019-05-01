@@ -132,7 +132,7 @@ const getData = async ({ idSite, period, date, segment }, { matomo }) => {
         const mergedData = { ...data[index], mergeCount: data[index].mergeCount + 1 }
 
         Object.keys(result)
-          .filter(key => ['idSite', 'mergeCount'].includes(key))
+          .filter(key => !['idSite', 'mergeCount'].includes(key))
           .forEach(key => {
             if (mergedData[key] && typeof mergedData[key] === 'number') {
               mergedData[key] += result[key]
