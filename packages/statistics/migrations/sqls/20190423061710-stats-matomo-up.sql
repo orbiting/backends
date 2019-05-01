@@ -61,14 +61,13 @@ CREATE INDEX "statisticsMatomo_repoId_template_idx"
 
 CREATE TABLE "statisticsIndexes" (
     type text NOT NULL,
-    condition text NOT NULL,
+    condition jsonb NOT NULL,
     data jsonb NOT NULL,
-    description text,
     "createdAt" timestamp with time zone NOT NULL DEFAULT now(),
     "updatedAt" timestamp with time zone NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX "statisticsIndexes_type_condition_idx" ON "statisticsIndexes"(type text_ops,condition text_ops);
+CREATE UNIQUE INDEX "statisticsIndexes_type_condition_idx" ON "statisticsIndexes"(type text_ops,condition jsonb_ops);
 
 CREATE TABLE "statisticsQuotes" (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,

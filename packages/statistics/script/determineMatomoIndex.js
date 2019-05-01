@@ -7,6 +7,8 @@ const yargs = require('yargs')
 
 const PgDb = require('@orbiting/backend-modules-base/lib/pgdb')
 
+const { MATOMO_SITE_ID } = process.env
+
 const IGNORE_FIELDS = ['idSite']
 
 const argv = yargs
@@ -18,6 +20,14 @@ const argv = yargs
   .option('segment', {
     alias: 's',
     default: null
+  })
+  .option('idSite', {
+    description: 'A valid Matomo Site ID e.g. 3',
+    default: MATOMO_SITE_ID
+  })
+  .option('period', {
+    alias: 'p',
+    default: 'day'
   })
   .option('group-by', {
     alias: 'g',
@@ -46,7 +56,7 @@ const getFields = async ({ pgdb }) => (await pgdb.query(`
 `)).filter(field => !IGNORE_FIELDS.includes(field.column_name))
 
 PgDb.connect().then(async pgdb => {
-  const { year, segment, groupBy = 'url', dryRun } = argv
+  const { year, segment, idSite, period, groupBy, dryRun } = argv
   const fields = await getFields({ pgdb })
 
   const expressions = fields.map(field => ({ expression: `"${field.column_name}"`, outputName: field.column_name }))
@@ -56,11 +66,11 @@ PgDb.connect().then(async pgdb => {
     outputName: 'relevant'
   })
 
-  const urlFragment = groupBy === 'url'
+  const fragmentUrl = groupBy === 'url'
     ? `AND url LIKE '%' || CONCAT_WS('/', '', to_char(date, 'YYYY'), to_char(date, 'MM'), to_char(date, 'DD')) || '%'`
     : ''
 
-  const segmentFragment = segment
+  const fragmentSegment = segment
     ? `AND segment = '${segment}'`
     : `AND segment IS NULL`
 
@@ -73,8 +83,10 @@ PgDb.connect().then(async pgdb => {
       FROM "statisticsMatomo"
       WHERE
         date BETWEEN '${year}'::date AND '${year.clone().add(1, 'year')}'::date
-        ${urlFragment}
-        ${segmentFragment}
+        ${fragmentUrl}
+        ${fragmentSegment}
+        AND "idSite" = '${idSite}'
+        AND period = '${period}'
         AND template = 'article'
 
       GROUP BY ${groupBy}
@@ -88,27 +100,42 @@ PgDb.connect().then(async pgdb => {
     LIMIT 1
   `)
 
-  console.log({ queryResults })
+  const condition = {
+    type: 'matomo',
+    condition: {
+      date: year.format('YYYY'),
+      segment,
+      idSite,
+      period,
+      groupBy
+    }
+  }
 
-  if (!dryRun && queryResults.length > 0) {
-    const result = queryResults[0]
+  if (queryResults.length > 0) {
+    const data = { ...queryResults[0] }
+    console.log({ condition, data })
 
-    const condition = { type: 'matomo', condition: `date:${year.format('YYYY')},segment:${segment},groupBy:${groupBy}` }
-    const hasRow = !!(await pgdb.public.statisticsIndexes.count(condition))
-    if (hasRow) {
-      debug('update index data for %o', { condition })
-      await pgdb.public.statisticsIndexes.update(
-        condition,
-        { data: result, updatedAt: new Date() }
-      )
+    if (!dryRun && queryResults.length > 0) {
+      const data = { ...queryResults[0] }
+
+      const hasRow = !!(await pgdb.public.statisticsIndexes.count(condition))
+      if (hasRow) {
+        debug('update index data for %o', condition)
+        await pgdb.public.statisticsIndexes.update(
+          condition,
+          { data, updatedAt: new Date() }
+        )
+      } else {
+        debug('insert new index data for %o', condition)
+        await pgdb.public.statisticsIndexes.insert(
+          { ...condition, data }
+        )
+      }
     } else {
-      debug('insert new index data for %o', { condition })
-      await pgdb.public.statisticsIndexes.insert(
-        { ...condition, data: result }
-      )
+      console.warn('In dry-run mode. Use --no-dry-run to persist results.')
     }
   } else {
-    console.warn('In dry-run mode. Use --no-dry-run to persist results.')
+    console.warn('No data found. %o', condition)
   }
 
   await pgdb.close()
