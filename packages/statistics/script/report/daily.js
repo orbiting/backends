@@ -15,6 +15,8 @@ const Data = require('../../lib/matomo/data')
 const Indexes = require('../../lib/matomo/indexes')
 const Documents = require('../../lib/elastic/documents')
 
+const { MATOMO_SITE_ID } = process.env
+
 moment.locale('de-CH')
 
 const SEGMENT_MEMBER = 'dimension1=@member'
@@ -36,6 +38,10 @@ const argv = yargs
     alias: 'l',
     number: true,
     default: 8
+  })
+  .option('idSite', {
+    alias: 'i',
+    default: MATOMO_SITE_ID
   })
   .option('index-year', {
     describe: 'Use <index-year>\'s median e.g. 2018',
@@ -155,7 +161,7 @@ const getUltradashboardUrlReportLink = (url) =>
   `https://ultradashboard.republik.ch/public/dashboard/aa39d4c2-a4bc-4911-8a8d-7b23a1d82425?url=${url}`
 
 PgDb.connect().then(async pgdb => {
-  const { limit, indexYear, channel, dryRun } = argv
+  const { limit, idSite, indexYear, channel, dryRun } = argv
   const date = argv.date || argv.relativeDate
 
   debug('Generate and post report %o', { date, limit, indexYear, dryRun })
@@ -176,7 +182,7 @@ PgDb.connect().then(async pgdb => {
           indexYear
         }
       ],
-      idSite: '5',
+      idSite,
       period: 'day'
     }
 
@@ -313,8 +319,8 @@ PgDb.connect().then(async pgdb => {
 
       await postMessage({
         channel,
-        username: 'Carl Friedrich Gauß',
-        icon_emoji: ':male-scientist:',
+        username: 'Departement für Buchstabenvermessung und Zahlberieslung',
+        icon_emoji: ':triangular_ruler:',
         blocks
       })
     }
