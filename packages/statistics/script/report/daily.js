@@ -116,14 +116,14 @@ const getUrls = async ({ date, limit }, { pgdb }) => {
     .sort((a, b) => descending(a.publishDate, b.publishDate))
 }
 
-const getBlock = ({ url, daysPublished, document, indexes, distributions }, { date }) => {
+const getBlock = ({ url, daysPublished, document: { meta }, indexes, distributions }, { date }) => {
   const block = {
     type: 'section',
     text: {
       type: 'mrkdwn',
       text: [
-        `*<${getUltradashboardUrlReportLink(url)}|${document.title}>*`,
-        `_${mdastToString({ children: document.credits }).replace(`, ${date.format('DD.MM.YYYY')}`, '')}_` + (daysPublished > 1 ? ` (${daysPublished}. Tag)` : ''),
+        `*<${getUltradashboardUrlReportLink(url)}|${meta.title}>*`,
+        `_${mdastToString({ children: meta.credits }).replace(`, ${date.format('DD.MM.YYYY')}`, '')}_` + (daysPublished > 1 ? ` (${daysPublished}. Tag)` : ''),
         `*Index ${Math.round(indexes.visitors * 100)}* ⋅ Abonnenten-Index ${Math.round(indexes.memberVisitors * 100)}`,
         'Via ' + distributions
           .sort((a, b) => descending(a.percentage, b.percentage))
@@ -133,11 +133,11 @@ const getBlock = ({ url, daysPublished, document, indexes, distributions }, { da
     }
   }
 
-  if (document.image || document.twitterImage || document.facebookImage) {
+  if (meta.image || meta.twitterImage || meta.facebookImage) {
     block.accessory = {
       type: 'image',
-      image_url: document.image || document.twitterImage || document.facebookImage,
-      alt_text: document.title
+      image_url: meta.image || meta.twitterImage || meta.facebookImage,
+      alt_text: meta.title
     }
   }
 
@@ -319,7 +319,7 @@ PgDb.connect().then(async pgdb => {
 
       await postMessage({
         channel,
-        username: 'Departement für Buchstabenvermessung und Zahlberieslung',
+        username: 'Departement für Buchstabenvermessung',
         icon_emoji: ':triangular_ruler:',
         blocks
       })
