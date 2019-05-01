@@ -13,13 +13,13 @@ const api = (options, { tokenAuth, endpoint }) => {
   fetchUrl.searchParams.append('format', 'JSON')
   fetchUrl.searchParams.append('token_auth', tokenAuth)
 
-  Object.keys(options).map(name => {
-    if (options[name] !== undefined) {
+  Object.keys(options).forEach(name => {
+    if (options[name] !== undefined && options[name] !== null) {
       fetchUrl.searchParams.append(name, options[name])
     }
   })
 
-  debug(fetchUrl.toString())
+  debug('api() %o', { options, url: fetchUrl.toString() })
 
   return fetchRetry(fetchUrl.toString())
     .then(body => body.json())
