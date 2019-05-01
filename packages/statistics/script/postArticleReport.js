@@ -76,11 +76,14 @@ const getMatomoIndex = async ({ year, segment = 'null', groupBy = 'url' }, { pgd
 /**
  * Data per URL
  */
-const getArticles = async ({ date, limit }, { pgdb }) => {
-  const articlesOnDate = await pgdb.query(`
+
+const getUrls = async ({ date, limit }, { pgdb }) => {
+  const urlsOnDate = await pgdb.query(`
     SELECT
-      sm.*,
-      1 AS "daysPublished"
+      sm.url,
+      sm.date,
+      sm."publishDate",
+      ('${date.format('YYYY-MM-DD')}' - sm."publishDate"::date) + 1 AS "daysPublished"
 
     FROM "statisticsMatomo" sm
     WHERE
@@ -93,11 +96,13 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
     LIMIT :limit
   `, { limit })
 
-  const left = limit - articlesOnDate.length
+  const left = limit - urlsOnDate.length
 
-  const previousArticles = await pgdb.query(`
+  const urlsBeforeDate = await pgdb.query(`
     SELECT
-      sm.*,
+      sm.url,
+      sm.date,
+      sm."publishDate",
       ('${date.format('YYYY-MM-DD')}' - sm."publishDate"::date) + 1 AS "daysPublished"
 
     FROM "statisticsMatomo" sm
@@ -111,24 +116,48 @@ const getArticles = async ({ date, limit }, { pgdb }) => {
     LIMIT :limit
   `, { limit: left > 0 ? left : 0 })
 
-  return [ ...articlesOnDate, ...previousArticles ]
+  return [ ...urlsOnDate, ...urlsBeforeDate ]
     .sort((a, b) => descending(a.publishDate, b.publishDate))
+}
+
+const appendStatistics = async ({ row, prop = 'unsegmented', segment = null }, { pgdb }) => {
+  const url = row.url
+  const date = moment(row.date)
+
+  const fragmentSegment = segment
+    ? `AND sm.segment = '${segment}'`
+    : 'AND sm.segment IS NULL'
+
+  const rows = await pgdb.query(`
+    SELECT
+      sm.*
+
+    FROM "statisticsMatomo" sm
+    WHERE
+      url = '${url}'
+      AND sm.date = '${date.format('YYYY-MM-DD')}'
+      ${fragmentSegment}
+
+    LIMIT 1
+  `)
+
+  return Object.assign({}, row, { [prop]: Object.assign({}, rows[0]) })
 }
 
 /**
  * Finds values in {row} and calculates desired percentile usind
  * provided {index}.
  */
-const appendPercentiles = ({ row, index, percentile = 'p50', prop = 'p50' }) => {
-  const data = {}
+const appendPercentiles = ({ data, index, percentile = 'p50', prop = 'p50' }) => {
+  const percentiles = {}
 
-  Object.keys(row).map(key => {
+  Object.keys(data).map(key => {
     if (index[`${key}.${percentile}`]) {
-      data[key] = (1 / index[`${key}.${percentile}`] * row[key])
+      percentiles[key] = (1 / index[`${key}.${percentile}`] * data[key])
     }
   })
 
-  return Object.assign({}, row, { [prop]: data })
+  return Object.assign({}, data, { [prop]: percentiles })
 }
 
 const appendDocumentMeta = async ({ row }, { elastic }) => {
@@ -168,7 +197,7 @@ const getBlock = ({ url, daysPublished, document, indexes, distributions }, { da
 }
 
 const getRandomQuote = async ({ pgdb }) => {
-  const results = await pgdb.query(`SELECT * FROM "statisticsQuotes" ORDER BY RANDOM() LIMIT 0`)
+  const results = await pgdb.query(`SELECT * FROM "statisticsQuotes" ORDER BY RANDOM() LIMIT 1`)
 
   if (results.length !== 1) {
     return {}
@@ -193,38 +222,50 @@ PgDb.connect().then(async pgdb => {
     const index = await getMatomoIndex({ year: indexYear }, { pgdb })
     const memberIndex = await getMatomoIndex({ year: indexYear, segment: 'dimension1=@member' }, { pgdb })
 
-    const articles = await getArticles({ date, limit }, { pgdb })
-      .then(articles => articles.map(row => appendPercentiles({ row, index, prop: 'p50a' })))
-      .then(articles => articles.map(row => appendPercentiles({ row, index: memberIndex, prop: 'p50m' })))
+    const articles = await getUrls({ date, limit }, { pgdb })
       .then(articles => Promise.map(
         articles,
-        async row => appendDocumentMeta({ row }, { elastic }),
-        { concurrency: 1 }
+        async row => appendStatistics({ row, prop: 'unsegmented' }, { pgdb })
+      ))
+      .then(articles => Promise.map(
+        articles,
+        async row => appendStatistics({ row, prop: 'segmentMember', segment: 'dimension1=@member' }, { pgdb })
+      ))
+      .then(articles => articles.map(row => ({
+        ...row,
+        unsegmented: appendPercentiles({ data: row.unsegmented, index }),
+        segmentMember: appendPercentiles({ data: row.segmentMember, index: memberIndex })
+      })))
+      .then(articles => Promise.map(
+        articles,
+        async row => appendDocumentMeta({ row }, { elastic })
       ))
       .then(articles => articles.filter(({ document }) => !!document))
-      .then(articles => articles.map(article => {
-        const { p50a, p50m } = article
+      .then(articles => articles.map(row => {
+        const { unsegmented, segmentMember } = row
 
         const indexes = {
-          visitors: p50a.nb_uniq_visitors,
-          memberVisitors: p50m.nb_uniq_visitors
+          _visitors: unsegmented.nb_uniq_visitors,
+          visitors: unsegmented.p50.nb_uniq_visitors,
+          _memberVisitors: segmentMember.nb_uniq_visitors,
+          memberVisitors: segmentMember.p50.nb_uniq_visitors
         }
 
         const sources = {
-          'Newsletter': article['campaign.newsletter.referrals'],
-          'Kampagnen': article['campaign.referrals'] - article['campaign.newsletter.referrals'],
+          'Newsletter': unsegmented['campaign.newsletter.referrals'],
+          'Kampagnen': unsegmented['campaign.referrals'] - unsegmented['campaign.newsletter.referrals'],
 
-          'Twitter': article['social.twitter.referrals'],
-          'Facebook': article['social.facebook.referrals'],
-          'Instagram': article['social.instagram.referrals'],
-          'LinkedIn': article['social.linkedin.referrals'],
-          'andere sozialen Netwerke': article['social.referrals'] - article['social.twitter.referrals'] - article['social.facebook.referrals'] - article['social.instagram.referrals'] - article['social.linkedin.referrals'],
+          'Twitter': unsegmented['social.twitter.referrals'],
+          'Facebook': unsegmented['social.facebook.referrals'],
+          'Instagram': unsegmented['social.instagram.referrals'],
+          'LinkedIn': unsegmented['social.linkedin.referrals'],
+          'andere sozialen Netwerke': unsegmented['social.referrals'] - unsegmented['social.twitter.referrals'] - unsegmented['social.facebook.referrals'] - unsegmented['social.instagram.referrals'] - unsegmented['social.linkedin.referrals'],
 
-          'Suchmaschinen': article['search.visits'],
-          'Dritt-Webseiten': article['website.referrals'],
-          'Republik-Webseite': article['previousPages.referrals'],
+          'Suchmaschinen': unsegmented['search.visits'],
+          'Dritt-Webseiten': unsegmented['website.referrals'],
+          'Republik-Webseite': unsegmented['previousPages.referrals'],
 
-          'Direkt': article['direct.visits']
+          'Direkt': unsegmented['direct.visits']
         }
 
         const allSources = Object.keys(sources).reduce((acc, curr) => acc + sources[curr], 0)
@@ -243,9 +284,9 @@ PgDb.connect().then(async pgdb => {
           return { source: key, percentage }
         }).filter(Boolean)
 
-        debug({ ...article, indexes, sources, distributions })
+        debug({ ...row, indexes, sources, distributions })
 
-        return { ...article, indexes, sources, distributions }
+        return { ...row, indexes, sources, distributions }
       }))
 
     // Daily quote for amusement
