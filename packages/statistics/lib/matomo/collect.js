@@ -2,19 +2,7 @@ const debug = require('debug')('statistics:lib:matomo:collect')
 const Promise = require('bluebird')
 const url = require('url')
 
-const documents = require('../elastic/documents')
-
-const EXCEPTIONAL_PATHNAMES = [
-  '/',
-  '/feuilleton',
-  '/feed',
-  '/rubriken',
-  '/suche',
-  '/verlag',
-  '/lesezeichen',
-  '/2018',
-  '/2019'
-]
+const { findByPaths, toPath } = require('../elastic/documents')
 
 const getPageUrlDetails = async ({ url }, { idSite, period, date, segment, matomo } = {}) => {
   return matomo.api({
@@ -34,22 +22,7 @@ const getPageUrlDetails = async ({ url }, { idSite, period, date, segment, matom
 }
 
 const isPageUrlWanted = ({ url, parsedUrl }) => {
-  if (parsedUrl && EXCEPTIONAL_PATHNAMES.includes(parsedUrl.pathname)) {
-    return true
-  }
-
-  // Include user pages (/~<username>)
-  if (url && url.match(/\/~.+/)) {
-    return true
-  }
-
-  // Include format pages (/format/<format>)
-  if (url && url.match(/\/format\/.*/)) {
-    return true
-  }
-
-  // Include article pages but newsletters (and misspelled versions of it)
-  if (url && url.match(/\/\d{4}\/\d{2}\/\d{2}\/.*$/) && !url.match(/-news?lew?tter/)) {
+  if (parsedUrl) {
     return true
   }
 
@@ -149,23 +122,26 @@ const getData = async ({ idSite, period, date, segment }, { matomo }) => {
         entry_bounce_count: node.entry_bounce_count || 0,
         exit_nb_uniq_visitors: node.exit_nb_uniq_visitors || 0,
         exit_nb_visits: node.exit_nb_visits || 0,
+        mergeCount: 0,
         ...transformedDetails
       }
 
       const index = data.findIndex(row => row.url === pageUrl)
 
       if (index > -1) {
-        const dupe = Object.assign({}, data[index])
+        const mergedData = { ...data[index], mergeCount: data[index].mergeCount + 1 }
 
-        Object.keys(result).forEach(key => {
-          if (dupe[key] && typeof dupe[key] === 'number') {
-            dupe[key] += result[key]
-          } else {
-            dupe[key] = result[key]
-          }
-        })
+        Object.keys(result)
+          .filter(key => ['idSite', 'mergeCount'].includes(key))
+          .forEach(key => {
+            if (mergedData[key] && typeof mergedData[key] === 'number') {
+              mergedData[key] += result[key]
+            } else {
+              mergedData[key] = result[key]
+            }
+          })
 
-        data[index] = dupe
+        data[index] = mergedData
 
         debug(`merged page URL ${node.url} data into ${pageUrl}`)
       } else {
@@ -187,13 +163,13 @@ const enrichData = async ({ data }, { elastic }) => {
   do {
     debug('enrichData', { limit, offset })
 
-    paths = data.slice(offset, offset + limit).map(({ url }) => url.replace('https://www.republik.ch', ''))
+    paths = data.slice(offset, offset + limit).map(({ url }) => toPath(url))
 
-    const docs = await documents({ paths }, { elastic })
+    const docs = await findByPaths({ paths, props: ['meta.path', 'meta.repoId', 'meta.template', 'meta.publishDate'] }, { elastic })
 
-    docs.map(doc => {
-      const index = data.findIndex(({ url }) => url.replace('https://www.republik.ch', '') === doc.path)
-      const { repoId, template, publishDate } = doc
+    docs.map(({ meta }) => {
+      const index = data.findIndex(({ url }) => toPath(url) === meta.path)
+      const { repoId, template, publishDate } = meta
       data[index] = { ...data[index], repoId, template, publishDate }
     })
 

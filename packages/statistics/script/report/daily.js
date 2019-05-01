@@ -4,7 +4,6 @@ require('@orbiting/backend-modules-env').config()
 const debug = require('debug')('statistics:script:postReport')
 const moment = require('moment')
 const yargs = require('yargs')
-const Promise = require('bluebird')
 const mdastToString = require('mdast-util-to-string')
 const { descending } = require('d3-array')
 
@@ -12,9 +11,13 @@ const PgDb = require('@orbiting/backend-modules-base/lib/pgdb')
 const { publish: { postMessage } } = require('@orbiting/backend-modules-slack')
 const elastic = require('@orbiting/backend-modules-base/lib/elastic').client()
 
-const getMeta = require('../lib/elastic/documents')
+const Data = require('../../lib/matomo/data')
+const Indexes = require('../../lib/matomo/indexes')
+const Documents = require('../../lib/elastic/documents')
 
 moment.locale('de-CH')
+
+const SEGMENT_MEMBER = 'dimension1=@member'
 
 const argv = yargs
   .option('date', {
@@ -62,21 +65,8 @@ const argv = yargs
   .argv
 
 /**
- * Fetches index for a particular year.
- */
-const getMatomoIndex = async ({ year, segment = 'null', groupBy = 'url' }, { pgdb }) => {
-  const index = await pgdb.public.statisticsIndexes.findOne({
-    type: 'matomo',
-    condition: `date:${year.format('YYYY')},segment:${segment},groupBy:${groupBy}`
-  })
-
-  return index.data
-}
-
-/**
  * Data per URL
  */
-
 const getUrls = async ({ date, limit }, { pgdb }) => {
   const urlsOnDate = await pgdb.query(`
     SELECT
@@ -118,54 +108,6 @@ const getUrls = async ({ date, limit }, { pgdb }) => {
 
   return [ ...urlsOnDate, ...urlsBeforeDate ]
     .sort((a, b) => descending(a.publishDate, b.publishDate))
-}
-
-const appendStatistics = async ({ row, prop = 'unsegmented', segment = null }, { pgdb }) => {
-  const url = row.url
-  const date = moment(row.date)
-
-  const fragmentSegment = segment
-    ? `AND sm.segment = '${segment}'`
-    : 'AND sm.segment IS NULL'
-
-  const rows = await pgdb.query(`
-    SELECT
-      sm.*
-
-    FROM "statisticsMatomo" sm
-    WHERE
-      url = '${url}'
-      AND sm.date = '${date.format('YYYY-MM-DD')}'
-      ${fragmentSegment}
-
-    LIMIT 1
-  `)
-
-  return Object.assign({}, row, { [prop]: Object.assign({}, rows[0]) })
-}
-
-/**
- * Finds values in {row} and calculates desired percentile usind
- * provided {index}.
- */
-const appendPercentiles = ({ data, index, percentile = 'p50', prop = 'p50' }) => {
-  const percentiles = {}
-
-  Object.keys(data).map(key => {
-    if (index[`${key}.${percentile}`]) {
-      percentiles[key] = (1 / index[`${key}.${percentile}`] * data[key])
-    }
-  })
-
-  return Object.assign({}, data, { [prop]: percentiles })
-}
-
-const appendDocumentMeta = async ({ row }, { elastic }) => {
-  const document = await getMeta({
-    paths: [row.url.replace('https://www.republik.ch', '')]
-  }, { elastic })
-
-  return Object.assign({}, row, { document: document[0] })
 }
 
 const getBlock = ({ url, daysPublished, document, indexes, distributions }, { date }) => {
@@ -219,36 +161,40 @@ PgDb.connect().then(async pgdb => {
   debug('Generate and post report %o', { date, limit, indexYear, dryRun })
 
   try {
-    const index = await getMatomoIndex({ year: indexYear }, { pgdb })
-    const memberIndex = await getMatomoIndex({ year: indexYear, segment: 'dimension1=@member' }, { pgdb })
+    const config = {
+      props: [
+        {
+          prop: 'unsegmented',
+          segment: null,
+          percentile: 'p50',
+          indexYear
+        },
+        {
+          prop: 'memberSegmented',
+          segment: SEGMENT_MEMBER,
+          percentile: 'p50',
+          indexYear
+        }
+      ],
+      idSite: '5',
+      period: 'day'
+    }
+
+    const { pluck: pluckData } = Data(config, { pgdb })
+    const { pluck: pluckIndexes } = Indexes(config, { pgdb })
+    const { pluck: pluckDocuments } = Documents(config, { elastic })
 
     const articles = await getUrls({ date, limit }, { pgdb })
-      .then(articles => Promise.map(
-        articles,
-        async row => appendStatistics({ row, prop: 'unsegmented' }, { pgdb })
-      ))
-      .then(articles => Promise.map(
-        articles,
-        async row => appendStatistics({ row, prop: 'segmentMember', segment: 'dimension1=@member' }, { pgdb })
-      ))
-      .then(articles => articles.map(row => ({
-        ...row,
-        unsegmented: appendPercentiles({ data: row.unsegmented, index }),
-        segmentMember: appendPercentiles({ data: row.segmentMember, index: memberIndex })
-      })))
-      .then(articles => Promise.map(
-        articles,
-        async row => appendDocumentMeta({ row }, { elastic })
-      ))
-      .then(articles => articles.filter(({ document }) => !!document))
-      .then(articles => articles.map(row => {
-        const { unsegmented, segmentMember } = row
+      .then(pluckData)
+      .then(pluckIndexes)
+      .then(pluckDocuments)
+      .then(rows => rows.filter(({ document }) => !!document))
+      .then(rows => rows.map(row => {
+        const { unsegmented, memberSegmented } = row
 
         const indexes = {
-          _visitors: unsegmented.nb_uniq_visitors,
           visitors: unsegmented.p50.nb_uniq_visitors,
-          _memberVisitors: segmentMember.nb_uniq_visitors,
-          memberVisitors: segmentMember.p50.nb_uniq_visitors
+          memberVisitors: memberSegmented.p50.nb_uniq_visitors
         }
 
         const sources = {
@@ -285,7 +231,6 @@ PgDb.connect().then(async pgdb => {
         }).filter(Boolean)
 
         debug({ ...row, indexes, sources, distributions })
-
         return { ...row, indexes, sources, distributions }
       }))
 

@@ -12,6 +12,8 @@ const elastic = require('@orbiting/backend-modules-base/lib/elastic').client()
 
 const collect = require('../../lib/matomo/collect')
 
+const { MATOMO_URL_BASE, MATOMO_API_TOKEN_AUTH, MATOMO_SITE_ID } = process.env
+
 const argv = yargs
   .option('relativeDate', {
     describe: 'ISO 8601 Time Interval e.g. P14D',
@@ -32,6 +34,14 @@ const argv = yargs
     describe: 'e.g. 2019-02-18',
     coerce: moment,
     implies: 'firstDate'
+  })
+  .option('idSite', {
+    alias: 'i',
+    default: MATOMO_SITE_ID
+  })
+  .option('segment', {
+    alias: 's',
+    default: null
   })
   .option('rowConcurrency', {
     alias: 'c',
@@ -54,9 +64,8 @@ const argv = yargs
   .version()
   .argv
 
-const { MATOMO_URL_BASE, MATOMO_API_TOKEN_AUTH, MATOMO_SITE_ID } = process.env
-
 PgDb.connect().then(async pgdb => {
+  const { idSite, segment } = argv
   const dates = []
 
   for (
@@ -82,16 +91,9 @@ PgDb.connect().then(async pgdb => {
   await Promise.each(
     dates,
     async (date) => {
-      debug({ idSite: MATOMO_SITE_ID, date })
-
-      // Unsegmented
+      debug({ idSite, date, segment })
       await collect(
-        { idSite: MATOMO_SITE_ID, period: 'day', date },
-        { pgdb, matomo, elastic }
-      )
-      // "Members" segment
-      await collect(
-        { idSite: MATOMO_SITE_ID, period: 'day', date, segment: 'dimension1=@member' },
+        { idSite, period: 'day', date, segment },
         { pgdb, matomo, elastic }
       )
     }

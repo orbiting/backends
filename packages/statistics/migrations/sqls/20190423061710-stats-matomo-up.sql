@@ -46,6 +46,10 @@ CREATE TABLE "statisticsMatomo" (
     "template" text,
     "publishDate" timestamp with time zone,
 
+    -- Count how many times a record was merged into. A merged record
+    -- falsifies visits and visitor numbers.
+    "mergeCount" integer NOT NULL DEFAULT 0,
+
     "createdAt" timestamp with time zone NOT NULL DEFAULT now(),
     "updatedAt" timestamp with time zone NOT NULL DEFAULT now()
 );
