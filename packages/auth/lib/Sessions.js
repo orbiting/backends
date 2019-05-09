@@ -1,6 +1,7 @@
-const kraut = require('kraut')
 const geoForIP = require('./geoForIP')
 const { newAuthError } = require('./AuthError')
+
+const { lowercase, uppercase } = require('./words.json')
 
 const DestroySessionError = newAuthError('session-destroy-failed', 'api/auth/errorDestroyingSession')
 const InitiateSessionError = newAuthError('session-init-failed', 'api/auth/session-init-failed')
@@ -20,7 +21,11 @@ const destroySession = async (req) => {
 const initiateSession = async ({ req, pgdb, email, consents }) => {
   const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress
   const userAgent = req.headers['user-agent']
-  const phrase = `${kraut.adjectives.random()} ${kraut.verbs.random()} ${kraut.nouns.random()}`
+  const phrase = [
+    lowercase[Math.floor(Math.random() * lowercase.length)],
+    lowercase[Math.floor(Math.random() * lowercase.length)],
+    uppercase[Math.floor(Math.random() * uppercase.length)]
+  ].join(' ')
   const { country, city } = await geoForIP(ipAddress)
   req.session.email = email
   req.session.ip = ipAddress

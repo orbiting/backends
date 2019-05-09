@@ -33,7 +33,6 @@
     "express-session": "^1.15.6",
     "geoip-database": "^1.0.19",
     "is-uuid": "^1.0.2",
-    "kraut": "^0.1.1",
     "maxmind": "^3.0.3",
     "otp": "^0.1.3",
     "passport": "^0.4.0",

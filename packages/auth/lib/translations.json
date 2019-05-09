@@ -32,7 +32,7 @@
     },
     {
       "key": "api/signin/mail/subject",
-      "value": "Zugriff bestätigen"
+      "value": "Zugriff bestätigen: {phrase}"
     },
     {
       "key": "api/signin/mail/appNotice/subject",
