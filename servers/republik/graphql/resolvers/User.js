@@ -55,7 +55,7 @@ module.exports = {
   },
   isEligibleForProfile (user, args, { user: me, pgdb }) {
     if (Roles.userIsMeOrInRoles(user, me, ['admin', 'supporter'])) {
-      return isEligible(user.id, pgdb)
+      return isEligible(user)
     }
     return null
   },
@@ -70,7 +70,7 @@ module.exports = {
       if (user._raw.sequenceNumber) {
         return user._raw.sequenceNumber
       }
-      const firstMembership = await pgdb.public.memberships.findFirst({userId: user.id}, {orderBy: ['sequenceNumber asc']})
+      const firstMembership = await pgdb.public.memberships.findFirst({ userId: user.id }, { orderBy: ['sequenceNumber asc'] })
       if (firstMembership) {
         return firstMembership.sequenceNumber
       }
@@ -245,7 +245,7 @@ module.exports = {
       return allListed
     }
   },
-  async address (user, args, {pgdb, user: me}) {
+  async address (user, args, { pgdb, user: me }) {
     if (Roles.userIsMeOrInRoles(user, me, ['admin', 'supporter'])) {
       if (!user._raw.addressId) {
         return null

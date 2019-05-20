@@ -3,16 +3,10 @@ const {
   hasUserCandidaciesInCandidacyPhase,
   hasUserCandidaciesInElectionPhase
 } = require('@orbiting/backend-modules-voting/lib/Candidacy')
+const { Roles } = require('@orbiting/backend-modules-auth')
 
-exports.isEligible = async (userId, pgdb) => {
-  const hasPledges = !!(await pgdb.public.pledges.findFirst({
-    userId
-  }))
-  const hasMembership = !!(await pgdb.public.memberships.findFirst({
-    userId,
-    active: true
-  }))
-  return hasPledges || hasMembership
+exports.isEligible = async user => {
+  return Roles.userIsInRoles(user, ['member'])
 }
 
 /**

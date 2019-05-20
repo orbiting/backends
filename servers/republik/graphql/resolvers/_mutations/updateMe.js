@@ -99,7 +99,7 @@ module.exports = async (_, args, context) => {
     (isListed && !me._raw.isListed) ||
     (args.hasPublicProfile && !me.hasPublicProfile)
   ) {
-    const check = await isEligible(me.id, pgdb)
+    const check = await isEligible(me)
     if (!check) {
       throw new Error(t('profile/notEligible'))
     }
