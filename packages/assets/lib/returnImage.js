@@ -1,6 +1,6 @@
 const sharp = require('sharp')
 const getWidthHeight = require('./getWidthHeight')
-const fileTypeStream = require('file-type-stream').default
+const { fileTypeStream } = require('file-type-stream2')
 const { PassThrough } = require('stream')
 const toArray = require('stream-to-array')
 const debug = require('debug')('assets:returnImage')
@@ -95,7 +95,7 @@ module.exports = async ({
     const isJPEG = mime === 'image/jpeg'
 
     // svg is not detected by fileTypeStream
-    if (!mime && path && new RegExp(/\.svg(\.webp)?$/).test(path)) {
+    if ((!mime || mime === 'application/octet-stream') && path && new RegExp(/\.svg(\.webp)?$/).test(path)) {
       mime = 'image/svg+xml'
     }
 
