@@ -127,6 +127,7 @@ const start = async (
     server,
     httpServer,
     pgdb,
+    redis,
     graphqlSchema,
     createGraphqlContext
   )

@@ -28,6 +28,8 @@ type queries {
   mediaResponses: [MediaResponse!]!
   membershipStats: MembershipStats!
   memberStats: MemberStats!
+
+  wsCount: Int
 }
 
 type mutations {

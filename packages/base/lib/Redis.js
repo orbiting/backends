@@ -20,7 +20,38 @@ const connect = () => {
 const disconnect = client =>
   client.quit()
 
+const zipArray = (array) => {
+  let newArray = []
+  for (let i = 0; i < array.length; i += 2) {
+    newArray.push({
+      value: array[i],
+      score: parseInt(array[i + 1])
+    })
+  }
+  return newArray
+}
+
+const zRangeUnexpiredAndGC = async (redis, key, ttl) => {
+  const minScore = new Date().getTime() - ttl
+  const result = await redis.zrangeAsync(key, 0, -1, 'WITHSCORES')
+    .then(objs => zipArray(objs))
+  let objs = []
+  let expiredObjs = []
+  for (let r of result) {
+    if (r.score > minScore) {
+      objs.push(r.value)
+    } else {
+      expiredObjs.push(r.value)
+    }
+  }
+  await Promise.all(expiredObjs.map(expiredKey =>
+    redis.zremAsync(key, expiredKey)
+  ))
+  return objs
+}
+
 module.exports = {
   connect,
-  disconnect
+  disconnect,
+  zRangeUnexpiredAndGC
 }

@@ -1,7 +1,6 @@
 const uniqBy = require('lodash/uniqBy')
 const yaml = require('../../lib/yaml')
 const { descending } = require('d3-array')
-const zipArray = require('../../lib/zipArray')
 const {
   getRepo,
   getCommits,
@@ -12,6 +11,7 @@ const {
 } = require('../../lib/github')
 const { transformUser } = require('@orbiting/backend-modules-auth')
 const debug = require('debug')('publikator:repo')
+const { zRangeUnexpiredAndGC } = require('@orbiting/backend-modules-base/lib/Redis')
 
 const UNCOMMITTED_CHANGES_TTL = 7 * 24 * 60 * 60 * 1000 // 1 week in ms
 
@@ -37,22 +37,8 @@ module.exports = {
     args,
     { redis, pgdb }
   ) => {
-    const minScore = new Date().getTime() - UNCOMMITTED_CHANGES_TTL
-    const result = await redis.zrangeAsync(repoId, 0, -1, 'WITHSCORES')
-      .then(objs => zipArray(objs))
+    const userIds = await zRangeUnexpiredAndGC(redis, repoId, UNCOMMITTED_CHANGES_TTL)
     redis.expireAsync(repoId, redis.__defaultExpireSeconds)
-    let userIds = []
-    let expiredUserIds = []
-    for (let r of result) {
-      if (r.score > minScore) {
-        userIds.push(r.value)
-      } else {
-        expiredUserIds.push(r.value)
-      }
-    }
-    await Promise.all(expiredUserIds.map(expiredKey =>
-      redis.zremAsync(repoId, expiredKey)
-    ))
     return userIds.length
       ? pgdb.public.users.find({ id: userIds })
         .then(users => users.map(transformUser))
