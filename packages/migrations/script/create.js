@@ -8,17 +8,18 @@ const fs = require('fs')
 const path = require('path')
 const moment = require('moment')
 
-const metaDirAbs = path.join(__dirname, '../migrations/')
-const repoRootAbs = path.join(__dirname, '../../../')
-
 const argv = yargs
   .option('dir', { alias: ['d', 'sqldir'] })
   .option('name', { alias: ['n'] })
-  .usage('Usage: $0 --sqldir <folder to store sqls (rel repo root)> --name <name of migration>')
+  .option('migrationsDir', { default: 'migrations' })
+  .usage('Usage: $0 --sqldir <folder to store sqls (rel repo root)> --name <name of migration> [--migrationsDir <folder to store migration.js>]')
   .demandOption(['dir', 'name'])
   .help()
   .version()
   .argv
+
+const metaDirAbs = path.join(__dirname, '../', argv.migrationsDir)
+const repoRootAbs = path.join(__dirname, '../../../')
 
 const template = ({ dir, file }) =>
 `const run = require('../run.js')
