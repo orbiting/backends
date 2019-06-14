@@ -64,7 +64,7 @@
     "db:seed": "servers/republik/seeds/script/seed.js",
     "dbts:migrate:up": "DATABASE_URL=`grep TIMESCALE_DATABASE_URL .env | cut -d '=' -f2,3` db-migrate up --migrations-dir packages/migrations/migrations-timescaleDB",
     "dbts:migrate:down": "DATABASE_URL=`grep TIMESCALE_DATABASE_URL .env | cut -d '=' -f2,3` db-migrate down --migrations-dir packages/migrations/migrations-timescaleDB",
-    "analytics": "node --max-old-space-size=8192 packages/analytics/script/cli.js",
+    "analytics": "node --max-old-space-size=4096 packages/analytics/script/cli.js",
     "sendNotification": "cd servers/republik && node ../../packages/notifications/script/sendNotification.js",
     "test": "TZ=Europe/Amsterdam jest --verbose --detectOpenHandles --forceExit",
     "test:unit": "TZ=Europe/Amsterdam jest --verbose --detectOpenHandles --forceExit --testPathPattern \"\\.(u)|(unit)\\.jest\"",

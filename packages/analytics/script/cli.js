@@ -2,6 +2,8 @@
 
 const yargs = require('yargs')
 const moment = require('moment')
+const devideDuration = require('../lib/devideDuration')
+const run = require('../lib/run')
 const path = require('path')
 
 const availableAnalytics = ['referer_pledges', 'referers']
@@ -39,6 +41,9 @@ const argv = yargs
         description: 'the analytics to run'
       })
   )
+  .option('workers', {
+    describe: 'parallelize work'
+  })
   .demandCommand(1)
   .argv
 
@@ -49,10 +54,15 @@ if (!['insert', 'drop'].includes(command)) {
   throw new Error(`command ${command} not available`)
 }
 
+const numWorkers = command === 'drop'
+  ? 1
+  : argv.workers || 1
+
 let startDate, endDate
 let statsData = {
   command,
-  analytics
+  analytics,
+  numWorkers
 }
 if (command === 'insert') {
   startDate = moment(argv.startDate)
@@ -72,18 +82,50 @@ if (command === 'insert') {
   console.log(statsData)
 }
 
-require('@orbiting/backend-modules-env').config(
-  path.join(__dirname, '../../../', '.env')
-)
+const options = {
+  command,
+  analytics,
+  startDate,
+  endDate,
+  statsData
+}
 
-const Context = require('../lib/Context')
-Context.create({ statsData })
-  .then(async (context) => {
-    context.stats.start()
-
-    await require(`../aggregations/${analytics}`)[command](
-      ...[startDate, endDate, context].filter(Boolean)
-    )
-    return context
+if (numWorkers === 1) {
+  run(options)
+} else {
+  const workerpool = require('workerpool')
+  const pool = workerpool.pool(path.join(__dirname, '../lib/runWorker.js'), {
+    maxWorkers: numWorkers,
+    minWorkers: 'max',
+    nodeWorker: 'auto'
   })
-  .then(context => Context.close(context))
+
+  devideDuration(startDate, endDate, numWorkers)
+    .map((dates, i) => ({
+      ...options,
+      statsData: {
+        workerId: i,
+        ...options.statsData
+      },
+      ...dates
+    }))
+    .forEach(input =>
+      pool.exec('run', [input])
+        .catch(err => {
+          console.error(err)
+        })
+        .then(() => {
+          console.log('worker finished')
+          pool.terminate()
+        })
+    )
+
+  /*
+  setInterval(
+    () => {
+      console.log('pool stats', pool.stats())
+    },
+    1000
+  ).unref()
+  */
+}
