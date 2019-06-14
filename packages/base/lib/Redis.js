@@ -23,8 +23,16 @@ const disconnect = client =>
 const deleteKeys = async (prefix, redis) => {
   const keys = await redis.keysAsync(`${prefix}*`)
   console.log(`Redis delete num keys: ${keys.length}`)
-  if (keys.length) {
-    return redis.delAsync(...keys)
+  if (keys.length > 0) {
+    if (keys.length < 500) {
+      return redis.delAsync(...keys)
+    } else {
+      return bluebird.map(
+        keys,
+        (key) => redis.delAsync(key),
+        { concurrency: 100 }
+      )
+    }
   }
 }
 

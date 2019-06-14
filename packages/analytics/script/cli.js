@@ -4,6 +4,8 @@ const yargs = require('yargs')
 const moment = require('moment')
 const path = require('path')
 
+const availableAnalytics = ['referer_pledges', 'referers']
+
 const argv = yargs
   .command(
     'insert <analytics> <startDate> <intervalCount> <intervalUnit>',
@@ -11,7 +13,7 @@ const argv = yargs
     yargs => yargs
       .positional('analytics', {
         type: 'string',
-        choices: ['referer_pledges'],
+        choices: availableAnalytics,
         description: 'the analytics to run'
       })
       .positional('startDate', {
@@ -33,7 +35,7 @@ const argv = yargs
     yargs => yargs
       .positional('analytics', {
         type: 'string',
-        choices: ['referer_pledges'],
+        choices: availableAnalytics,
         description: 'the analytics to run'
       })
   )

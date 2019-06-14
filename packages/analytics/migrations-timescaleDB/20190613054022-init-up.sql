@@ -1,9 +1,6 @@
---CREATE schema ts;
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE EXTENSION IF NOT EXISTS timescaledb;--SCHEMA ts;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";-- SCHEMA ts;
-
---CREATE TABLE ts."refererPledges" (
 CREATE TABLE "referer_pledges" (
   time                    timestamptz NOT NULL,
   "refererName"           text NOT NULL,
@@ -12,8 +9,21 @@ CREATE TABLE "referer_pledges" (
   "pkgName"               text NOT NULL
 );
 
---SELECT ts.create_hypertable('ts."refererPledges"', 'time', chunk_time_interval => interval '1 week');
 SELECT create_hypertable('referer_pledges', 'time', chunk_time_interval => interval '1 week');
+
+
+CREATE TABLE "referers" (
+  time                    timestamptz NOT NULL,
+  "refererName"           text NOT NULL,
+  "refererIsCampaign"     boolean NOT NULL DEFAULT false
+  --"visitorId"             bytea NOT NULL
+);
+
+SELECT create_hypertable('referers', 'time', chunk_time_interval => interval '1 week');
+
+
+
+
 
 --CREATE TABLE ts.pledges (
 --  id        uuid NOT NULL UNIQUE,

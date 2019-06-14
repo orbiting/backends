@@ -33,7 +33,13 @@ const stream = (queryString, onResult, { mysql }) => new Promise((resolve, rejec
       stats.numResults++
       promises.push(
         onResult(result)
+          .catch(e => { console.log(e) })
       )
+      /*
+      if (promises.length > 1000) {
+        promises.shift()
+      }
+      */
     })
     .on('end', action => {
       Promise.all(promises)

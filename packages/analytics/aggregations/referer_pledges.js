@@ -4,7 +4,8 @@ const Referer = require('../lib/Referer')
 const Promise = require('bluebird')
 const moment = require('moment')
 
-const REDIS_KEY_PREFIX = 'analytics:referer_pledges:countedPledgeIds'
+const TS_TABLE = 'referer_pledges'
+const REDIS_KEY_PREFIX = `analytics:${TS_TABLE}:countedPledgeIds`
 
 const insert = async (startDate, endDate, context) => {
   const { pgdb, pgdbTs, redis } = context
@@ -43,8 +44,8 @@ const insert = async (startDate, endDate, context) => {
     FROM piwik_log_visit v
     JOIN piwik_log_conversion_item ci ON v.idvisit = ci.idvisit
     WHERE v.idsite = 5
-    AND ci.server_time > '${startDate.toISOString()}'
-    AND ci.server_time <= '${endDate.toISOString()}'
+    AND ci.server_time >= '${startDate.toISOString()}'
+    AND ci.server_time < '${endDate.toISOString()}'
     GROUP BY v.idvisit`,
   async (visit) => {
     const referer = Referer.getForVisit(visit)
@@ -72,7 +73,7 @@ const insert = async (startDate, endDate, context) => {
           return
         }
 
-        return pgdbTs.public.referer_pledges.insert({
+        return pgdbTs.public[TS_TABLE].insert({
           time: pledge.createdAt,
           total: pledge.total,
           pkgName: pledge.pkgName,
@@ -86,12 +87,12 @@ const insert = async (startDate, endDate, context) => {
   context
   )
 
-  console.log('referer_pledges count', await pgdbTs.public.referer_pledges.count())
+  console.log(`${TS_TABLE} count`, await pgdbTs.public[TS_TABLE].count())
 }
 
 const drop = ({ pgdbTs, redis }) =>
   Promise.all([
-    pgdbTs.public.referer_pledges.delete(),
+    pgdbTs.public[TS_TABLE].delete(),
     Redis.deleteKeys(REDIS_KEY_PREFIX, redis)
   ])
 
