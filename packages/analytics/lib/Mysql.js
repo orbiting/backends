@@ -1,5 +1,6 @@
 const mysql = require('mysql2')
 const Promise = require('bluebird')
+const { default: PQueue } = require('p-queue')
 
 const {
   PIWIK_MYSQL_HOST,
@@ -22,27 +23,25 @@ const connect = () => {
   return con
 }
 
-const stream = (queryString, onResult, { mysql }) => new Promise((resolve, reject) => {
-  const stats = {
-    numResults: 0
-  }
+const stream = (queryString, onResult, { mysql, stats }) => new Promise((resolve, reject) => {
+  stats.data.mysqlStreamResults = 0
 
-  const promises = []
+  const queue = new PQueue({ concurrency: 100 })
+  setInterval(
+    () => {
+      stats.data.queueSize = queue.size
+    },
+    1000
+  ).unref()
   mysql.query(queryString)
     .on('result', result => {
-      stats.numResults++
-      promises.push(
-        onResult(result)
-          .catch(e => { console.log(e) })
+      stats.data.mysqlStreamResults++
+      queue.add(
+        () => onResult(result).catch(e => { console.log(e) })
       )
-      /*
-      if (promises.length > 1000) {
-        promises.shift()
-      }
-      */
     })
     .on('end', action => {
-      Promise.all(promises)
+      queue.onEmpty()
         .then(() => resolve())
     })
     .on('error', err => {

@@ -50,25 +50,26 @@ if (!['insert', 'drop'].includes(command)) {
 }
 
 let startDate, endDate
+let statsData = {
+  command,
+  analytics
+}
 if (command === 'insert') {
   startDate = moment(argv.startDate)
   endDate = moment(startDate).add(argv.intervalCount, argv.intervalUnit)
 
-  console.log({
-    command,
-    analytics,
+  statsData = {
+    ...statsData,
     startDate: startDate.toString(),
     endDate: endDate.toString()
-  })
+  }
+  console.log(statsData)
 
   if (endDate.isBefore(moment(startDate).add(30, 'minutes'))) {
     throw new Error(`interval too short, min 30min!`)
   }
 } else {
-  console.log({
-    command,
-    analytics
-  })
+  console.log(statsData)
 }
 
 require('@orbiting/backend-modules-env').config(
@@ -76,8 +77,10 @@ require('@orbiting/backend-modules-env').config(
 )
 
 const Context = require('../lib/Context')
-Context.create()
+Context.create({ statsData })
   .then(async (context) => {
+    context.stats.start()
+
     await require(`../aggregations/${analytics}`)[command](
       ...[startDate, endDate, context].filter(Boolean)
     )

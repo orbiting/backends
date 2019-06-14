@@ -20,6 +20,7 @@
     "link": "yarn link"
   },
   "dependencies": {
-    "mysql2": "^1.6.5"
+    "mysql2": "^1.6.5",
+    "p-queue": "^6.0.2"
   }
 }
