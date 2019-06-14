@@ -19,7 +19,7 @@ const connect = () => {
     bigNumberStrings: true
   })
 
-  return con// .promise()
+  return con
 }
 
 const stream = (queryString, onResult, { mysql }) => new Promise((resolve, reject) => {

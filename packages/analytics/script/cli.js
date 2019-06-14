@@ -6,12 +6,13 @@ const path = require('path')
 
 const argv = yargs
   .command(
-    'insert <entity> <startDate> <intervalCount> <intervalUnit>',
-    'e.g. referers 2019-02-15 2 days',
+    'insert <analytics> <startDate> <intervalCount> <intervalUnit>',
+    'e.g. insert referer_pledges 2019-02-15 2 days',
     yargs => yargs
-      .positional('entity', {
+      .positional('analytics', {
         type: 'string',
-        description: 'e.g. referers'
+        choices: ['referer_pledges'],
+        description: 'the analytics to run'
       })
       .positional('startDate', {
         type: 'string',
@@ -26,31 +27,46 @@ const argv = yargs
         description: 'e.g. days'
       })
   )
+  .command(
+    'drop <analytics>',
+    'e.g. drop referer_pledges',
+    yargs => yargs
+      .positional('analytics', {
+        type: 'string',
+        choices: ['referer_pledges'],
+        description: 'the analytics to run'
+      })
+  )
   .demandCommand(1)
   .argv
 
 const command = argv._[0]
-const { entity } = argv
+const { analytics } = argv
 
-if (!['insert'].includes(command)) {
+if (!['insert', 'drop'].includes(command)) {
   throw new Error(`command ${command} not available`)
 }
-if (!['referers'].includes(entity)) {
-  throw new Error(`command ${entity} not available`)
-}
 
-const startDate = moment(argv.startDate)
-const endDate = moment(startDate).add(argv.intervalCount, argv.intervalUnit)
+let startDate, endDate
+if (command === 'insert') {
+  startDate = moment(argv.startDate)
+  endDate = moment(startDate).add(argv.intervalCount, argv.intervalUnit)
 
-console.log({
-  command,
-  entity,
-  startDate: startDate.toString(),
-  endDate: endDate.toString()
-})
+  console.log({
+    command,
+    analytics,
+    startDate: startDate.toString(),
+    endDate: endDate.toString()
+  })
 
-if (endDate.isBefore(moment(startDate).add(30, 'minutes'))) {
-  throw new Error(`interval too short!`)
+  if (endDate.isBefore(moment(startDate).add(30, 'minutes'))) {
+    throw new Error(`interval too short, min 30min!`)
+  }
+} else {
+  console.log({
+    command,
+    analytics
+  })
 }
 
 require('@orbiting/backend-modules-env').config(
@@ -60,9 +76,9 @@ require('@orbiting/backend-modules-env').config(
 const Context = require('../lib/Context')
 Context.create()
   .then(async (context) => {
-    if (command === 'insert') {
-      await require(`../inserts/${entity}`)(startDate, endDate, context)
-    }
+    await require(`../aggregations/${analytics}`)[command](
+      ...[startDate, endDate, context].filter(Boolean)
+    )
     return context
   })
   .then(context => Context.close(context))

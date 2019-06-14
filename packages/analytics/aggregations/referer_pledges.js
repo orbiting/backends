@@ -1,10 +1,13 @@
 const Mysql = require('../lib/Mysql')
+const Redis = require('@orbiting/backend-modules-base/lib/Redis')
 const Referer = require('../lib/Referer')
 const Promise = require('bluebird')
 const moment = require('moment')
 
-module.exports = async (startDate, endDate, context) => {
-  const { pgdb, pgdbTs } = context
+const REDIS_KEY_PREFIX = 'analytics:referer_pledges:countedPledgeIds'
+
+const insert = async (startDate, endDate, context) => {
+  const { pgdb, pgdbTs, redis } = context
 
   const pledges = await pgdb.query(`
     SELECT
@@ -18,8 +21,6 @@ module.exports = async (startDate, endDate, context) => {
       ON p."packageId" = pkg.id
   `)
   console.log('pledges count:', pledges.length)
-
-  const countedPledgeIds = {}
 
   await Mysql.stream(`
     SELECT
@@ -56,9 +57,6 @@ module.exports = async (startDate, endDate, context) => {
           // console.log('pledge not found')
           return
         }
-        if (countedPledgeIds[pledge.id]) {
-          return
-        }
 
         const minCreatedAt = moment(pledge.createdAt).subtract(24, 'hours')
         const maxCreatedAt = moment(pledge.createdAt).add(24, 'hours')
@@ -70,7 +68,9 @@ module.exports = async (startDate, endDate, context) => {
           return
         }
 
-        countedPledgeIds[pledge.id] = 1
+        if (!(await redis.setAsync(`${REDIS_KEY_PREFIX}:${pledge.id}`, 1, 'NX'))) {
+          return
+        }
 
         return pgdbTs.public.referer_pledges.insert({
           time: pledge.createdAt,
@@ -87,4 +87,15 @@ module.exports = async (startDate, endDate, context) => {
   )
 
   console.log('referer_pledges count', await pgdbTs.public.referer_pledges.count())
+}
+
+const drop = ({ pgdbTs, redis }) =>
+  Promise.all([
+    pgdbTs.public.referer_pledges.delete(),
+    Redis.deleteKeys(REDIS_KEY_PREFIX, redis)
+  ])
+
+module.exports = {
+  insert,
+  drop
 }

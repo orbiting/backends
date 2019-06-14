@@ -20,7 +20,16 @@ const connect = () => {
 const disconnect = client =>
   client.quit()
 
+const deleteKeys = async (prefix, redis) => {
+  const keys = await redis.keysAsync(`${prefix}*`)
+  console.log(`Redis delete num keys: ${keys.length}`)
+  if (keys.length) {
+    return redis.delAsync(...keys)
+  }
+}
+
 module.exports = {
   connect,
-  disconnect
+  disconnect,
+  deleteKeys
 }
