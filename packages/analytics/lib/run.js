@@ -1,4 +1,3 @@
-const path = require('path')
 const moment = require('moment')
 
 module.exports = (input) => {
@@ -15,10 +14,6 @@ module.exports = (input) => {
     statsData.startDate = startDate.toString()
     statsData.endDate = endDate.toString()
   }
-
-  require('@orbiting/backend-modules-env').config(
-    path.join(__dirname, '../../../', '.env')
-  )
 
   const Context = require('./Context')
 

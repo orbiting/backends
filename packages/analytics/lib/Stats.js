@@ -1,13 +1,29 @@
 const moment = require('moment')
+const columnify = require('columnify')
+const util = require('util')
 
 const STATS_INTERVAL_SECS = 4
+const REDIS_KEY_PREFIX = `analytics:stats`
 
-const create = (initialData = {}) => {
+const aggregateSnapshots = (snapshots) => {
+  return columnify([
+    snapshots.reduce(
+      (agg, snapshot, i) =>
+        ({
+          ...agg,
+          [`worker-${i}`]: util.inspect(snapshot, { depth: 2, breakLength: 50, colors: true })
+        }),
+      {}
+    )
+  ], { preserveNewLines: true })
+}
+
+const create = (initialData = {}, context) => {
   const data = initialData
   let interval
   let startTime
 
-  const logStats = () => {
+  const createSnapshot = () => {
     const now = moment()
     const runtime = now.diff(startTime)
     let queueData = {}
@@ -29,12 +45,36 @@ const create = (initialData = {}) => {
         timeEstimate: moment.duration(estimate).humanize()
       }
     }
-    console.log({
+    return {
       ...data,
       ...queueData,
       runtime: `${Math.round(runtime / 1000)} s`,
       runningSince: startTime.fromNow()
-    })
+    }
+  }
+
+  const logStats = () => {
+    const { redis } = context
+    const { aggregateForWorkers, workerId, numWorkers } = data
+
+    if (!aggregateForWorkers) {
+      const snapshot = createSnapshot()
+      if (workerId === undefined) {
+        console.log(snapshot)
+      } else {
+        redis.setAsync(`${REDIS_KEY_PREFIX}:${workerId}`, JSON.stringify(snapshot))
+      }
+    } else {
+      Promise.all(
+        Array(numWorkers).fill(1).map((_, i) =>
+          redis.getAsync(`${REDIS_KEY_PREFIX}:${i}`)
+            .then(result => JSON.parse(result))
+        )
+      )
+        .then(snapshots => {
+          console.log(aggregateSnapshots(snapshots))
+        })
+    }
   }
 
   const start = () => {
@@ -58,6 +98,7 @@ const create = (initialData = {}) => {
     stop
   }
 }
+
 module.exports = {
   create
 }

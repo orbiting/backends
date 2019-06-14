@@ -120,6 +120,12 @@ if (numWorkers === 1) {
         })
     )
 
+  const Context = require('../lib/Context')
+  Context.create({ statsData: { aggregateForWorkers: true, numWorkers } })
+    .then(async (context) => {
+      context.stats.start()
+    })
+
   /*
   setInterval(
     () => {

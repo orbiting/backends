@@ -20,6 +20,7 @@
     "link": "yarn link"
   },
   "dependencies": {
+    "columnify": "^1.5.4",
     "mysql2": "^1.6.5",
     "p-queue": "^6.0.2",
     "workerpool": "^3.1.2"
