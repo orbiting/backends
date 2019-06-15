@@ -20,9 +20,11 @@
     "link": "yarn link"
   },
   "dependencies": {
-    "columnify": "^1.5.4",
+    "cli-table": "^0.3.1",
+    "log-update": "^3.2.0",
     "mysql2": "^1.6.5",
     "p-queue": "^6.0.2",
+    "progress-string": "^1.2.2",
     "workerpool": "^3.1.2"
   }
 }

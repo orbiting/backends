@@ -115,7 +115,6 @@ if (numWorkers === 1) {
           console.error(err)
         })
         .then(() => {
-          console.log('worker finished')
           pool.terminate()
         })
     )

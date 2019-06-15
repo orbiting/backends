@@ -1,21 +1,46 @@
 const moment = require('moment')
-const columnify = require('columnify')
+const Table = require('cli-table')
 const util = require('util')
+const omit = require('lodash/omit')
+const logUpdate = require('log-update')
+const progress = require('progress-string')
 
 const STATS_INTERVAL_SECS = 4
 const REDIS_KEY_PREFIX = `analytics:stats`
 
-const aggregateSnapshots = (snapshots) => {
-  return columnify([
-    snapshots.reduce(
-      (agg, snapshot, i) =>
-        ({
-          ...agg,
-          [`worker-${i}`]: util.inspect(snapshot, { depth: 2, breakLength: 50, colors: true })
-        }),
-      {}
+const logSnapshots = (snapshots) => {
+  const formattedSnapshots = snapshots.map(snapshot =>
+    util.inspect(
+      omit(snapshot, ['command', 'analytics', 'workerId', 'numWorkers']),
+      { depth: 2, breakLength: 50, colors: true }
     )
-  ], { preserveNewLines: true })
+      .split('\n')
+      .filter((e, i, a) => i > 0 && i < a.length - 1)
+      .map(e => e.trim())
+      .join('\n')
+  )
+  const snapshotsPerLine = 4
+  const numLines = Math.ceil(formattedSnapshots.length / snapshotsPerLine)
+  const lines = Array(numLines).fill(1).map((_, i) => {
+    const line = [
+      ...formattedSnapshots.slice(i * snapshotsPerLine, (i * snapshotsPerLine) + snapshotsPerLine)
+    ]
+    if (i > 0 && line.length < snapshotsPerLine) {
+      line.push(...Array(snapshotsPerLine - line.length).fill('n/a'))
+    }
+    return line
+  })
+
+  const table = new Table({
+    head: snapshots
+      .slice(0, snapshotsPerLine)
+      .map(snapshot => `worker: ${snapshot.workerId || 0}`)
+  })
+  table.push(...lines)
+
+  logUpdate(
+    table.toString()
+  )
 }
 
 const create = (initialData = {}, context) => {
@@ -26,8 +51,9 @@ const create = (initialData = {}, context) => {
   const createSnapshot = () => {
     const now = moment()
     const runtime = now.diff(startTime)
+    const bar = progress({ width: 30, total: 100 })
     let queueData = {}
-    if (data.queueSize && data.mysqlStreamResults) {
+    if (data.mysqlStreamResults && data.mysqlStreamResults > 0) {
       const tasksTotal = data.mysqlStreamResults
       const tasksRemaining = data.queueSize
       const tasksExecuted = tasksTotal - tasksRemaining
@@ -36,13 +62,14 @@ const create = (initialData = {}, context) => {
       const remaining = estimate - runtime
       const tasksProgress = 100 / tasksTotal * tasksExecuted
       queueData = {
-        tasksPerSecond: Math.round(tasksPerMs * 1000),
+        progress: bar(tasksProgress),
         tasksProgress: `${Math.round(tasksProgress)}%`,
+        tasksPerSecond: Math.round(tasksPerMs * 1000),
 
         estimate: `${Math.round(estimate / 1000)} s`,
-        timeRemaining: moment.duration(remaining).humanize(),
+        timeEstimate: moment.duration(estimate).humanize(),
         remaining: `${Math.round(remaining / 1000)} s`,
-        timeEstimate: moment.duration(estimate).humanize()
+        timeRemaining: moment.duration(remaining).humanize()
       }
     }
     return {
@@ -60,7 +87,7 @@ const create = (initialData = {}, context) => {
     if (!aggregateForWorkers) {
       const snapshot = createSnapshot()
       if (workerId === undefined) {
-        console.log(snapshot)
+        logSnapshots([snapshot])
       } else {
         redis.setAsync(`${REDIS_KEY_PREFIX}:${workerId}`, JSON.stringify(snapshot))
       }
@@ -72,7 +99,7 @@ const create = (initialData = {}, context) => {
         )
       )
         .then(snapshots => {
-          console.log(aggregateSnapshots(snapshots))
+          logSnapshots(snapshots)
         })
     }
   }
@@ -83,6 +110,9 @@ const create = (initialData = {}, context) => {
       return
     }
     startTime = moment()
+    if (!data.aggregateForWorkers) {
+      logStats()
+    }
     interval = setInterval(logStats, STATS_INTERVAL_SECS * 1000)
   }
 
