@@ -1,0 +1,8 @@
+rsync -e 'ssh -i secrets/analytics.pem' -avh ../../../../backends ubuntu@`cat ip_address.txt`:~/src/ \
+  --exclude docker-data \
+  --exclude .env \
+  --exclude .git \
+  --exclude node_modules \
+  --exclude coverage \
+  --exclude .terraform \
+  --exclude backends/servers/republik/local

@@ -1,0 +1,1 @@
+ssh -i secrets/analytics.pem ubuntu@`cat ip_address.txt` -t "cd /home/ubuntu/src/backends; exec \$SHELL -l"

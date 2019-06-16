@@ -1,0 +1,2 @@
+ssh -i secrets/analytics.pem ubuntu@`cat ip_address.txt` 'bash -s' < ./install.sh
+
