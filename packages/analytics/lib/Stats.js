@@ -38,9 +38,13 @@ const logSnapshots = (snapshots) => {
   })
   table.push(...lines)
 
-  logUpdate(
-    table.toString()
-  )
+  if (snapshots.length === 1) {
+    console.log(table.toString())
+  } else {
+    logUpdate(
+      table.toString()
+    )
+  }
 }
 
 const create = (initialData = {}, context) => {
