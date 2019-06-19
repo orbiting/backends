@@ -139,8 +139,6 @@ const insert = async (startDate, endDate, context) => {
           v.idvisitor as idvisitor
         FROM piwik_log_visit v
         WHERE v.idsite = 5
-        AND v.referer_type != 1
-        AND v.referer_url IS NOT NULL
         GROUP BY v.idvisitor
         HAVING
           MIN(v.visit_first_action_time) >= '${startDate.toISOString()}'
