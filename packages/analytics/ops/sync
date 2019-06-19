@@ -6,3 +6,5 @@ rsync -e 'ssh -i secrets/analytics.pem' -avh ../../../../backends ubuntu@`cat ip
   --exclude coverage \
   --exclude .terraform \
   --exclude backends/servers/republik/local
+#
+rsync -e 'ssh -i secrets/analytics.pem' -avh ./secrets/.env ubuntu@`cat ip_address.txt`:~/src/backends/.env

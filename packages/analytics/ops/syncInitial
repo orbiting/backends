@@ -1,5 +1,3 @@
 ./sync
 #
-rsync -e 'ssh -i secrets/analytics.pem' -avh ./secrets/.env ubuntu@`cat ip_address.txt`:~/src/backends/.env
-#
 ssh -i secrets/analytics.pem ubuntu@`cat ip_address.txt` -t 'bash -ic "cd /home/ubuntu/src/backends; nvm install 12; yarn install"'
