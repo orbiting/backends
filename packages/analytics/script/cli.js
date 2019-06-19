@@ -6,7 +6,7 @@ const devideDuration = require('../lib/devideDuration')
 const run = require('../lib/run')
 const path = require('path')
 
-const availableAnalytics = ['referer_pledges', 'referers']
+const availableAnalytics = ['referer_pledges', 'referers', 'document_revenue']
 
 const argv = yargs
   .command(

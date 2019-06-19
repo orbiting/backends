@@ -19,6 +19,13 @@ CREATE TABLE "referers" (
   --"visitorId"             bytea NOT NULL
 );
 
+CREATE TABLE "documents" (
+  title text NOT NULL,
+  path text NOT NULL UNIQUE,
+  revenue_closest INT NOT NULL DEFAULT 0,
+  revenue_hops INT NOT NULL DEFAULT 0
+)
+
 SELECT create_hypertable('referers', 'time', chunk_time_interval => interval '1 week');
 
 
