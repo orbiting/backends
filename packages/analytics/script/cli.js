@@ -100,6 +100,13 @@ if (numWorkers === 1) {
     nodeWorker: 'auto'
   })
 
+  const Context = require('../lib/Context')
+  const contextPromise = Context.create({ statsData: { aggregateForWorkers: true, numWorkers } })
+    .then((context) => {
+      context.stats.start()
+      return context
+    })
+
   devideDuration(startDate, endDate, numWorkers)
     .map((dates, i) => ({
       ...options,
@@ -116,14 +123,14 @@ if (numWorkers === 1) {
         })
         .then(() => {
           pool.terminate()
+            .then( () =>
+              contextPromise.then( (context) =>
+                Context.close(context)
+              )
+            )
         })
     )
 
-  const Context = require('../lib/Context')
-  Context.create({ statsData: { aggregateForWorkers: true, numWorkers } })
-    .then(async (context) => {
-      context.stats.start()
-    })
 
   /*
   setInterval(

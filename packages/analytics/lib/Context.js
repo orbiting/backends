@@ -24,14 +24,17 @@ const create = async ({ statsData }) => {
   }
 }
 
-const close = ({ pgdb, pgdbTs, mysql, redis, stats }) =>
-  Promise.all([
-    stats && stats.stop(),
+const close = async ({ pgdb, pgdbTs, mysql, redis, stats }) => {
+  if (stats) {
+    await stats.stop()
+  }
+  return Promise.all([
     pgdb && PgDb.disconnect(pgdb),
     pgdbTs && TimescaleDB.disconnect(pgdbTs),
     redis && Redis.disconnect(redis),
     mysql && mysql.close()
   ])
+}
 
 module.exports = {
   create,

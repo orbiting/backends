@@ -27,7 +27,7 @@ const connect = () => {
 const stream = async (queryString, onResult, { mysql, stats, redis }, doCache = false) => {
   stats.data.mysqlStreamResults = 0
 
-  const queue = new PQueue({ concurrency: 100 })
+  const queue = new PQueue({ concurrency: 10 })
   setInterval(
     () => {
       stats.data.queueSize = queue.size
@@ -54,6 +54,7 @@ const stream = async (queryString, onResult, { mysql, stats, redis }, doCache = 
       )
       stats.data.mysqlStreamResults = parsedCacheResult.length
       await queue.onIdle()
+      stats.data.queueSize = queue.size
       return
     }
   }
@@ -74,6 +75,7 @@ const stream = async (queryString, onResult, { mysql, stats, redis }, doCache = 
           await redis.setAsync(redisKey, JSON.stringify(cacheResults))
         }
         await queue.onIdle()
+        stats.data.queueSize = queue.size
         resolve()
       })
       .on('error', err => {
