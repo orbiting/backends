@@ -26,7 +26,7 @@ resource "aws_security_group" "allow_ssh" {
 
 resource "aws_instance" "analytics" {
   ami           = "ami-08d658f84a6d84a80" # ubuntu 18.04
-  instance_type = "z1d.6xlarge"
+  instance_type = "z1d.3xlarge"
   key_name      = "analytics"
   security_groups = ["allow_ssh"]
 
