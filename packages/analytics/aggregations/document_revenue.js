@@ -196,8 +196,9 @@ const insert = async (startDate, endDate, context) => {
           if (actions.length > 0) {
             await addToDocumentsField(
               actions[0].doc.meta,
-              'revenue_closest',
+              pledge.pkgName,
               pledge.total,
+              'revenue_closest',
               context
             )
 
@@ -205,24 +206,28 @@ const insert = async (startDate, endDate, context) => {
             const numMaxActions = 100
             const hopActions = actions.slice(0, numMaxActions)
             const numActions = hopActions.length
-            const scoreTotal = (numActions * (numActions + 1) / 2)
+            // const scoreTotal = (numActions * (numActions + 1) / 2)
+            // https://www.wolframalpha.com/input/?i=sum+k+%C2%B2
+            const scoreTotal = (1 / 6) * numActions * (numActions + 1) * (2 * numActions + 1)
             await Promise.each(
               hopActions,
               (action, index) => {
-                const revenue_hops = Math.round(pledge.total * ((numActions - index)/scoreTotal))
-                //console.log({ index, revenue_hops, total: pledge.total})
+                // const revenue_hops = Math.round(pledge.total * ((numActions - index)/scoreTotal))
+                const revenue_hops = pledge.total * (Math.pow(numActions - index, 2) / scoreTotal)
+                // console.log({ index, revenue_hops, total: pledge.total})
                 checkSum += revenue_hops
                 return addToDocumentsField(
                   action.doc.meta,
+                  pledge.pkgName,
+                  Math.round(revenue_hops),
                   'revenue_hops',
-                  revenue_hops,
                   context
                 )
               }
             )
-            //if (pledge.total !== checkSum) {
+            // if (pledge.total !== checkSum) {
             //  console.log(`sum invalid total:${pledge.total} checkSum:${checkSum} diff:${checkSum-pledge.total}`)
-            //}
+            // }
           }
         },
         { concurrency: 10 }
@@ -236,15 +241,16 @@ const insert = async (startDate, endDate, context) => {
   // console.log(`${TS_TABLE} count`, await pgdbTs.public[TS_TABLE].count())
 }
 
-const addToDocumentsField = ({ title, path }, fieldName, value, { pgdbTs }) =>
+const addToDocumentsField = ({ title, path }, pkgName, value, fieldName, { pgdbTs }) =>
   pgdbTs.query(`
-    INSERT INTO documents (title, path, ${fieldName})
-    VALUES (:title, :path, :value)
-    ON CONFLICT (path) DO UPDATE
+    INSERT INTO documents (title, path, pkg_name, ${fieldName})
+    VALUES (:title, :path, :pkgName, :value)
+    ON CONFLICT (path, pkg_name) DO UPDATE
       SET ${fieldName} = documents.${fieldName} + EXCLUDED.${fieldName}
   `, {
     title: title || path,
     path,
+    pkgName,
     value
   })
 

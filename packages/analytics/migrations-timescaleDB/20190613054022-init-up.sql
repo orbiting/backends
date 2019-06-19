@@ -21,9 +21,11 @@ CREATE TABLE "referers" (
 
 CREATE TABLE "documents" (
   title text NOT NULL,
-  path text NOT NULL UNIQUE,
+  path text NOT NULL,
+  pkg_name text NOT NULL,
   revenue_closest INT NOT NULL DEFAULT 0,
-  revenue_hops INT NOT NULL DEFAULT 0
+  revenue_hops INT NOT NULL DEFAULT 0,
+  UNIQUE(path, pkg_name)
 )
 
 SELECT create_hypertable('referers', 'time', chunk_time_interval => interval '1 week');
