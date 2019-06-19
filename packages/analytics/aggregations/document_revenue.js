@@ -4,6 +4,8 @@ const Referer = require('../lib/Referer')
 const Promise = require('bluebird')
 const moment = require('moment')
 const { descending } = require('d3-array')
+const uniqBy = require('lodash/uniqBy')
+const { parse } = require('url')
 
 const TS_TABLE = 'document_revenue'
 const REDIS_KEY_PREFIX = `analytics:${TS_TABLE}:countedPledgeIds`
@@ -12,6 +14,19 @@ const REDIS_KEY_PREFIX = `analytics:${TS_TABLE}:countedPledgeIds`
 
 const documents = require('./prefetched_data/documents.json').data.documents.nodes
 // .filter(doc => doc.meta.template === 'article')
+
+const actionTimeWithinPledgeTime = (actionTime, pledgeCreatedAt) => {
+  const minCreatedAt = moment(pledgeCreatedAt).subtract(24, 'hours')
+  const maxCreatedAt = moment(pledgeCreatedAt).add(24, 'hours')
+  const itemCreatedAt = moment(actionTime)
+  if (itemCreatedAt.isBetween(minCreatedAt, maxCreatedAt, null, '[]')) {
+    return true
+  }
+  // console.log('conversion_items out of timerange', {
+  //  diff: moment(pledgeCreatedAt).from(itemCreatedAt)
+  // })
+  return false
+}
 
 const insert = async (startDate, endDate, context) => {
   const { pgdb, pgdbTs, redis, mysql } = context
@@ -80,6 +95,43 @@ const insert = async (startDate, endDate, context) => {
   }, {})
   console.log('doc actions', Object.keys(actionUrlDocumentMap).length)
 
+  const actionUrlPledgeMap = urlActions.reduce((agg, { idaction, name: url }) => {
+    const parsedUrl = parse(url.replace('republik.ch', ''), true)
+    if (parsedUrl.query.id) {
+      const pledgeId = parsedUrl.query.id
+      const pledge = pledges.find(p => p.id === pledgeId)
+      agg[idaction] = pledge
+    }
+    return agg
+  }, {})
+  console.log('actionUrlPledgeMap:', Object.keys(actionUrlPledgeMap).length)
+
+  // type = action or conversion_item
+  const getPledgesForLog = (type, array) => Promise.map(
+    array,
+    async (item) => {
+      const pledge = type === 'action'
+        ? actionUrlPledgeMap[item.idaction_url]
+        : pledges.find(p => p.id === item.idorder)
+
+      if (!pledge) {
+        return
+      }
+
+      // server_time for action and conversion_item
+      if (!actionTimeWithinPledgeTime(item.server_time, pledge.createdAt)) {
+        return
+      }
+
+      if (!(await redis.setAsync(`${REDIS_KEY_PREFIX}:${type}:${pledge.id}`, 1, 'NX'))) {
+        return
+      }
+
+      return pledge
+    },
+    { concurrency: 10 }
+  ).then(arr => arr.filter(Boolean))
+
   await Mysql.stream(`
     WITH
       visitor_ids AS (
@@ -132,37 +184,28 @@ const insert = async (startDate, endDate, context) => {
       ci.conversion_items,
       va.actions
     FROM visitor_ids vids
-    JOIN visitor_conversion_items ci ON vids.idvisitor = ci.idvisitor
+    LEFT JOIN visitor_conversion_items ci ON vids.idvisitor = ci.idvisitor
     JOIN visitor_actions va ON vids.idvisitor = va.idvisitor
     `,
   async (visitor) => {
-    let visitorPledges = []
-    await Promise.each(
-      visitor.conversion_items,
-      async (ci) => {
-        const pledge = pledges.find(p => p.id === ci.idorder)
-        if (!pledge) {
-          return
-        }
+    const conversionItemsPledges = visitor.conversion_items && visitor.conversion_items.length
+      ? await getPledgesForLog('conversion_item', visitor.conversion_items)
+      : []
+    const actionPledges = visitor.actions && visitor.actions.length
+      ? await getPledgesForLog('action', visitor.actions)
+      : []
 
-        const minCreatedAt = moment(pledge.createdAt).subtract(24, 'hours')
-        const maxCreatedAt = moment(pledge.createdAt).add(24, 'hours')
-        const itemCreatedAt = moment(ci.server_time)
-        if (!itemCreatedAt.isBetween(minCreatedAt, maxCreatedAt, null, '[]')) {
-          // console.log('conversion_items out of timerange', {
-          //  diff: moment(pledge.createdAt).from(itemCreatedAt)
-          // })
-          return
-        }
+    const visitorPledges = uniqBy([...conversionItemsPledges, ...actionPledges], (p) => p.id)
 
-        if (!(await redis.setAsync(`${REDIS_KEY_PREFIX}:${pledge.id}`, 1, 'NX'))) {
-          return
-        }
-
-        visitorPledges.push(pledge)
-      },
-      { concurrency: 10 }
-    )
+    /*
+    if (visitorPledges.length) {
+      console.log({
+        numCIPledges: conversionItemsPledges.length,
+        numAPledges: actionPledges.length,
+        numVisitorPledges: visitorPledges.length
+      })
+    }
+    */
 
     if (visitorPledges.length > 0) {
       await Promise.each(
