@@ -97,7 +97,7 @@ if (numWorkers === 1) {
   const pool = workerpool.pool(path.join(__dirname, '../lib/runWorker.js'), {
     maxWorkers: numWorkers,
     minWorkers: 'max',
-    nodeWorker: 'auto'
+    nodeWorker: 'process'
   })
 
   const Context = require('../lib/Context')
@@ -123,14 +123,13 @@ if (numWorkers === 1) {
         })
         .then(() => {
           pool.terminate()
-            .then( () =>
-              contextPromise.then( (context) =>
+            .then(() =>
+              contextPromise.then((context) =>
                 Context.close(context)
               )
             )
         })
     )
-
 
   /*
   setInterval(
