@@ -27,7 +27,7 @@ const connect = () => {
 const stream = async (queryString, onResult, { mysql, stats, redis }, doCache = false) => {
   stats.data.mysqlStreamResults = 0
 
-  const queue = new PQueue({ concurrency: 10 })
+  const queue = new PQueue({ concurrency: 100 })
   setInterval(
     () => {
       stats.data.queueSize = queue.size

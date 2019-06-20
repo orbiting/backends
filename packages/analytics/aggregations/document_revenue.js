@@ -1,6 +1,6 @@
 const Mysql = require('../lib/Mysql')
 const Redis = require('@orbiting/backend-modules-base/lib/Redis')
-const Referer = require('../lib/Referer')
+// const Referer = require('../lib/Referer')
 const Promise = require('bluebird')
 const moment = require('moment')
 const { descending } = require('d3-array')
@@ -8,7 +8,7 @@ const uniqBy = require('lodash/uniqBy')
 const { parse } = require('url')
 
 const TS_TABLE = 'document_revenue'
-const REDIS_KEY_PREFIX = `analytics:${TS_TABLE}:countedPledgeIds`
+const REDIS_KEY_PREFIX = `analytics:${TS_TABLE}`
 
 // https://api.republik.ch/graphiql/?query=%7B%0A%20%20documents(first%3A%204000)%20%7B%0A%20%20%20%20totalCount%0A%20%20%20%20pageInfo%20%7B%0A%20%20%20%20%20%20hasNextPage%0A%20%20%20%20%7D%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
 
@@ -16,8 +16,8 @@ const documents = require('./prefetched_data/documents.json').data.documents.nod
 // .filter(doc => doc.meta.template === 'article')
 
 const actionTimeWithinPledgeTime = (actionTime, pledgeCreatedAt) => {
-  const minCreatedAt = moment(pledgeCreatedAt).subtract(24, 'hours')
-  const maxCreatedAt = moment(pledgeCreatedAt).add(24, 'hours')
+  const minCreatedAt = moment(pledgeCreatedAt).subtract(24 * 3, 'hours')
+  const maxCreatedAt = moment(pledgeCreatedAt).add(24 * 3, 'hours')
   const itemCreatedAt = moment(actionTime)
   if (itemCreatedAt.isBetween(minCreatedAt, maxCreatedAt, null, '[]')) {
     return true
@@ -28,8 +28,8 @@ const actionTimeWithinPledgeTime = (actionTime, pledgeCreatedAt) => {
   return false
 }
 
-const insert = async (startDate, endDate, context) => {
-  const { pgdb, pgdbTs, redis, mysql } = context
+const loadInitialData = async (context) => {
+  const { pgdb, mysql } = context
 
   const pledges = await pgdb.query(`
     SELECT
@@ -99,12 +99,43 @@ const insert = async (startDate, endDate, context) => {
     const parsedUrl = parse(url.replace('republik.ch', ''), true)
     if (parsedUrl.query.id) {
       const pledgeId = parsedUrl.query.id
-      const pledge = pledges.find(p => p.id === pledgeId)
+      const pledge = pledges.find(p => p.id === pledgeId)
       agg[idaction] = pledge
     }
     return agg
   }, {})
   console.log('actionUrlPledgeMap:', Object.keys(actionUrlPledgeMap).length)
+
+  return {
+    pledges,
+    actionUrlDocumentMap,
+    actionUrlPledgeMap
+  }
+}
+
+const getInitialData = async (context) => {
+  const { redis } = context
+
+  const redisKey = `${REDIS_KEY_PREFIX}:initialData`
+  const cachedResult = await redis.getAsync(redisKey)
+  if (cachedResult) {
+    console.log('cached initial result')
+    return JSON.parse(cachedResult)
+  } else {
+    const result = await loadInitialData(context)
+    await redis.setAsync(redisKey, JSON.stringify(result))
+    return result
+  }
+}
+
+const insert = async (startDate, endDate, context) => {
+  const { pgdbTs, redis } = context
+
+  const {
+    pledges,
+    actionUrlDocumentMap,
+    actionUrlPledgeMap
+  } = await getInitialData(context)
 
   // type = action or conversion_item
   const getPledgesForLog = (type, array) => Promise.map(
@@ -123,7 +154,7 @@ const insert = async (startDate, endDate, context) => {
         return
       }
 
-      if (!(await redis.setAsync(`${REDIS_KEY_PREFIX}:${type}:${pledge.id}`, 1, 'NX'))) {
+      if (!(await redis.setAsync(`${REDIS_KEY_PREFIX}:countedPledgeIds:${type}:${pledge.id}`, 1, 'NX'))) {
         return
       }
 
@@ -243,7 +274,6 @@ const insert = async (startDate, endDate, context) => {
               context
             )
 
-            let checkSum = 0
             const numMaxActions = 100
             const hopActions = actions.slice(0, numMaxActions)
             const numActions = hopActions.length
@@ -256,7 +286,6 @@ const insert = async (startDate, endDate, context) => {
                 // const revenue_hops = Math.round(pledge.total * ((numActions - index)/scoreTotal))
                 const revenue_hops = pledge.total * (Math.pow(numActions - index, 2) / scoreTotal)
                 // console.log({ index, revenue_hops, total: pledge.total})
-                checkSum += revenue_hops
                 return addToDocumentsField(
                   action.doc.meta,
                   pledge.pkgName,
@@ -266,12 +295,28 @@ const insert = async (startDate, endDate, context) => {
                 )
               }
             )
-            // if (pledge.total !== checkSum) {
-            //  console.log(`sum invalid total:${pledge.total} checkSum:${checkSum} diff:${checkSum-pledge.total}`)
-            // }
           }
+
+          //await pgdbTs.query(`
+          //  INSERT INTO documents_hops (num_hops, num_pledges, pledges_totals, pkg_name)
+          //  VALUES (:num_hops, :num_pledges, :pledges_totals, :pkgName)
+          //  ON CONFLICT (num_hops, pkg_name) DO UPDATE
+          //    SET num_pledges = documents_hops.num_pledges + EXCLUDED.num_pledges,
+          //    SET pledges_totals = documents_hops.pledges_totals + EXCLUDED.pledges_totals
+          //`, {
+          await pgdbTs.query(`
+            INSERT INTO documents_hops (num_hops, num_pledges, pkg_name)
+            VALUES (:num_hops, :num_pledges, :pkgName)
+            ON CONFLICT (num_hops, pkg_name) DO UPDATE
+              SET num_pledges = documents_hops.num_pledges + EXCLUDED.num_pledges
+          `, {
+            num_hops: actions.length,
+            num_pledges: 1,
+            //pledges_totals: pledge.total,
+            pkgName: pledge.pkgName
+          })
         },
-        { concurrency: 10 }
+        { concurrency: 100 }
       )
     }
   },
@@ -299,7 +344,7 @@ const drop = ({ pgdbTs, redis }) =>
   Promise.all([
     // pgdbTs.public[TS_TABLE].delete(),
     pgdbTs.public.documents.delete(),
-    Redis.deleteKeys(REDIS_KEY_PREFIX, redis)
+    Redis.deleteKeys(`${REDIS_KEY_PREFIX}:countedPledgeIds`, redis)
   ])
 
 module.exports = {

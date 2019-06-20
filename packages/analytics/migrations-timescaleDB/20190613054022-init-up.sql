@@ -28,6 +28,14 @@ CREATE TABLE "documents" (
   UNIQUE(path, pkg_name)
 )
 
+CREATE TABLE "documents_hops" (
+  num_hops INT NOT NULL,
+  num_pledges INT NOT NULL,
+  --pledges_totals INT NOT NULL,
+  pkg_name text NOT NULL,
+  UNIQUE(num_hops, pkg_name)
+)
+
 SELECT create_hypertable('referers', 'time', chunk_time_interval => interval '1 week');
 
 
