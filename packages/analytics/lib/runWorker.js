@@ -1,5 +1,5 @@
 const workerpool = require('workerpool')
 
 workerpool.worker({
-  run: require('./run')
+  run2: require('./run')
 })

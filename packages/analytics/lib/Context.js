@@ -11,7 +11,7 @@ const Mysql = require('./Mysql')
 const Promise = require('bluebird')
 const Stats = require('./Stats')
 
-const create = async ({ statsData }) => {
+const create = async ({ statsData } = {}) => {
   const context = {
     pgdb: await PgDb.connect(),
     pgdbTs: await TimescaleDB.connect(),

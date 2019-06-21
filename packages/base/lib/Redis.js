@@ -22,7 +22,9 @@ const disconnect = client =>
 
 const deleteKeys = async (prefix, redis) => {
   const keys = await redis.keysAsync(`${prefix}*`)
-  console.log(`Redis delete num keys: ${keys.length}`)
+  if (keys.length) {
+    console.log(`Redis delete num keys: ${keys.length}`)
+  }
   if (keys.length > 0) {
     if (keys.length < 500) {
       return redis.delAsync(...keys)

@@ -96,8 +96,9 @@ if (numWorkers === 1) {
   const workerpool = require('workerpool')
   const pool = workerpool.pool(path.join(__dirname, '../lib/runWorker.js'), {
     maxWorkers: numWorkers,
-    minWorkers: 'max',
-    nodeWorker: 'process'
+    minWorkers: numWorkers,
+    //nodeWorker: 'process'
+    nodeWorker: 'thread'
   })
 
   const Context = require('../lib/Context')
@@ -117,7 +118,7 @@ if (numWorkers === 1) {
       ...dates
     }))
     .forEach(input =>
-      pool.exec('run', [input])
+      pool.exec('run2', [input])
         .catch(err => {
           console.error(err)
         })

@@ -24,16 +24,30 @@ const connect = () => {
   return con
 }
 
-const stream = async (queryString, onResult, { mysql, stats, redis }, doCache = false) => {
+const stream = async (queryString, onResult, { mysql, stats, redis }, {
+  doQueue = false,
+  doBatch = false,
+  batchSize = 1000,
+  doCache = false,
+  queueConcurrency = 100
+} = {}) => {
   stats.data.mysqlStreamResults = 0
 
-  const queue = new PQueue({ concurrency: 100 })
-  setInterval(
-    () => {
-      stats.data.queueSize = queue.size
-    },
-    1000
-  ).unref()
+  let queue
+  if (doQueue) {
+    queue = new PQueue({ concurrency: queueConcurrency })
+    setInterval(
+      () => {
+        stats.data.queueSize = queue.size
+      },
+      1000
+    ).unref()
+  }
+
+  let batch
+  if (doBatch) {
+    batch = []
+  }
 
   const cacheResults = []
   let redisKey
@@ -59,23 +73,49 @@ const stream = async (queryString, onResult, { mysql, stats, redis }, doCache = 
     }
   }
 
+  const sendResult = (result) => {
+    if (doQueue) {
+      queue.add(
+        () => onResult(result).catch(e => { console.log(e) })
+      )
+    } else {
+      onResult(result).catch(e => { console.log(e) })
+    }
+    if (doCache) {
+      cacheResults.push(result)
+    }
+  }
+
   await new Promise((resolve, reject) => {
     mysql.query(queryString)
       .on('result', result => {
         stats.data.mysqlStreamResults++
-        queue.add(
-          () => onResult(result).catch(e => { console.log(e) })
-        )
-        if (doCache) {
-          cacheResults.push(result)
+
+        if (doBatch) {
+          batch.push(result)
+          if (batch.length >= batchSize) {
+            const batchResult = batch
+            batch = []
+            sendResult(batchResult)
+          }
+        } else {
+          sendResult(result)
         }
+
       })
       .on('end', async (action) => {
+        if (doBatch) {
+          sendResult(batch)
+          batch = []
+        }
+
         if (doCache) {
           await redis.setAsync(redisKey, JSON.stringify(cacheResults))
         }
-        await queue.onIdle()
-        stats.data.queueSize = queue.size
+        if (doQueue) {
+          await queue.onIdle()
+          stats.data.queueSize = queue.size
+        }
         resolve()
       })
       .on('error', err => {
