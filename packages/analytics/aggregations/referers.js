@@ -23,23 +23,23 @@ const insert = async (startDate, endDate, context) => {
     AND v.referer_type != 1
     AND v.referer_url IS NOT NULL
     GROUP BY v.idvisit`,
-  null,
-  async (visit) => {
-    const referer = Referer.getForVisit(visit)
+    null,
+    async (visit) => {
+      const referer = Referer.getForVisit(visit)
 
-    if (![
-      'Republik-Newsletter',
-      'Webmail',
-      'Direkt / Keine Angabe'
-    ].includes(referer.name)) {
-      return pgdbTs.public[TS_TABLE].insert({
-        time: moment(visit.visit_first_action_time),
-        refererName: referer.name,
-        refererIsCampaign: referer.isCampaign
-      })
-    }
-  },
-  context
+      if (![
+        'Republik-Newsletter',
+        'Webmail',
+        'Direkt / Keine Angabe'
+      ].includes(referer.name)) {
+        return pgdbTs.public[TS_TABLE].insert({
+          time: moment(visit.visit_first_action_time),
+          refererName: referer.name,
+          refererIsCampaign: referer.isCampaign
+        })
+      }
+    },
+    context
   )
 
   console.log(`${TS_TABLE} count`, await pgdbTs.public[TS_TABLE].count())

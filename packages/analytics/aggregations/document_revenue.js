@@ -38,18 +38,18 @@ const insert = async (startDate, endDate, context, numWorkers = 1) => {
       FROM piwik_log_conversion_item
       ORDER BY idvisitor
     `,
-  (conversionItem) => ({
-    idvisitor: Buffer.from(conversionItem.idvisitor).toString('hex')
-  }),
-  (conversionItemsByVisitorBatch) => {
-    return pledgeCollector.collect(conversionItemsByVisitorBatch, true)
-  },
-  context,
-  {
-    queueConcurrency: 10 * numWorkers,
-    groupBy: GroupBy('idvisitor'),
-    batch: Batch(pool ? 100 * numWorkers : 2)
-  }
+    (conversionItem) => ({
+      idvisitor: Buffer.from(conversionItem.idvisitor).toString('hex')
+    }),
+    (conversionItemsByVisitorBatch) => {
+      return pledgeCollector.collect(conversionItemsByVisitorBatch, true)
+    },
+    context,
+    {
+      queueConcurrency: 10 * numWorkers,
+      groupBy: GroupBy('idvisitor'),
+      batch: Batch(pool ? 100 * numWorkers : 2)
+    }
   )
   context.stats.stopTimer('conversion_item_stream')
 
@@ -66,19 +66,19 @@ const insert = async (startDate, endDate, context, numWorkers = 1) => {
     FROM piwik_log_link_visit_action
     ORDER BY idvisitor
     `,
-  (action) => ({
-    idvisitor: Buffer.from(action.idvisitor).toString('hex')
-  }),
-  async (actionsByVisitorBatch) => {
-    return pledgeCollector.collect(actionsByVisitorBatch, false)
-  },
-  context,
-  {
-    doQueue: true,
-    queueConcurrency: 10 * numWorkers,
-    groupBy: GroupBy('idvisitor'),
-    batch: Batch(pool ? 500 : 2)
-  }
+    (action) => ({
+      idvisitor: Buffer.from(action.idvisitor).toString('hex')
+    }),
+    async (actionsByVisitorBatch) => {
+      return pledgeCollector.collect(actionsByVisitorBatch, false)
+    },
+    context,
+    {
+      doQueue: true,
+      queueConcurrency: 10 * numWorkers,
+      groupBy: GroupBy('idvisitor'),
+      batch: Batch(pool ? 500 : 2)
+    }
   )
   context.stats.stopTimer('actions_stream')
 

@@ -47,60 +47,60 @@ const insert = async (startDate, endDate, context) => {
       AND v.referer_type != 1
       AND v.referer_url IS NOT NULL
     GROUP BY v.idvisit`,
-  null,
-  async (visit) => {
-    // sanitize
-    const conversion_items = visit.conversion_items
-      .filter(ci => !!ci.server_time) // filter nulls
-      .filter((ci, i, cis) => cis.findIndex(ci2 => ci2.idorder === ci.idorder) === i) // unique
-      .map(ci => {
-        ci.idvisitor = Buffer.from(ci.idvisitor).toString('hex')
-        return ci
-      })
-    const actions = visit.actions
-      .filter(a => !!a.server_time) // filter nulls
-      .filter((a, i, as) => as.findIndex(a2 => a2.id === a.id) === i) // unique
-      .map(a => {
-        a.idvisitor = Buffer.from(a.idvisitor).toString('hex')
-        return a
-      })
-
-    const pledgeCollector = PledgeCollector()
-    if (conversion_items.length) {
-      await pledgeCollector.collect([conversion_items], true)
-    }
-    if (actions.length) {
-      await pledgeCollector.collect([actions], false)
-    }
-    const pledges = pledgeCollector.getPledgesArray()
-
-    // console.log(`num ci:${conversion_items.length} num a:${actions.length} pledges:${pledges.length}`)
-
-    if (!pledges || !pledges.length) {
-      return
-    }
-
-    const referer = Referer.getForVisit(visit)
-
-    return Promise.map(
-      pledges,
-      async (pledge) => {
-        if (!(await redis.setAsync(`${REDIS_KEY_PREFIX}:${pledge.id}`, 1, 'NX'))) {
-          return
-        }
-
-        return pgdbTs.public[TS_TABLE].insert({
-          time: pledge.createdAt,
-          total: pledge.total,
-          pkgName: pledge.pkgName,
-          refererName: referer.name,
-          refererIsCampaign: referer.isCampaign
+    null,
+    async (visit) => {
+      // sanitize
+      const conversion_items = visit.conversion_items
+        .filter(ci => !!ci.server_time) // filter nulls
+        .filter((ci, i, cis) => cis.findIndex(ci2 => ci2.idorder === ci.idorder) === i) // unique
+        .map(ci => {
+          ci.idvisitor = Buffer.from(ci.idvisitor).toString('hex')
+          return ci
         })
-      },
-      { concurrency: 10 }
-    )
-  },
-  context
+      const actions = visit.actions
+        .filter(a => !!a.server_time) // filter nulls
+        .filter((a, i, as) => as.findIndex(a2 => a2.id === a.id) === i) // unique
+        .map(a => {
+          a.idvisitor = Buffer.from(a.idvisitor).toString('hex')
+          return a
+        })
+
+      const pledgeCollector = PledgeCollector()
+      if (conversion_items.length) {
+        await pledgeCollector.collect([conversion_items], true)
+      }
+      if (actions.length) {
+        await pledgeCollector.collect([actions], false)
+      }
+      const pledges = pledgeCollector.getPledgesArray()
+
+      // console.log(`num ci:${conversion_items.length} num a:${actions.length} pledges:${pledges.length}`)
+
+      if (!pledges || !pledges.length) {
+        return
+      }
+
+      const referer = Referer.getForVisit(visit)
+
+      return Promise.map(
+        pledges,
+        async (pledge) => {
+          if (!(await redis.setAsync(`${REDIS_KEY_PREFIX}:${pledge.id}`, 1, 'NX'))) {
+            return
+          }
+
+          return pgdbTs.public[TS_TABLE].insert({
+            time: pledge.createdAt,
+            total: pledge.total,
+            pkgName: pledge.pkgName,
+            refererName: referer.name,
+            refererIsCampaign: referer.isCampaign
+          })
+        },
+        { concurrency: 10 }
+      )
+    },
+    context
   )
 
   console.log(`${TS_TABLE} count`, await pgdbTs.public[TS_TABLE].count())
