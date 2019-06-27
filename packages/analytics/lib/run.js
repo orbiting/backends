@@ -5,7 +5,8 @@ module.exports = (input) => {
   const {
     command,
     analytics,
-    statsData
+    statsData,
+    numWorkers
   } = input
   let startDate, endDate
   if (input.startDate) {
@@ -22,7 +23,7 @@ module.exports = (input) => {
       context.stats.start()
 
       await require(`../aggregations/${analytics}`)[command](
-        ...[startDate, endDate, context].filter(Boolean)
+        ...[startDate, endDate, context, numWorkers].filter(Boolean)
       )
       return context
     })

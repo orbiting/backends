@@ -87,17 +87,18 @@ const options = {
   analytics,
   startDate,
   endDate,
-  statsData
+  statsData,
+  numWorkers
 }
 
-if (numWorkers === 1) {
+if (numWorkers === 1 || analytics === 'document_revenue') {
   run(options)
 } else {
   const workerpool = require('workerpool')
   const pool = workerpool.pool(path.join(__dirname, '../lib/runWorker.js'), {
     maxWorkers: numWorkers,
     minWorkers: numWorkers,
-    //nodeWorker: 'process'
+    // nodeWorker: 'process'
     nodeWorker: 'thread'
   })
 

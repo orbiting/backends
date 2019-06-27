@@ -1,7 +1,6 @@
 const mysql = require('mysql2')
 const Promise = require('bluebird')
 const { default: PQueue } = require('p-queue')
-const crypto = require('crypto')
 
 const {
   PIWIK_MYSQL_HOST,
@@ -24,19 +23,19 @@ const connect = () => {
   return con
 }
 
-const stream = async (queryString, onResult, { mysql, stats, redis }, {
-  doQueue = false,
-  doBatch = false,
-  batchSize = 1000,
-  doCache = false,
-  queueConcurrency = 100
+const stream = async (queryString, transformRow, onResult, { mysql, stats, redis }, {
+  doQueue = true,
+  queueConcurrency = 1000,
+  groupBy,
+  batch
 } = {}) => {
   stats.data.mysqlStreamResults = 0
 
   let queue
+  let queueInterval
   if (doQueue) {
     queue = new PQueue({ concurrency: queueConcurrency })
-    setInterval(
+    queueInterval = setInterval(
       () => {
         stats.data.queueSize = queue.size
       },
@@ -44,76 +43,53 @@ const stream = async (queryString, onResult, { mysql, stats, redis }, {
     ).unref()
   }
 
-  let batch
-  if (doBatch) {
-    batch = []
-  }
-
-  const cacheResults = []
-  let redisKey
-  if (doCache) {
-    const sha = crypto.createHash('sha256')
-      .update(queryString)
-      .digest('hex')
-
-    redisKey = `analytics:cache:mysql:${sha}`
-    const cachedResult = await redis.getAsync(redisKey)
-    if (cachedResult) {
-      console.log('cached result')
-      const parsedCacheResult = JSON.parse(cachedResult)
-      parsedCacheResult.forEach(result =>
-        queue.add(
-          () => onResult(result).catch(e => { console.log(e) })
-        )
-      )
-      stats.data.mysqlStreamResults = parsedCacheResult.length
-      await queue.onIdle()
-      stats.data.queueSize = queue.size
-      return
-    }
-  }
-
-  const sendResult = (result) => {
+  const returnResult = (result) => {
     if (doQueue) {
-      queue.add(
+      return queue.add(
         () => onResult(result).catch(e => { console.log(e) })
       )
-    } else {
-      onResult(result).catch(e => { console.log(e) })
     }
-    if (doCache) {
-      cacheResults.push(result)
-    }
+    // no await possible here, if you need to await the promises
+    // use the queue
+    return onResult(result, queue).catch(e => { console.log(e) })
   }
 
   await new Promise((resolve, reject) => {
     mysql.query(queryString)
-      .on('result', result => {
+      .on('result', row => {
         stats.data.mysqlStreamResults++
 
-        if (doBatch) {
-          batch.push(result)
-          if (batch.length >= batchSize) {
-            const batchResult = batch
-            batch = []
-            sendResult(batchResult)
-          }
-        } else {
-          sendResult(result)
+        if (transformRow) {
+          Object.assign(row, transformRow(row))
         }
 
+        let result = row
+        if (groupBy) {
+          result = groupBy.push(row)
+        }
+        if (result && batch) {
+          result = batch.push(result)
+        }
+        if (result) {
+          return returnResult(result)
+        }
       })
-      .on('end', async (action) => {
-        if (doBatch) {
-          sendResult(batch)
-          batch = []
+      .on('end', async () => {
+        let result
+        if (groupBy) {
+          result = groupBy.flush()
+        }
+        if (batch) {
+          batch.push(result)
+          result = batch.flush()
+        }
+        if (result) {
+          await returnResult(result)
         }
 
-        if (doCache) {
-          await redis.setAsync(redisKey, JSON.stringify(cacheResults))
-        }
-        if (doQueue) {
+        if (queue) {
           await queue.onIdle()
+          clearInterval(queueInterval)
           stats.data.queueSize = queue.size
         }
         resolve()

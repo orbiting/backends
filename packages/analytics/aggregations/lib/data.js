@@ -1,4 +1,4 @@
-const { cache } = require('./redisCache')
+const { cache } = require('../../lib/redisCache')
 
 const pledgesCache = cache('pledges', async ({ pgdb }) => {
   const pledges = await pgdb.query(`
@@ -53,7 +53,7 @@ const actionUrlDocumentMapCache = cache('actionUrlDocumentMap', async (context) 
 
   // https://api.republik.ch/graphiql/?query=%7B%0A%20%20documents(first%3A%204000)%20%7B%0A%20%20%20%20totalCount%0A%20%20%20%20pageInfo%20%7B%0A%20%20%20%20%20%20hasNextPage%0A%20%20%20%20%7D%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
   const documents = require('./prefetched_data/documents.json').data.documents.nodes
-  //.filter(doc => doc.meta.template === 'article')
+  // .filter(doc => doc.meta.template === 'article')
 
   // https://github.com/orbiting/backends/pull/243/files#diff-335c7871f7372e6ad6cdfc13f0a993b7
   const getCurrentPath = path => {
@@ -65,16 +65,16 @@ const actionUrlDocumentMapCache = cache('actionUrlDocumentMap', async (context) 
     return currentPath
   }
 
-  const result = urlActions.reduce((agg, d) => {
-    if (d.name.startsWith('republik.ch')) {
-      let path = getCurrentPath(
-        d.name
-          .replace('republik.ch', '')
-          .split('?')[0]
-      )
-      const doc = documents.find(d => d.meta.path === path)
+  const result = urlActions.reduce((agg, { idaction, name: url }) => {
+    if (url.startsWith('republik.ch')) {
+      const path = url
+        .replace('republik.ch', '')
+        .split('?')[0]
+      const currentPath = getCurrentPath(path)
+      const doc = documents.find(d => d.meta.path == currentPath) ||
+        documents.find(d => d.meta.path == path)
       if (doc) {
-        agg[d.idaction] = doc
+        agg[idaction] = doc
       }
     }
     return agg
@@ -105,5 +105,6 @@ const actionUrlPledgeMapCache = cache('actionUrlPledgeMap', async (context) => {
 module.exports = {
   pledges: pledgesCache,
   actionUrlDocumentMap: actionUrlDocumentMapCache,
-  actionUrlPledgeMap: actionUrlPledgeMapCache
+  actionUrlPledgeMap: actionUrlPledgeMapCache,
+  urlActions: urlActionsCache
 }

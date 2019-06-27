@@ -12,11 +12,11 @@ const redlock = (redis) => {
       retryDelay: LOCK_RETRY_DELAY_MS,
       retryCount: LOCK_TTL_MS / LOCK_RETRY_DELAY_MS,
       retryJitter: LOCK_RETRY_DELAY_MS / 10,
-      driftFactor: 0.01,
+      driftFactor: 0.01
     }
   )
   _redlock.on('clientError', (err) => {
-    console.error('A redis error has occurred:', err);
+    console.error('A redis error has occurred:', err)
   })
   return _redlock
 }
@@ -31,7 +31,7 @@ const cache = (key, loaderFunc) => {
   const getCached = async (redis) => {
     const cachedResult = await redis.getAsync(redisKey)
     if (cachedResult) {
-      //console.log(`cached result for ${redisKey}`)
+      // console.log(`cached result for ${redisKey}`)
       return JSON.parse(cachedResult)
     }
   }
@@ -45,7 +45,7 @@ const cache = (key, loaderFunc) => {
 
       const cachedResult2 = await getCached(redis)
       if (cachedResult2) {
-        //console.log('cachedResult2 present')
+        // console.log('cachedResult2 present')
         await lock.unlock()
         return cachedResult2
       }
@@ -68,7 +68,6 @@ const cache = (key, loaderFunc) => {
 
 const clearLocks = (redis) =>
   deleteKeys(LOCK_KEY_PREFIX, redis)
-
 
 module.exports = {
   cache,

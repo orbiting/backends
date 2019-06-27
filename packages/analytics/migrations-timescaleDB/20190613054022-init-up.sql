@@ -16,7 +16,6 @@ CREATE TABLE "referers" (
   time                    timestamptz NOT NULL,
   "refererName"           text NOT NULL,
   "refererIsCampaign"     boolean NOT NULL DEFAULT false
-  --"visitorId"             bytea NOT NULL
 );
 
 CREATE TABLE "documents" (
@@ -31,7 +30,7 @@ CREATE TABLE "documents" (
 CREATE TABLE "documents_hops" (
   num_hops INT NOT NULL,
   num_pledges INT NOT NULL,
-  --pledges_totals INT NOT NULL,
+  pledges_totals INT NOT NULL,
   pkg_name text NOT NULL,
   UNIQUE(num_hops, pkg_name)
 )

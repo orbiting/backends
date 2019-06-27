@@ -11,7 +11,7 @@ const REDIS_KEY_PREFIX = `analytics:stats`
 const logSnapshots = (snapshots) => {
   const formattedSnapshots = snapshots.map(snapshot =>
     util.inspect(
-      omit(snapshot, ['command', 'analytics', 'workerId', 'numWorkers']),
+      omit(snapshot, ['command', 'analytics', 'workerId']),
       { depth: 2, breakLength: 50, colors: true }
     )
       .split('\n')
@@ -49,6 +49,7 @@ const logSnapshots = (snapshots) => {
 
 const create = (initialData = {}, context) => {
   const data = initialData
+  const timers = []
   let interval
   let startTime
 
@@ -76,11 +77,21 @@ const create = (initialData = {}, context) => {
         timeRemaining: moment.duration(remaining).humanize()
       }
     }
+    const timersData = timers.reduce(
+      (result, timer) => {
+        const diff = timer.endDiff || process.hrtime(timer.hrtime)
+        const NS_PER_SEC = 1e9
+        result[timer.name] = `${diff[0] + (diff[1] / NS_PER_SEC)} s`
+        return result
+      },
+      {}
+    )
     return {
       ...data,
       ...queueData,
+      ...timersData,
       runtime: `${Math.round(runtime / 1000)} s`,
-      runningSince: startTime.fromNow()
+      runningSince: startTime ? startTime.fromNow() : ''
     }
   }
 
@@ -126,10 +137,32 @@ const create = (initialData = {}, context) => {
     interval = null
   }
 
+  const startTimer = (name) => {
+    const timer = timers.find(t => t.name === name)
+    if (timer) {
+      timer.hrtime = process.hrtime()
+      timer.endDiff = null
+    } else {
+      timers.push({
+        name,
+        hrtime: process.hrtime()
+      })
+    }
+  }
+
+  const stopTimer = (name) => {
+    const timer = timers.find(t => t.name === name)
+    if (timer) {
+      timer.endDiff = process.hrtime(timer.hrtime)
+    }
+  }
+
   return {
     data,
     start,
-    stop
+    stop,
+    startTimer,
+    stopTimer
   }
 }
 

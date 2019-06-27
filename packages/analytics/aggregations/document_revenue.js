@@ -1,7 +1,10 @@
 const Mysql = require('../lib/Mysql')
-const workerpool = require('workerpool')
 const path = require('path')
-const { clearLocks } = require('./document_revenue/redisCache')
+const { clearLocks } = require('../lib/redisCache')
+const Promise = require('bluebird')
+const { GroupBy, Batch, ThreadPool } = require('../lib/utils')
+const { attribute: attributePledgesToDocuments } = require('./lib/attributePledgesToDocuments')
+const { Collector: PledgeCollector } = require('./lib/Pledge')
 
 // piwik_log_link_visit_action
 // +------------+-------------------------+-------------+-------------+------------+
@@ -13,27 +16,20 @@ const { clearLocks } = require('./document_revenue/redisCache')
 // |          1 | index_idsite_servertime | server_time |    16624410 | BTREE      |
 // +------------+-------------------------+-------------+-------------+------------+
 
-const insert = async (startDate, endDate, context) => {
-
+const insert = async (startDate, endDate, context, numWorkers = 1) => {
   // clear cache locks from potentially aborted last run
   await clearLocks(context.redis)
 
-  const numWorkers = 10
-  const pool = workerpool.pool(
-    path.join(__dirname, './document_revenue/filterVisitorsWithPledges.js'),
-    {
-      maxWorkers: numWorkers,
-      minWorkers: numWorkers,
-      nodeWorker: 'thread'
-    }
-  )
+  let pool
+  if (numWorkers > 1) {
+    console.warn('running multiple workers for filter and attribute is experimental')
+    pool = ThreadPool(path.join(__dirname, './lib/thread_worker.js'), numWorkers)
+  }
 
-  let visitorEvents = []
-  let idvisitor
+  const pledgeCollector = PledgeCollector(pool)
+  await pledgeCollector.loadInitialData()
 
-  const visitors = {}
-  const pledges = {}
-
+  context.stats.startTimer('conversion_item_stream')
   await Mysql.stream(`
       SELECT
         idvisitor,
@@ -42,39 +38,25 @@ const insert = async (startDate, endDate, context) => {
       FROM piwik_log_conversion_item
       ORDER BY idvisitor
     `,
-    async (conversionItem) => {
-      if (conversionItem.idvisitor !== idvisitor) {
-
-        if (visitorEvents.length) {
-          const sendEvents = visitorEvents
-          visitorEvents = []
-          const result = await pool.exec('filter', [sendEvents])
-            .catch(err => {
-              console.error(err)
-            })
-          if (result) {
-            result.forEach( pledge => {
-              visitors[pledge.idvisitor] = pledge
-              pledges[pledge.id] = pledge
-            })
-          }
-        }
-
-      }
-      visitorEvents.push(conversionItem)
-
-    },
-    context,
-    {
-      doQueue: true,
-      queueConcurrency: 2 * numWorkers
-    }
+  (conversionItem) => ({
+    idvisitor: Buffer.from(conversionItem.idvisitor).toString('hex')
+  }),
+  (conversionItemsByVisitorBatch) => {
+    return pledgeCollector.collect(conversionItemsByVisitorBatch, true)
+  },
+  context,
+  {
+    queueConcurrency: 10 * numWorkers,
+    groupBy: GroupBy('idvisitor'),
+    batch: Batch(pool ? 100 * numWorkers : 2)
+  }
   )
+  context.stats.stopTimer('conversion_item_stream')
 
-  idvisitor = null
-
+  context.stats.startTimer('actions_stream')
   await Mysql.stream(`
     SELECT
+      idlink_va AS id,
       idvisitor,
       idaction_url,
       idaction_url_ref,
@@ -84,24 +66,54 @@ const insert = async (startDate, endDate, context) => {
     FROM piwik_log_link_visit_action
     ORDER BY idvisitor
     `,
-    async (action) => {
-    },
-    context,
-    {
-      doBatch: false
-    }
+  (action) => ({
+    idvisitor: Buffer.from(action.idvisitor).toString('hex')
+  }),
+  async (actionsByVisitorBatch) => {
+    return pledgeCollector.collect(actionsByVisitorBatch, false)
+  },
+  context,
+  {
+    doQueue: true,
+    queueConcurrency: 10 * numWorkers,
+    groupBy: GroupBy('idvisitor'),
+    batch: Batch(pool ? 500 : 2)
+  }
   )
+  context.stats.stopTimer('actions_stream')
 
-  await pool.terminate()
-  //console.log({ visitors, pledges })
-  console.log({
-    numVisitors: Object.keys(visitors).length,
-    pledges: Object.keys(pledges).length
-  })
+  const pledgesArray = pledgeCollector.getPledgesArray()
 
+  context.stats.startTimer('attributing')
+  if (pool) {
+    const numPerSlice = Math.ceil(pledgesArray.length / numWorkers)
+    await Promise.all(
+      Array(numWorkers).fill(1).map((_, i) => {
+        return pool.exec(
+          'attributePledgesToDocuments',
+          'attribute',
+          [pledgesArray.slice(i * numPerSlice, (i + 1) * numPerSlice)]
+        )
+      })
+    )
+    await pool.terminate()
+  } else {
+    await attributePledgesToDocuments(pledgesArray)
+  }
+  context.stats.stopTimer('attributing')
+
+  Object.apply(context.stats.data, pledgeCollector.getStats())
+  context.stats.data.finished = 'true'
 }
 
+const drop = ({ pgdbTs, redis }) =>
+  Promise.all([
+    pgdbTs.public.documents.delete(),
+    pgdbTs.public.documents_hops.delete(),
+    pgdbTs.public.document_pledges.delete()
+  ])
 
 module.exports = {
-  insert
+  insert,
+  drop
 }
