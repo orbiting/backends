@@ -284,7 +284,7 @@ module.exports = async (discussion, args, context, info) => {
       index
     }))
 
-  if (first || tag) {
+  if (first !== null || tag) {
     let filterComments = coveredComments
       .sort(compare)
 
@@ -304,7 +304,7 @@ module.exports = async (discussion, args, context, info) => {
           return false
         })
     }
-    if (first) {
+    if (first !== null) {
       filterComments = filterComments
         .slice(0, first)
     }
