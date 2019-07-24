@@ -33,6 +33,8 @@ input ImageProperties {
 }
 
 extend type User {
+  slug: String
+
   address: Address
   hasAddress: Boolean
   credentials: [Credential!]!
@@ -235,5 +237,24 @@ type MembershipPeriodStatsDay {
   date: Date!
   cancelCount: Int!
   prolongCount: Int!
+}
+
+type StatementUserConnection {
+  totalCount: Int!
+  pageInfo: PageInfo
+  nodes: [StatementUser!]!
+}
+type StatementUser {
+  id: ID!
+  name: String!
+  slug: String
+  portrait(
+    properties: ImageProperties
+  ): String
+  statement: String
+  credentials: [Credential!]!
+  updatedAt: DateTime!
+  sequenceNumber: Int
+  hasPublicProfile: Boolean!
 }
 `
