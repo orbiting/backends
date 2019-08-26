@@ -36,7 +36,13 @@
                   <td style="padding:20px;">
 	                <p>Guten Tag, {{name}}</p>
                     <p>Sehr geehrte Dame, sehr geehrter Herr</p>
-                    <p>Am {{GRANT_BEGIN}} hat {{GRANTER_NAME}} mit Ihnen das Republik-Abonnement geteilt.</p>
+                    
+                    {{#if `RECIPIENT_EMAIL != GRANTER_EMAIL`}}
+                    	<p>Am {{GRANT_BEGIN}} hat {{GRANTER_NAME}} mit Ihnen das Republik-Abonnement geteilt.</p>
+                    {{else}}
+                    	<p>{{CAMPAIGN_TEXT_FOLLOWUP}}</p>
+                    {{/if}}
+                    
                     <p>Für einen Einblick in unser unabhängiges, werbefreies digitales Magazin für Politik, Wirtschaft, Gesellschaft und Kultur. Und in unser Projekt gegen den Zynismus, den Vormarsch der Autoritären und gegen die Diktatur der Angst.</p>
                     <p>Die Republik bietet Einordnung und Vertiefung anstelle einer Flut von Nachrichten.
 Wir recherchieren, um Missstände aufzudecken, oft monatelang. Und diskutieren über drängende Fragen der Gegenwart.</p>

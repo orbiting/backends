@@ -37,10 +37,22 @@
                     <p>Guten Tag, {{name}}</p>
                     <p>Und willkommen an Bord!<br />
 	                    Wir freuen uns sehr, Sie bei der Republik begrüssen zu dürfen.</p>
+	                   
+	                {{#if `RECIPIENT_EMAIL != GRANTER_EMAIL`}}
+                    	<p>Für {{CAMPAIGN_PERIOD}} sind Sie jetzt Gast an Bord der Republik. 
+					Und können unser Magazin entdecken, es lesen, sehen, hören und mitdiskutieren.</p>
+                    {{else}}
+                    	<p>{{CAMPAIGN_TEXT_ONBOARDING}}</p>
+                    {{/if}} 
+	                   
                     <p>Nachfolgend finden Sie die wichtigsten Informationen zur Republik:</p>
                     <p>Die Republik erscheint von Montag bis Samstag mit täglich ein bis drei neuen Beiträgen. In der <a href="{{frontend_base_url}}/2018/09/01/app/diskussion">Republik-App</a>, <a href="{{frontend_base_url}}">auf der Website</a> und als Newsletter.</p>
                     
+                    {{#if `RECIPIENT_EMAIL != GRANTER_EMAIL`}}
                     <p>Sie können ab sofort <a href="{{frontend_base_url}}/anmelden">das Magazin lesen</a>, an <a href="{{link_dialog}}">sämtlichen Debatten teilnehmen</a> und Beiträge mit Ihren Freunden oder Feinden teilen. Und haben so bis zum {{GRANT_END}} Zeit, die Republik kennenzulernen.</p>
+                    {{else}}
+                    <p>Sie können ab sofort <a href="{{frontend_base_url}}/anmelden">das Magazin lesen</a> und Beiträge mit Ihren Freunden oder Feinden teilen. Und haben so bis zum {{GRANT_END}} Zeit, die Republik kennenzulernen.</p>
+                    {{/if}} 
                     
                     <p>Als Magazin bieten wir Einordnung und Vertiefung anstelle einer Flut von Nachrichten.
 Wir recherchieren, um Missstände aufzudecken, oft monatelang. Und diskutieren über drängende Fragen der Gegenwart.</p>

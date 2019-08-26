@@ -35,7 +35,13 @@
                 <tr>
                   <td style="padding:20px;">
                     <p>Guten Tag, {{name}}</p>
-                    <p>Seit {{GRANT_BEGIN}} durften wir Sie dank einer Empfehlung von {{GRANTER_NAME}} probeweise als Leserin oder Leser an Bord der Republik haben.</p>
+                    
+                    {{#if `RECIPIENT_EMAIL != GRANTER_EMAIL`}}
+                    	<p>Seit {{GRANT_BEGIN}} durften wir Sie dank einer Empfehlung von {{GRANTER_NAME}} probeweise als Leserin oder Leser an Bord der Republik haben.</p>
+                    {{else}}
+                    	<p>{{CAMPAIGN_TEXT_EXPIRED}}</p>
+                    {{/if}}
+                    
                     <p>Hat Ihnen unser Magazin gefallen?</p>
 					<p>Finden Sie unsere Idee eines unabhängigen und werbefreien digitalen Magazins für Politik, Wirtschaft, Gesellschaft und Kultur auch unterstützenswert?</p>
 					<p>Wie Sie wissen, ist die Republik werbefrei und wird von ihren Leserinnen und Lesern finanziert.</p>

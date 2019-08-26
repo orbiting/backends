@@ -36,14 +36,25 @@
                   <td style="padding:20px;">
                     <p>Guten Tag</p>
                     {{#unless RECIPIENT_HAS_MEMBERSHIPS}}
-	                    <p><strong>{{GRANTER_NAME}} (<a href="mailto:{{GRANTER_EMAIL}}">{{GRANTER_EMAIL}}</a>) hat die Republik – ein neues, unabhängiges und werbefreies digitales Magazin für Politik, Wirtschaft, Gesellschaft und Kultur – mit Ihnen geteilt.</strong>
-	                    </p>
-	                    {{#if GRANTER_MESSAGE}}
-	                    <p>Und uns eine Nachricht für Sie mitgegeben:</p>
-	                    <blockquote style="color:#282828;font-size:17px;line-height:24px;{{sg_font_style_sans_serif_regular}}">{{{GRANTER_MESSAGE}}}</blockquote>
+                    
+                        {{#if `RECIPIENT_EMAIL != GRANTER_EMAIL`}}
+		                    <p><strong>{{GRANTER_NAME}} (<a href="mailto:{{GRANTER_EMAIL}}">{{GRANTER_EMAIL}}</a>) hat die Republik – ein neues, unabhängiges und werbefreies digitales Magazin für Politik, Wirtschaft, Gesellschaft und Kultur – mit Ihnen geteilt.</strong>
+		                    </p>
+		                    {{#if GRANTER_MESSAGE}}
+		                    <p>Und uns eine Nachricht für Sie mitgegeben:</p>
+		                    <blockquote style="color:#282828;font-size:17px;line-height:24px;{{sg_font_style_sans_serif_regular}}">{{{GRANTER_MESSAGE}}}</blockquote>
+		                    {{/if}}
+		                {{else}}    
+		                	{{CAMPAIGN_TEXT_INVITATION}}
 	                    {{/if}}
+	                    
+	                    {{#if `RECIPIENT_EMAIL != GRANTER_EMAIL`}}
 	                    <p>Für {{CAMPAIGN_PERIOD}} sind Sie jetzt Gast an Bord der Republik. 
 							Und können unser Magazin entdecken, es lesen, sehen, hören und mitdiskutieren.</p>
+						{{else}}
+	                    <p>Für {{CAMPAIGN_PERIOD}} sind Sie jetzt Gast an Bord der Republik. 
+							Und können unser Magazin entdecken, es lesen, sehen und hören.</p>
+	                    {{/if}} 
 						
 						<p>Die Republik erscheint von Montag bis Samstag mit täglich ein bis drei neuen Beiträgen. 
 							<a href="{{frontend_base_url}}/2018/01/13/gebrauchsanleitung">In der Republik-App</a>, <a href="{{frontend_base_url}}/anmelden">auf der Website</a> und als Newsletter.</p>
@@ -72,10 +83,15 @@
                     {{/unless}}
                     {{#if RECIPIENT_HAS_MEMBERSHIPS}}
 	                    <p>Sie erhalten diese E-Mail im Rahmen unserer Aktion «{{CAMPAIGN_TITLE}}».</p>
+	                    
+	                    {{#if `RECIPIENT_EMAIL != GRANTER_EMAIL`}}
 	                    <p>{{GRANTER_NAME}} geht davon aus, dass Sie noch kein Republik-Abo besitzen. Dabei befinden Sie sich als Besitzerin oder Besitzer eines Abos bereits an Bord – vielen Dank dafür!</p>
+	                    {{else}}
+	                    <p>Sie haben aber bereits ein gültiges Abo – vielen Dank dafür!</p>
+	                    {{/if}} 
 	                    
 	                    {{#if RECIPIENT_HAS_CAMPAIGNS}}
-		                    <p>Sie können Ihr Abo ebenfalls <a href="{{LINK_ACCOUNT_SHARE}}">mit anderen Personen teilen</a>. Die Empfänger erhalten eine persönliche Einladung per E-Mail.</p>
+		                    <p>Sie können Ihr Abo auch <a href="{{LINK_ACCOUNT_SHARE}}">mit anderen Personen teilen</a>. Die Empfänger erhalten eine persönliche Einladung per E-Mail.</p>
 		                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
 		                      <tr>
 		                        <td>
