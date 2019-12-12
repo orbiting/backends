@@ -6,10 +6,15 @@ module.exports = (context) => ({
   ),
   byParentId: createDataLoader(
     async parentIds => {
-      const or = parentIds.map(p => ({ 'parentIds @>': [ p ] }))
+      const or = parentIds.map(p => ({ 'parentIds @>': [p] }))
       return context.pgdb.public.comments.find({ or })
     },
     null,
     (key, rows) => rows.filter(row => row.parentIds.includes(key))
+  ),
+  byDiscussionId: createDataLoader(
+    ids => context.pgdb.public.comments.find({ discussionId: ids }, { orderBy: { parentIds: 'asc' } }),
+    null,
+    (key, rows) => rows.filter(row => row.discussionId === key)
   )
 })
