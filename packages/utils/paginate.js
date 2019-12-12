@@ -67,7 +67,7 @@ const base64toObject = (base64) => {
 const objectToBase64 = (object) =>
   Buffer.from(JSON.stringify(object), 'utf-8').toString('base64')
 
-module.exports.paginator = (args, payloadFn, nodesFn) => {
+module.exports.paginator = (args, payloadFn, nodesFn, connectionFn) => {
   const { first, last, after: _after, before: _before, only } = args
 
   const after = _after && base64toObject(_after)
@@ -105,7 +105,7 @@ module.exports.paginator = (args, payloadFn, nodesFn) => {
   const hasNextPage = !!endCursor &&
     nodes.some((node, i) => node.id === endCursor && i < lastIndex)
 
-  return {
+  const connection = {
     totalCount: nodes.length,
     pageInfo: {
       hasNextPage,
@@ -116,4 +116,8 @@ module.exports.paginator = (args, payloadFn, nodesFn) => {
     nodes: nodeSubset,
     _nodes: nodes
   }
+
+  return connectionFn
+    ? connectionFn({ ...args, after, before }, payload, connection)
+    : connection
 }
