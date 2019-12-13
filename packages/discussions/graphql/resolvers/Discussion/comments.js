@@ -3,6 +3,10 @@ const graphqlFields = require('graphql-fields')
 
 const { paginate: { paginator } } = require('@orbiting/backend-modules-utils')
 
+/**
+ * Returns a function which can be passed to paginator. It adds all required
+ * properties to ensure pagination is kept in order.
+ */
 const payloadModifer = (parent) => ({
   after = {},
   before = {},
@@ -38,6 +42,9 @@ const payloadModifer = (parent) => ({
     flatDepth
 })
 
+/**
+ * Map of functions on how to determine a sort value.
+ */
 const sortValueMap = {
   HOT: node => node.hotness,
   VOTES: node => node.upVotes - node.downVotes,
@@ -45,6 +52,9 @@ const sortValueMap = {
   REPLIES: (node, index, nodes) => nodes.filter(n => n.parentIds && n.parentIds.includes(node.id)).length
 }
 
+/**
+ * Returns a function which then appends a sort value.
+ */
 const appendSortValue = (by) => {
   const sortValue = sortValueMap[by]
 
@@ -58,11 +68,18 @@ const appendSortValue = (by) => {
   })
 }
 
+/**
+ * Sorts value
+ */
 const sortValue = (direction) => (a, b) =>
   direction === 'DESC'
     ? descending(a._sort, b._sort)
     : ascending(a._sort, b._sort)
 
+/**
+ * Will ensure a node w/ focus ID an its parents (not children however) are prepended to
+ * nodes array.
+ */
 const bubbleUpFocused = (focusId, nodes) => {
   const focusNode = focusId && nodes.find(n => n.id === focusId)
 
@@ -92,6 +109,7 @@ const bubbleUpFocused = (focusId, nodes) => {
 module.exports = async (discussion, args, context, info) => {
   const { loaders } = context
 
+  // Short-circuits resolver if only Connection.totalCount and/or Connection.id are queried for.
   const requestedFields = Object.keys(graphqlFields(info))
   const wantsTotalCountOnly = !requestedFields.some(key => !['id', 'totalCount'].includes(key))
 
@@ -112,6 +130,9 @@ module.exports = async (discussion, args, context, info) => {
     payloadModifer(parentNode && { id: parentNode.id, depth: parentNode.depth }),
     (args, payload) => {
       const { parent, focusId, tag, orderBy, orderDirection, flatDepth } = payload
+
+      // Maximum depth is determined by flatDepth arguments, and maybe a parent
+      // node's depth. In latter case parent node's depth is topped w/ flatDepth argument.
       const maximumDepth = ((parent && parent.depth + 1 + flatDepth) || flatDepth)
 
       const concoctNodes = nodes
@@ -131,7 +152,9 @@ module.exports = async (discussion, args, context, info) => {
 
       return {
         ...connection,
+        // Count returns all available nodes
         totalCount: countNodes.filter(n => n.depth >= anchorDepth).length,
+        // Count returns all available nodes on same depth level
         directTotalCount: countNodes.filter(n => n.depth === anchorDepth).length,
         focus: args.focusId && nodes.find(n => n.id === args.focusId),
         id: discussion.id
