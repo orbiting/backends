@@ -133,7 +133,10 @@ module.exports = async (discussion, args, context, info) => {
 
       // Maximum depth is determined by flatDepth arguments, and maybe a parent
       // node's depth. In latter case parent node's depth is topped w/ flatDepth argument.
-      const maximumDepth = ((parent && parent.depth + 1 + flatDepth) || flatDepth)
+      const maximumDepth =
+        (parent && parent.depth + 1 + flatDepth) ||
+        (flatDepth === 0 && 1) ||
+        flatDepth
 
       const concoctNodes = nodes
         .filter(n => n.depth < maximumDepth)
