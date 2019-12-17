@@ -315,9 +315,20 @@ const getCustomOptions = async (package_) => {
     user: {
       memberhips[] {
         membershipType
-        membershipPeriods[]
+        membershipPeriods[] {
+          pledgeOption {
+            packageOption {
+              membershipType
+            }
+          }
+        }
         pledge {
           package
+        }
+        pledgeOption {
+          packageOption {
+            membershipType
+          }
         }
       }
     }
@@ -455,12 +466,8 @@ const resolvePackages = async ({ packages, pledger = {}, strict = false, pgdb })
 const resolveMemberships = async ({ memberships, pgdb }) => {
   debug('resolveMemberships')
 
-  const membershipTypes =
-    memberships.length > 0
-      ? await pgdb.public.membershipTypes.find({
-        id: memberships.map(membership => membership.membershipTypeId)
-      })
-      : []
+  const membershipTypes = await pgdb.public.membershipTypes.findAll()
+  const membershipTypeRewardIds = membershipTypes.map(type => type.rewardId)
 
   const membershipPledges =
     memberships.length > 0
@@ -483,6 +490,44 @@ const resolveMemberships = async ({ memberships, pgdb }) => {
       })
       : []
 
+  const pledgeOptions =
+    membershipPeriods.length > 0
+      ? await pgdb.public.pledgeOptions.find({
+        pledgeId: [
+          ...membershipPeriods.map(period => period.pledgeId).filter(Boolean),
+          ...membershipPledges.map(pledge => pledge.id).filter(Boolean)
+        ],
+        'amount >': 0
+      })
+      : []
+
+  const membershipPeriodPackageOptions =
+  pledgeOptions.length > 0
+    ? await pgdb.public.packageOptions.find({
+      id: pledgeOptions.map(option => option.templateId)
+    })
+    : []
+
+  membershipPeriodPackageOptions.forEach((packageOption, index, packageOptions) => {
+    packageOptions[index].membershipType =
+      membershipTypes.find(
+        membershipType => membershipType.rewardId === packageOption.rewardId
+      )
+  })
+
+  pledgeOptions.forEach((pledgeOption, index, pledgeOptions) => {
+    pledgeOptions[index].packageOption =
+      membershipPeriodPackageOptions.find(
+        packageOption => packageOption.id === pledgeOption.templateId
+      )
+  })
+
+  membershipPeriods.forEach((period, index, periods) => {
+    periods[index].pledgeOption = pledgeOptions.find(
+      option => option.pledgeId === period.pledgeId && option.membershipId === period.membershipId
+    )
+  })
+
   membershipPledges.forEach((pledge, index, pledges) => {
     pledges[index].package = membershipPledgePackages.find(package_ => package_.id === pledge.packageId)
   })
@@ -497,10 +542,16 @@ const resolveMemberships = async ({ memberships, pgdb }) => {
         membershipPledge => membershipPledge.id === membership.pledgeId
       )
 
+    memberships[index].pledgeOption = pledgeOptions.find(
+      option => option.pledgeId === membership.pledgeId && membershipTypeRewardIds.includes(option.packageOption.rewardId)
+    )
+
     memberships[index].periods =
       membershipPeriods.filter(
         period => period.membershipId === membership.id
       )
+
+    memberships[index].periodEndingLast = getPeriodEndingLast(memberships[index].periods)
   })
 
   return memberships
