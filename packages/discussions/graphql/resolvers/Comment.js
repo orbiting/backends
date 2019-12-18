@@ -215,6 +215,7 @@ module.exports = {
 
     if (children) {
       return {
+        id: comment.id,
         totalCount: children.length,
         directTotalCount: nodes.length,
         nodes
