@@ -12,9 +12,9 @@ const payloadModifer = (parent) => ({
   before = {},
   focusId,
   tag,
-  orderBy = 'HOT',
-  orderDirection = 'DESC',
-  flatDepth = 0
+  orderBy,
+  orderDirection,
+  flatDepth
 }) => ({
   parent:
     (after.payload && after.payload.parent) ||
@@ -126,7 +126,13 @@ module.exports = async (discussion, args, context, info) => {
   const parentNode = args.parentId && nodes.find(n => n.id === args.parentId)
 
   return paginator(
-    args,
+    {
+      first: 200,
+      orderBy: 'HOT',
+      orderDirection: 'DESC',
+      flatDepth: 0,
+      ...args
+    },
     payloadModifer(parentNode && { id: parentNode.id, depth: parentNode.depth }),
     (args, payload) => {
       const { parent, focusId, tag, orderBy, orderDirection, flatDepth } = payload
