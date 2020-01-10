@@ -1,3 +1,6 @@
+const { meta: { getWordsPerMinute } } = require('@orbiting/backend-modules-documents/lib')
+const { MIDDLE_DURATION_MINS } = require('../Documents')
+
 const keywordPartial = {
   fields: {
     keyword: {
@@ -34,7 +37,13 @@ module.exports = {
   search: {
     termFields: {
       'meta.title': {
-        boost: 3,
+        boost: 2,
+        highlight: {
+          number_of_fragments: 0
+        }
+      },
+      'meta.shortTitle': {
+        boost: 2,
         highlight: {
           number_of_fragments: 0
         }
@@ -45,25 +54,72 @@ module.exports = {
           number_of_fragments: 0
         }
       },
-      'meta.authors': {
-        boost: 2,
-        highlight: {
-          number_of_fragments: 0
-        }
+      'meta.creditsString': {
+        boost: 3
       },
       contentString: {
-        highlight: {}
+        highlight: {
+          boundary_scanner_locale: 'de-CH',
+          fragment_size: 300
+        }
       },
-      content: {
-        highlight: {}
+      'resolved.meta.dossier.meta.title': {
+        boost: 3
       },
-      'resolved.meta.format.meta.title.keyword': {
-        boost: 6
+      'resolved.meta.format.meta.title': {
+        boost: 3
       },
-      'resolved.meta.format.meta.description': {},
-      'resolved.meta.section.meta.title.keyword': {},
-      'resolved.meta.section.meta.description': {}
+      'resolved.meta.section.meta.title': {
+        boost: 3
+      }
     },
+    functionScore: (query) => ({
+      query,
+      functions: [
+        {
+          filter: {
+            terms: {
+              'meta.template': ['format', 'section', 'dossier']
+            }
+          },
+          weight: 20
+        },
+        {
+          filter: {
+            match: {
+              'meta.isSeriesMaster': true
+            }
+          },
+          weight: 20
+        },
+        {
+          filter: {
+            match: {
+              'meta.isSeriesEpisode': true
+            }
+          },
+          weight: 10
+        },
+        {
+          filter: {
+            range: {
+              'contentString.count': {
+                gte: getWordsPerMinute() * MIDDLE_DURATION_MINS
+              }
+            }
+          },
+          weight: 5
+        },
+        {
+          filter: {
+            match: {
+              'meta.template': 'editorialNewsletter'
+            }
+          },
+          weight: 0.1
+        }
+      ]
+    }),
     filter: {
       default: () => {
         const filter = {
@@ -356,6 +412,10 @@ module.exports = {
               type: 'text',
               analyzer: 'german'
             },
+            shortTitle: {
+              type: 'text',
+              analyzer: 'german'
+            },
             description: {
               type: 'text',
               analyzer: 'german'
@@ -383,6 +443,10 @@ module.exports = {
             },
             feed: {
               type: 'boolean'
+            },
+            creditsString: {
+              type: 'text',
+              analyzer: 'german'
             },
             credits: {
               ...mdastPartial

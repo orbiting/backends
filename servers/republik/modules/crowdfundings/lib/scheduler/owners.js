@@ -20,7 +20,7 @@ const {
 const STATS_INTERVAL_SECS = 3
 const DAYS_BEFORE_END_DATE = 29
 
-/* const getMinEndDate = (now, daysBeforeEndDate) =>
+const getMinEndDate = (now, daysBeforeEndDate) =>
   moment(now)
     .subtract(6, 'hours')
     .subtract(30, 'minutes')
@@ -32,13 +32,13 @@ const getMaxEndDate = (now, daysBeforeEndDate) =>
     .subtract(6, 'hours')
     .subtract(30, 'minutes')
     .add(daysBeforeEndDate, 'days')
-    .endOf('day') */
+    .endOf('day')
 
 const createBuckets = (now) => [
-  /* {
+  {
     name: 'membership_owner_prolong_notice',
     endDate: {
-      min: getMinEndDate(now, 22),
+      min: getMinEndDate(now, 13),
       max: getMaxEndDate(now, DAYS_BEFORE_END_DATE)
     },
     predicate: ({ id: userId, membershipType, membershipAutoPay, autoPay }) => {
@@ -100,7 +100,7 @@ const createBuckets = (now) => [
       templateName: 'membership_owner_prolong_notice_0'
     },
     handler: mailings
-  }, */
+  },
   {
     name: 'membership_owner_autopay_notice',
     endDate: {
