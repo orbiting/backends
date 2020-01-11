@@ -42,7 +42,8 @@ Promise.props({ pgdb: PgDb.connect(), redis: Redis.connect() }).then(async (conn
         'verena.rothen@korrektorat-lektorat.net'
       ) */
       -- AND u.id = 'ceb21d95-d318-4c24-abe1-129e6ab335fc'
-      AND u.roles @> '"gen201912"'
+      -- AND u.roles @> '"gen201912"'
+      -- AND m.active = TRUE
     GROUP BY u.id
     ORDER BY RANDOM()
     -- LIMIT 100
@@ -75,6 +76,7 @@ Promise.props({ pgdb: PgDb.connect(), redis: Redis.connect() }).then(async (conn
     'prolong-before-feb': [], // Dez to Januar
     'prolong-between-feb-mar': [], // Februar to Mar
     'prolong-after-mar-autopay-monthly': [], // active
+    'cancelled-active': [], // cancelled, but still active
     alumni: [],
     others: []
   }
@@ -137,6 +139,11 @@ Promise.props({ pgdb: PgDb.connect(), redis: Redis.connect() }).then(async (conn
       }
 
       if (
+        !!activeMembership &&
+        activeMembership.renew === false
+      ) {
+        segments['cancelled-active'].push(row)
+      } else if (
         !!activeMembership &&
         activeMembership.membershipType.name !== 'MONTHLY_ABO' &&
         lastEndDate.isBefore('2020-02-01') &&
