@@ -1,5 +1,6 @@
 const { merge } = require('apollo-modules-node')
 const cluster = require('cluster')
+const Promise = require('bluebird')
 
 const {
   server: Server,
@@ -21,6 +22,11 @@ const { graphql: cards } = require('@orbiting/backend-modules-cards')
 const { graphql: maillog } = require('@orbiting/backend-modules-maillog')
 const { graphql: embeds } = require('@orbiting/backend-modules-embeds')
 const { graphql: gsheets } = require('@orbiting/backend-modules-gsheets')
+
+const { intervalScheduler } = require('@orbiting/backend-modules-schedulers')
+
+const PgDb = require('@orbiting/backend-modules-base/lib/PgDb')
+const Redis = require('@orbiting/backend-modules-base/lib/Redis')
 
 const loaderBuilders = {
   ...require('@orbiting/backend-modules-voting/loaders'),
@@ -188,9 +194,18 @@ const runOnce = async () => {
     searchNotifyListener = await SearchNotifyListener.start(context)
   }
 
+  const statsCacheScheduler = await intervalScheduler.init({
+    name: 'stats-cache',
+    context: await Promise.props({ pgdb: PgDb.connect(), redis: Redis.connect() }),
+    runFunc: require('./modules/crowdfundings/lib/scheduler/stats-cache'),
+    lockTtlSecs: 6,
+    runIntervalSecs: 8
+  })
+
   const close = async () => {
     slackGreeter && await slackGreeter.close()
     searchNotifyListener && await searchNotifyListener.close()
+    statsCacheScheduler && await statsCacheScheduler.close()
   }
 
   process.once('SIGTERM', close)
