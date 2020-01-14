@@ -11,11 +11,11 @@ const PgDb = require('@orbiting/backend-modules-base/lib/PgDb')
 const Redis = require('@orbiting/backend-modules-base/lib/Redis')
 const { expireGrants, followupGrants } = require('@orbiting/backend-modules-access')
 
-const { changeover } = require('../modules/crowdfundings/lib/scheduler/changeover')
-const { deactivate } = require('../modules/crowdfundings/lib/scheduler/deactivate')
-const { inform: informGivers } = require('../modules/crowdfundings/lib/scheduler/givers')
-const { inform: informWinbacks } = require('../modules/crowdfundings/lib/scheduler/winbacks')
-const { run: owners } = require('../modules/crowdfundings/lib/scheduler/owners')
+const { changeover } = require('../modules/crowdfundings/lib/jobs/changeover')
+const { deactivate } = require('../modules/crowdfundings/lib/jobs/deactivate')
+const { inform: informGivers } = require('../modules/crowdfundings/lib/jobs/givers')
+const { inform: informWinbacks } = require('../modules/crowdfundings/lib/jobs/winbacks')
+const { run: owners } = require('../modules/crowdfundings/lib/jobs/owners')
 const mail = require('../modules/crowdfundings/lib/Mail')
 
 const jobs = {

@@ -197,7 +197,7 @@ const runOnce = async () => {
   const statsCacheScheduler = await intervalScheduler.init({
     name: 'stats-cache',
     context: await Promise.props({ pgdb: PgDb.connect(), redis: Redis.connect() }),
-    runFunc: require('./modules/crowdfundings/lib/scheduler/stats-cache'),
+    runFunc: require('./modules/crowdfundings/lib/jobs/stats-cache'),
     lockTtlSecs: 6,
     runIntervalSecs: 8
   })

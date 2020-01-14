@@ -1,7 +1,7 @@
 const {
   TYPE,
   winbackCanBeSentForCancellationDate
-} = require('../../lib/scheduler/winbacks')
+} = require('../../lib/jobs/winbacks')
 
 module.exports = {
   async winbackSentAt ({ membershipId, id }, args, { pgdb }) {
