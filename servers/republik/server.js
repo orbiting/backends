@@ -35,23 +35,17 @@ const loaderBuilders = {
   ...require('./loaders')
 }
 
-const { AccessScheduler, graphql: access } = require('@orbiting/backend-modules-access')
+const { graphql: access } = require('@orbiting/backend-modules-access')
 
-const MembershipScheduler = require('./modules/crowdfundings/lib/scheduler')
 const mail = require('./modules/crowdfundings/lib/Mail')
 
 const {
   LOCAL_ASSETS_SERVER,
   MAIL_EXPRESS_RENDER,
   SEARCH_PG_LISTENER,
-  NODE_ENV,
-  ACCESS_SCHEDULER,
-  MEMBERSHIP_SCHEDULER,
   SERVER = 'republik',
   DYNO
 } = process.env
-
-const DEV = NODE_ENV && NODE_ENV !== 'production'
 
 const start = async () => {
   const server = await run()
@@ -167,7 +161,7 @@ const run = async (workerId, config) => {
 }
 
 // in cluster mode, this runs before run otherwise after
-const runOnce = async (...args) => {
+const runOnce = async () => {
   if (cluster.isWorker) {
     throw new Error('runOnce must only be called on cluster.isMaster')
   }
@@ -194,32 +188,9 @@ const runOnce = async (...args) => {
     searchNotifyListener = await SearchNotifyListener.start(context)
   }
 
-  let accessScheduler
-  if (ACCESS_SCHEDULER === 'false' || (DEV && ACCESS_SCHEDULER !== 'true')) {
-    console.log('ACCESS_SCHEDULER prevented scheduler from begin started',
-      { ACCESS_SCHEDULER, DEV }
-    )
-  } else {
-    accessScheduler = await AccessScheduler.init(context)
-  }
-
-  let membershipScheduler
-  if (MEMBERSHIP_SCHEDULER === 'false' || (DEV && MEMBERSHIP_SCHEDULER !== 'true')) {
-    console.log('MEMBERSHIP_SCHEDULER prevented scheduler from begin started',
-      { MEMBERSHIP_SCHEDULER, DEV }
-    )
-  } else {
-    membershipScheduler = await MembershipScheduler.init(context)
-  }
-
   const close = async () => {
-    await Promise.all([
-      slackGreeter && slackGreeter.close(),
-      searchNotifyListener && searchNotifyListener.close(),
-      accessScheduler && accessScheduler.close(),
-      membershipScheduler && membershipScheduler.close()
-    ].filter(Boolean))
-    await ConnectionContext.close(context)
+    slackGreeter && await slackGreeter.close()
+    searchNotifyListener && await searchNotifyListener.close()
   }
 
   process.once('SIGTERM', close)
