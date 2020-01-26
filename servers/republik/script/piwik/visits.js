@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+/* eslint-disable node/no-deprecated-api, camelcase */
+
+require('@orbiting/backend-modules-env').config()
+
 const fs = require('fs')
 const path = require('path')
 const mysql = require('mysql2')
@@ -7,25 +11,39 @@ const { parse } = require('url')
 const { ascending, descending, range, sum } = require('d3-array')
 const { timeFormat } = require('d3-time-format')
 
+const PgDb = require('@orbiting/backend-modules-base/lib/PgDb')
+const Elasticsearch = require('@orbiting/backend-modules-base/lib/Elasticsearch')
+const Redis = require('@orbiting/backend-modules-base/lib/Redis')
+const RedisPubSub = require('@orbiting/backend-modules-base/lib/RedisPubSub')
+const { t } = require('@orbiting/backend-modules-translate')
+
+const search = require('@orbiting/backend-modules-search/graphql/resolvers/_queries/search')
+
+const loaderBuilders = {
+  ...require('@orbiting/backend-modules-discussions/loaders'),
+  ...require('@orbiting/backend-modules-documents/loaders')
+}
+
+const getContext = (payload) => {
+  const loaders = {}
+  const context = {
+    ...payload,
+    loaders,
+    user: {
+      name: 'Analystic-bot',
+      email: 'ruggedly@project-r.construction',
+      roles: ['editor', 'member']
+    }
+  }
+  Object.keys(loaderBuilders).forEach(key => {
+    loaders[key] = loaderBuilders[key](context)
+  })
+  return context
+}
+
 // node --max-old-space-size=4096 script/piwik/visits.js
 
 // https://developer.matomo.org/guides/persistence-and-the-mysql-backend
-
-// documents.json
-// https://api.republik.ch/graphiql?query=%7B%0A%20%20documents(first%3A%202000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
-const documents = require('./documents.json').data.documents.nodes
-  .filter(doc => doc.meta.template === 'article')
-
-// https://ultradashboard.republik.ch/question/181
-const redirections = require('./redirections.json')
-
-// https://ultradashboard.republik.ch/question/182
-const pledges = require('./pledges.json')
-  .filter(p => p.name !== 'PROLONG')
-const pledgeIndex = pledges.reduce((index, pledge) => {
-  index[pledge.id] = pledge
-  return index
-})
 
 // const getWeek = timeFormat('%W')
 const getMonth = timeFormat('%m')
@@ -61,16 +79,8 @@ const referrerNames = {
 }
 const shortDays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
-const getCurrentPath = path => {
-  let currentPath = path
-  let redirection
-  while (redirection = redirections.find(r => r.source === currentPath)) {
-    currentPath = redirection.target
-  }
-  return currentPath
-}
-
-const analyse = async () => {
+const analyse = async (context, { fileBaseData = false } = {}) => {
+  const { pgdb } = context
   const con = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -78,13 +88,57 @@ const analyse = async () => {
   })
   const connection = con.promise()
 
-  const [ urlActions ] = await connection.query(`SELECT idaction, name FROM piwik_log_action WHERE type = 1`)
+  const [urlActions] = await connection.query('SELECT idaction, name FROM piwik_log_action WHERE type = 1')
 
   console.log('url actions', urlActions.length)
 
+  const documents = fileBaseData
+    ? require('./documents.json').data.documents.nodes.filter(doc => doc.meta.template === 'article') // https://api.republik.ch/graphiql?query=%7B%0A%20%20documents(first%3A%202000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
+    : await search(null, {
+      first: 10000,
+      unrestricted: true,
+      filter: {
+        template: 'article',
+        type: 'Document'
+      },
+      sort: {
+        key: 'publishedAt',
+        direction: 'DESC'
+      }
+    }, context).then(d => d.nodes.map(n => n.entity))
+
+  console.log('documents', documents.length)
+
+  const redirections = fileBaseData
+    ? require('./redirections.json') // https://ultradashboard.republik.ch/question/181
+    : await pgdb.query('SELECT source, target FROM redirections WHERE "deletedAt" is null')
+  console.log('redirections', redirections.length)
+
+  const pledges = fileBaseData
+    ? require('./pledges.json').filter(p => p.name !== 'PROLONG') // https://ultradashboard.republik.ch/question/182
+    : await pgdb.query(`
+      SELECT p.id, p.total, p."createdAt", pack.name
+      FROM pledges p
+      JOIN packages pack on pack.id = p."packageId"
+      WHERE p.status != 'DRAFT' AND p.status != 'CANCELLED' AND pack.name != 'PROLONG'
+    `)
+  console.log('pledges', pledges.length)
+
+  const pledgeIndex = pledges.reduce((index, pledge) => {
+    index[pledge.id] = pledge
+    return index
+  })
+
+  const getCurrentPath = path => {
+    let currentPath = path
+    while (redirections.find(r => r.source === currentPath)) {
+      currentPath = redirections.find(r => r.source === currentPath).target
+    }
+    return currentPath
+  }
   const actionIdToDocument = urlActions.reduce((agg, d) => {
     if (d.name.startsWith('republik.ch')) {
-      let path = getCurrentPath(
+      const path = getCurrentPath(
         d.name
           .replace('republik.ch', '')
           .split('?')[0]
@@ -270,7 +324,7 @@ const analyse = async () => {
 
   await new Promise((resolve, reject) => query
     .on('result', visit => {
-      const actions = visit.actions.map(({idaction_url, server_time, time_spent}) => {
+      const actions = visit.actions.map(({ idaction_url, server_time, time_spent }) => {
         const doc = actionIdToDocument[idaction_url]
         if (doc) {
           const nextAction = visit.actions.find(a => a.idaction_url_ref === idaction_url)
@@ -312,7 +366,7 @@ const analyse = async () => {
     compare = (a, b) => ascending(a[0], b[0])
   ) => Array.from(map)
     .sort(compare)
-    .map(d => ({key: d[0], count: d[1]}))
+    .map(d => ({ key: d[0], count: d[1] }))
 
   const missingPledges = new Set()
   const toJS = stat => Object.keys(stat).reduce((agg, key) => {
@@ -346,7 +400,7 @@ const analyse = async () => {
       ),
       hours: mapToJs(segment.hours),
       days: mapToJs(segment.days)
-        .map(d => ({key: shortDays[d.key], count: d.count})),
+        .map(d => ({ key: shortDays[d.key], count: d.count })),
       minutesSpent: mapToJs(segment.minutesSpent)
     }
     return agg
@@ -371,4 +425,19 @@ const analyse = async () => {
   connection.end()
 }
 
-analyse()
+PgDb.connect().then(async pgdb => {
+  const context = getContext({
+    pgdb,
+    elastic: Elasticsearch.connect(),
+    redis: Redis.connect(),
+    pubsub: RedisPubSub.connect(),
+    t
+  })
+
+  await analyse(context)
+}).then(() => {
+  process.exit()
+}).catch(e => {
+  console.log(e)
+  process.exit(1)
+})
