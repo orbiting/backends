@@ -7,7 +7,7 @@
  * cat local/cancellations.csv | node script/prolong/importCancellations.js
  */
 require('@orbiting/backend-modules-env').config()
-const PgDb = require('@orbiting/backend-modules-base/lib/pgdb')
+const PgDb = require('@orbiting/backend-modules-base/lib/PgDb')
 const rw = require('rw')
 const {dsvFormat} = require('d3-dsv')
 const csvParse = dsvFormat(',').parse
@@ -72,7 +72,8 @@ PgDb.connect().then(async pgdb => {
           membershipId: membership.id,
           reason: reason.length ? reason.trim() : null,
           category: normalizedCategory,
-          suppressNotifications: true,
+          suppressConfirmation: true,
+          suppressWinback: true,
           createdAt: date
         })
       }

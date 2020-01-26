@@ -1,3 +1,6 @@
+const { meta: { getWordsPerMinute } } = require('@orbiting/backend-modules-documents/lib')
+const { MIDDLE_DURATION_MINS } = require('../Documents')
+
 const keywordPartial = {
   fields: {
     keyword: {
@@ -34,7 +37,13 @@ module.exports = {
   search: {
     termFields: {
       'meta.title': {
-        boost: 3,
+        boost: 2,
+        highlight: {
+          number_of_fragments: 0
+        }
+      },
+      'meta.shortTitle': {
+        boost: 2,
         highlight: {
           number_of_fragments: 0
         }
@@ -45,23 +54,72 @@ module.exports = {
           number_of_fragments: 0
         }
       },
-      'meta.authors': {
-        boost: 2,
-        highlight: {
-          number_of_fragments: 0
-        }
+      'meta.creditsString': {
+        boost: 3
       },
       contentString: {
-        highlight: {}
+        highlight: {
+          boundary_scanner_locale: 'de-CH',
+          fragment_size: 300
+        }
       },
-      content: {
-        highlight: {}
+      'resolved.meta.dossier.meta.title': {
+        boost: 3
       },
-      'resolved.meta.format.meta.title.keyword': {
-        boost: 6
+      'resolved.meta.format.meta.title': {
+        boost: 3
       },
-      'resolved.meta.format.meta.description': {}
+      'resolved.meta.section.meta.title': {
+        boost: 3
+      }
     },
+    functionScore: (query) => ({
+      query,
+      functions: [
+        {
+          filter: {
+            terms: {
+              'meta.template': ['format', 'section', 'dossier']
+            }
+          },
+          weight: 20
+        },
+        {
+          filter: {
+            match: {
+              'meta.isSeriesMaster': true
+            }
+          },
+          weight: 20
+        },
+        {
+          filter: {
+            match: {
+              'meta.isSeriesEpisode': true
+            }
+          },
+          weight: 10
+        },
+        {
+          filter: {
+            range: {
+              'contentString.count': {
+                gte: getWordsPerMinute() * MIDDLE_DURATION_MINS
+              }
+            }
+          },
+          weight: 5
+        },
+        {
+          filter: {
+            match: {
+              'meta.template': 'editorialNewsletter'
+            }
+          },
+          weight: 0.1
+        }
+      ]
+    }),
     filter: {
       default: () => {
         const filter = {
@@ -72,65 +130,113 @@ module.exports = {
             // return all editorialNewsletters with feed:true or everything
             // that is not editorialNewsletters. Brainfuck.
             should: [
-              { bool: { must: [
-                { term: { 'meta.template': 'editorialNewsletter' } },
-                { term: { 'meta.feed': true } }
-              ] } },
-              { bool: { must_not: [
-                { term: { 'meta.template': 'editorialNewsletter' } }
-              ] } }
+              {
+                bool: {
+                  must: [
+                    { term: { 'meta.template': 'editorialNewsletter' } },
+                    { term: { 'meta.feed': true } }
+                  ]
+                }
+              },
+              {
+                bool: {
+                  must_not: [
+                    { term: { 'meta.template': 'editorialNewsletter' } }
+                  ]
+                }
+              }
             ]
           }
         }
 
         if (PREVIEW_MAIL_REPO_ID) {
           // Allow repo w/ preview email to be retrieved nomatter other filter
-          filter.bool.should.push({ bool: { must: [
-            { term: { 'meta.repoId': PREVIEW_MAIL_REPO_ID } }
-          ] } })
+          filter.bool.should.push({
+            bool: {
+              must: [
+                { term: { 'meta.repoId': PREVIEW_MAIL_REPO_ID } }
+              ]
+            }
+          })
         }
       }
     },
     rolebasedFilter: {
       // Default filter
-      default: () => ({ bool: { must: [
-        { term: { '__state.published': true } }
-      ] } }),
+      default: () => ({
+        bool: {
+          must: [
+            { term: { '__state.published': true } }
+          ]
+        }
+      }),
+
       // Adopted filter when role "editor" is present
-      editor: ({ scheduledAt, id, ids } = {}) => {
+      editor: ({ scheduledAt, ignorePrepublished, id, ids } = {}) => {
         const should = [
-          { bool: { must: [
-            { term: { '__state.published': false } },
-            { term: { '__state.prepublished': true } }
-          ] } },
-          { bool: { must: [
-            { term: { '__state.published': true } },
-            { term: { '__state.prepublished': true } }
-          ] } }
+          {
+            bool: {
+              must: [
+                { term: { '__state.published': true } },
+                { term: { '__state.prepublished': true } }
+              ]
+            }
+          }
         ]
 
         if (scheduledAt) {
-          should.push({ bool: { must: [
-            { term: { 'meta.prepublication': false } },
-            { range: { 'meta.scheduledAt': { lte: scheduledAt } } }
-          ] } })
+          const must = [
+            { term: { 'meta.prepublication': false } }
+          ]
+          // scheduledAt can be date or a filter object
+          // date: filter lower or equal
+          // filter: ignore, is added to query in createShould
+          if (!scheduledAt.from && !scheduledAt.to) {
+            must.push(
+              { range: { 'meta.scheduledAt': { lte: scheduledAt } } }
+            )
+          }
+          should.push({ bool: { must } })
+        }
+
+        if (!ignorePrepublished) {
+          should.push({
+            bool: {
+              must: [
+                { term: { '__state.published': false } },
+                { term: { '__state.prepublished': true } }
+              ]
+            }
+          })
         }
 
         if (id) {
-          should.push({ bool: { must: [
-            { term: { _id: id } }
-          ] } })
+          should.push({
+            bool: {
+              must: [
+                { term: { _id: id } }
+              ]
+            }
+          })
         }
 
         if (ids) {
-          should.push({ bool: { must: [
-            { terms: { _id: ids } }
-          ] } })
+          should.push({
+            bool: {
+              must: [
+                { terms: { _id: ids } }
+              ]
+            }
+          })
         }
 
-        return { bool: { must: [
-          { bool: { should } }
-        ] } }
+        return {
+          bool: {
+            must: [
+              { bool: { should } }
+            ]
+          }
+        }
       }
     }
   },
@@ -174,6 +280,35 @@ module.exports = {
           properties: {
             meta: {
               properties: {
+                section: {
+                  properties: {
+                    meta: {
+                      properties: {
+                        title: {
+                          type: 'text',
+                          analyzer: 'german',
+                          fields: {
+                            keyword: {
+                              type: 'keyword',
+                              normalizer: 'republik_strict',
+                              ignore_above: 256
+                            }
+                          }
+                        },
+                        description: {
+                          type: 'text',
+                          analyzer: 'german'
+                        },
+                        kind: {
+                          type: 'keyword'
+                        },
+                        template: {
+                          type: 'keyword'
+                        }
+                      }
+                    }
+                  }
+                },
                 format: {
                   properties: {
                     meta: {
@@ -253,7 +388,8 @@ module.exports = {
           fields: {
             count: {
               type: 'token_count',
-              analyzer: 'standard'
+              analyzer: 'standard',
+              store: true
             },
             keyword: {
               type: 'keyword',
@@ -276,11 +412,18 @@ module.exports = {
               type: 'text',
               analyzer: 'german'
             },
+            shortTitle: {
+              type: 'text',
+              analyzer: 'german'
+            },
             description: {
               type: 'text',
               analyzer: 'german'
             },
             publishDate: {
+              type: 'date'
+            },
+            lastPublishedAt: {
               type: 'date'
             },
             scheduledAt: {
@@ -301,6 +444,10 @@ module.exports = {
             feed: {
               type: 'boolean'
             },
+            creditsString: {
+              type: 'text',
+              analyzer: 'german'
+            },
             credits: {
               ...mdastPartial
             },
@@ -313,6 +460,9 @@ module.exports = {
               type: 'keyword'
             },
             format: {
+              type: 'keyword'
+            },
+            section: {
               type: 'keyword'
             },
             kind: {

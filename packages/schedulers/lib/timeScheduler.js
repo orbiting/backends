@@ -1,4 +1,5 @@
 const Redlock = require('redlock')
+const Promise = require('bluebird')
 
 const moment = require('moment')
 
@@ -14,14 +15,22 @@ const init = async ({
   lockTtlSecs,
   runAtTime,
   runAtDaysOfWeek = [1, 2, 3, 4, 5, 6, 7],
-  runInitially = false
+  runInitially = false,
+  dryRun = false
 }) => {
   if (!name || !context || !runFunc || !lockTtlSecs || !runAtTime) {
-    throw new Error('missing input', { name, context, runFunc, lockTtlSecs, runAtTime })
+    console.error(`missing input, scheduler ${name}`, { name, context, runFunc, lockTtlSecs, runAtTime })
+    throw new Error(`missing input, scheduler ${name}`)
   }
   if (runAtDaysOfWeek.length < 1) {
     throw new Error('runAtDaysOfWeek must at least have one entry')
   }
+  if (dryRun) {
+    console.warn(`WARNING: dryRun flag enabled, scheduler "${name}"`)
+  }
+
+  const lockKey = `locks:${name}-scheduler`
+
   const { redis } = context
   if (!redis) {
     throw new Error('missing redis')
@@ -45,6 +54,7 @@ const init = async ({
     throw new Error(`lockTtlSecs must be at least ${Math.ceil(MIN_TTL_MS / 1000)})`, { lockTtlSecs })
   }
 
+  let timeout
   const scheduleNextRun = () => {
     const [runAtHour, runAtMinute] = runAtTime.split(':')
     if (!runAtHour || !runAtMinute) {
@@ -60,29 +70,44 @@ const init = async ({
       nextRunAt.add(24, 'hours')
     }
     const nextRunInMs = nextRunAt.diff(now) // ms
-    setTimeout(run, nextRunInMs).unref()
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+    timeout = setTimeout(run, nextRunInMs).unref()
     debug(`next run scheduled ${nextRunAt.fromNow()} at: ${nextRunAt}`)
   }
 
   const run = async () => {
     try {
-      const lock = await redlock()
-        .lock(`locks:${name}-scheduler`, 1000 * lockTtlSecs)
+      const lock = await redlock().lock(lockKey, 1000 * lockTtlSecs)
+
+      const extendLockInterval = setInterval(
+        () =>
+          lock.extend(1000 * lockTtlSecs)
+            .then(() => { debug('extending lock') })
+            .catch(e => { console.warn('extending lock failed', e) }),
+        1000 * lockTtlSecs * 0.9
+      )
 
       debug('run started')
 
-      const now = moment()
-      await runFunc({ now }, context)
+      try {
+        const now = moment()
+        await runFunc({ now, dryRun }, context)
+      } catch (e) {
+        console.error('scheduled run failed', e)
+      } finally {
+        // remove interval to extend lock in case runFunc takes longer than
+        // initial lock ttl.
+        clearInterval(extendLockInterval)
+      }
 
       // wait until other processes exceeded waiting time
       // then give up lock
-      setTimeout(
-        () => {
-          lock.unlock()
-            .then(lock => { debug('unlocked') })
-            .catch(e => { console.warn('unlocking failed', e) })
-        },
-        1.5 * MIN_TTL_MS
+      await Promise.delay(MIN_TTL_MS * 1.5).then(
+        () => lock.unlock()
+          .then(() => { debug('unlocked') })
+          .catch(e => { console.warn('unlocking failed', e) })
       )
 
       debug('run completed')
@@ -101,11 +126,23 @@ const init = async ({
     }
   }
 
+  const close = async () => {
+    const lock = await redlock().lock(lockKey, 1000 * lockTtlSecs * 2)
+    clearTimeout(timeout)
+    await lock.unlock()
+      .catch((err) => { console.error(err) })
+  }
+
   if (runInitially) {
     debug('run initially')
-    return run()
+    await run()
   } else {
-    return scheduleNextRun()
+    await scheduleNextRun()
+  }
+
+  return {
+    run,
+    close
   }
 }
 

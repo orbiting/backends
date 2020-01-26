@@ -1,26 +1,54 @@
+const { shuffle } = require('d3-array')
 const { transformUser } = require('@orbiting/backend-modules-auth')
 
-module.exports = async (_, args, {pgdb}) => {
-  const data = await pgdb.public.gsheets.findOneFieldOnly({name: 'employees'}, 'data')
-  if (!data) {
+module.exports = async (_, args, { pgdb }) => {
+  const employees = await pgdb.public.gsheets.findOneFieldOnly({ name: 'employees' }, 'data')
+  if (!employees) {
     return []
   }
-  const publishedData = data
-    .filter(d => d.published)
+  let result = employees.filter(e => e.published)
 
-  const userIds = publishedData
+  if (args.withGreeting) {
+    result = result.filter(d => d.greeting)
+  }
+
+  if (args.shuffle) {
+    const shuffledEmployees = shuffle(result)
+
+    if (!args.withBoosted) {
+      result = shuffledEmployees.slice(0, args.shuffle)
+    } else {
+      const boostedEmployees = shuffle([
+        shuffledEmployees.find(({ famous, gender }) => famous && gender === 'f'),
+        shuffledEmployees.find(({ famous, gender }) => famous && gender === 'f')
+      ])
+      const otherEmployees = shuffledEmployees.filter(e => !boostedEmployees.includes(e))
+
+      result = [
+        boostedEmployees.shift(),
+        otherEmployees.shift(),
+        boostedEmployees.shift()
+      ]
+        .concat(otherEmployees)
+        .filter(Boolean)
+        .filter((a, i, all) => all.findIndex(b => b.userId === a.userId) === i)
+        .slice(0, args.shuffle)
+    }
+  }
+
+  const userIds = result
     .map(e => e.userId)
     .filter(Boolean)
 
-  const users = await pgdb.public.users.find({
-    id: userIds
-  })
-    .then(result => result
-      .map(transformUser)
-    )
+  if (userIds.length === 0) {
+    return result
+  }
 
-  return publishedData.map(d => ({
-    ...d,
-    user: users.find(u => u.id === d.userId)
+  const users = await pgdb.public.users.find({ id: userIds })
+    .then(result => result.map(transformUser))
+
+  return result.map(e => ({
+    ...e,
+    user: users.find(u => u.id === e.userId)
   }))
 }

@@ -9,15 +9,16 @@ const {
   isEligible,
   isInCandidacy,
   isInCandidacyInCandidacyPhase,
-  isInCandidacyInElectionPhase
+  isInCandidacyInElectionPhase,
+  hasCards
 } = require('../../../lib/profile')
 const { Redirections: {
   upsert: upsertRedirection,
   delete: deleteRedirection
 } } = require('@orbiting/backend-modules-redirections')
 
-const { lib: { upload: { uploadPortrait } } } = require('@orbiting/backend-modules-assets')
-const ensureStringLength = require('../../../lib/ensureStringLength')
+const { lib: { Portrait } } = require('@orbiting/backend-modules-assets')
+const { ensureStringLength } = require('@orbiting/backend-modules-utils')
 
 const MAX_STATEMENT_LENGTH = 140
 const MAX_BIOGRAPHY_LENGTH = 2000
@@ -129,6 +130,12 @@ module.exports = async (_, args, context) => {
     }
   }
 
+  if (await hasCards(me._raw, pgdb)) {
+    if (args.hasPublicProfile === false) {
+      throw new Error(t('profile/cards/needed'))
+    }
+  }
+
   if (isListed || (isListed === undefined && me._raw.isListed)) {
     if (
       !(statement && statement.trim()) &&
@@ -149,7 +156,11 @@ module.exports = async (_, args, context) => {
     : undefined
 
   if (portrait) {
-    portraitUrl = await uploadPortrait(portrait)
+    portraitUrl = await Portrait.upload(portrait)
+    await Portrait.del(me._raw.portraitUrl)
+  } else if (portrait === null && me._raw.portraitUrl) {
+    await Portrait.del(me._raw.portraitUrl)
+    portraitUrl = null
   }
 
   if (username !== undefined && username !== null) {
@@ -166,10 +177,10 @@ module.exports = async (_, args, context) => {
     throw new Error(t('api/publicProfile/usernameNeeded'))
   }
   if (pgpPublicKey) {
-    if (containsPrivateKey(pgpPublicKey)) {
+    if (await containsPrivateKey(pgpPublicKey)) {
       throw new Error(t('api/pgpPublicKey/private'))
     }
-    if (!getKeyId(pgpPublicKey)) {
+    if (!await getKeyId(pgpPublicKey)) {
       throw new Error(t('api/pgpPublicKey/invalid'))
     }
   }

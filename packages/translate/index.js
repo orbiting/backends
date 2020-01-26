@@ -1,1 +1,4 @@
-module.exports = require('export-files')(__dirname)
+module.exports = {
+  TranslatedError: require('./TranslatedError'),
+  t: require('./t')
+}

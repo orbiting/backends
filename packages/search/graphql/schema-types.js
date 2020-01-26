@@ -48,9 +48,12 @@ input SearchFilterInput {
   hasDossier: Boolean
   # repoId
   format: String
+  # repoIds
+  formats: [String!]
   hasFormat: Boolean
   template: String
   publishedAt: DateRangeInput
+  scheduledAt: DateRangeInput
   userId: ID
   author: String
   discussion: Boolean
@@ -70,7 +73,7 @@ input SearchGenericFilterInput {
 
 type SearchConnection {
   nodes: [SearchNode!]!
-  aggregations: [SearchAggregation!]!
+  aggregations(keys: [String!]): [SearchAggregation!]!
   pageInfo: SearchPageInfo!
   totalCount: Int!
   # used to (anonymously) track subsequent searches
@@ -95,24 +98,13 @@ type SearchAggregation {
   key: String!
   count: Int
   label: String!
-  buckets: [Bucket!]
+  buckets: [SearchAggregationBucket!]
 }
 
-type Bucket {
+type SearchAggregationBucket {
   value: String!
   count: Int!
   label: String!
-}
-
-#union Bucket = SearchAggregationBucketString | SearchAggregationBucketBoolean
-
-type SearchAggregationBucketString {
-  value: String!
-  count: Int!
-}
-type SearchAggregationBucketBoolean {
-  value: Boolean!
-  count: Int!
 }
 
 type SearchPageInfo {

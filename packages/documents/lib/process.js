@@ -44,6 +44,24 @@ const processImageUrlsInContent = (mdast, fn) => {
           node.data[key] = fn(node.data[key])
         }
       }
+      if (typeof node.data.src === 'object') {
+        for (let key of embedImageKeys) {
+          if (node.data.src && node.data.src[key]) {
+            node.data.src[key] = fn(node.data.src[key])
+          }
+        }
+      }
+    }
+  })
+}
+
+const processEmbedsInContent = (mdast, fn) => {
+  visit(mdast, 'zone', node => {
+    if (node.data && node.identifier.indexOf('EMBED') > -1) {
+      const result = fn(node.data)
+      if (result !== undefined) {
+        node.data = result
+      }
     }
   })
 }
@@ -67,5 +85,6 @@ module.exports = {
   processMembersOnlyZonesInContent,
   processRepoImageUrlsInContent,
   processRepoImageUrlsInMeta,
-  processImageUrlsInContent
+  processImageUrlsInContent,
+  processEmbedsInContent
 }

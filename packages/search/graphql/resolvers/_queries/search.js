@@ -34,8 +34,9 @@ const { getIndexAlias, getDateIndex } = require('../../../lib/utils')
 
 const reduceFilters = filterReducer(documentSchema)
 const createElasticFilter = elasticFilterBuilder(documentSchema)
+const schemaAggregations = extractAggs(documentSchema)
 
-const getFieldList = require('graphql-list-fields')
+const getFieldList = require('@orbiting/graphql-list-fields')
 
 const createCache = require('../../../lib/cache')
 
@@ -46,14 +47,46 @@ const {
 
 const DEV = process.env.NODE_ENV && process.env.NODE_ENV !== 'production'
 
+const FUZZINESS_WORD_LENGTH_THRESHOLD = 5
+
 const deepMergeArrays = function (objValue, srcValue) {
   if (_.isArray(objValue)) {
     return objValue.concat(srcValue)
   }
 }
 
+const getSimpleQueryStringQuery = (searchTerm) => {
+  const sanitizedSearchTerm = searchTerm.trim()
+
+  if (sanitizedSearchTerm.match(/[+|\-"*()~]/g)) {
+    return sanitizedSearchTerm
+  }
+
+  // split search term and stitch together with fuzzy per word
+  const fuzzySearchTerm = sanitizedSearchTerm
+    .split(/\s/)
+    .map(term => {
+      if (term.length >= FUZZINESS_WORD_LENGTH_THRESHOLD * 2) {
+        return `${term}~2`
+      } else if (term.length >= FUZZINESS_WORD_LENGTH_THRESHOLD) {
+        return `${term}~1`
+      }
+
+      return term
+    })
+    .join(' ')
+
+  debug('getSimpleQueryStringQuery', {
+    searchTerm,
+    sanitizedSearchTerm,
+    fuzzySearchTerm
+  })
+
+  return `(${sanitizedSearchTerm}) | ("${sanitizedSearchTerm}") | (${fuzzySearchTerm})`
+}
+
 const createShould = function (
-  searchTerm, searchFilter, indicesList, user, scheduledAt
+  searchTerm, searchFilter, indicesList, user, scheduledAt, ignorePrepublished
 ) {
   const queries = []
 
@@ -62,8 +95,6 @@ const createShould = function (
     let must = {
       match_all: {}
     }
-
-    let should = []
 
     let fields = Object.keys(search.termFields)
 
@@ -78,36 +109,29 @@ const createShould = function (
     })
 
     if (searchTerm) {
-      must = [
-        { multi_match: {
-          query: searchTerm,
-          type: 'best_fields',
-          fields
-        } }
-      ]
+      const query = {
+        simple_query_string: {
+          query: getSimpleQueryStringQuery(searchTerm),
+          fields,
+          default_operator: 'AND',
+          analyzer: 'german'
+        }
+      }
 
-      should = [
-        { multi_match: {
-          query: searchTerm,
-          type: 'phrase',
-          fields
-        } },
-        { multi_match: {
-          query: searchTerm,
-          type: 'cross_fields',
-          fields
-        } }
-      ]
+      must = [
+        query,
+        search.functionScore && { function_score: search.functionScore(query) }
+      ].filter(Boolean)
     }
 
-    const rolbasedFilterArgs = Object.assign(
+    const rolebasedFilterArgs = Object.assign(
       {},
-      { scheduledAt },
+      { scheduledAt, ignorePrepublished },
       getFilterObj(searchFilter)
     )
 
     const rolebasedFilterDefault =
-      _.get(search, 'rolebasedFilter.default', () => ({}))(rolbasedFilterArgs)
+      _.get(search, 'rolebasedFilter.default', () => ({}))(rolebasedFilterArgs)
 
     const rolebasedFilter = Object.assign({}, rolebasedFilterDefault)
 
@@ -118,7 +142,7 @@ const createShould = function (
           search,
           'rolebasedFilter.editor',
           () => rolebasedFilterDefault
-        )(rolbasedFilterArgs)
+        )(rolebasedFilterArgs)
       )
     }
 
@@ -135,7 +159,6 @@ const createShould = function (
     queries.push({
       bool: {
         must,
-        should,
         filter
       }
     })
@@ -151,7 +174,7 @@ const createHighlight = (indicesList) => {
   indicesList.forEach(({ search }) => {
     Object.keys(search.termFields).forEach((field) => {
       if (search.termFields[field].highlight) {
-        fields[field] = search.termFields[field].highlight
+        fields[field] = { ...search.termFields[field].highlight, order: 'score' }
       }
     })
   })
@@ -159,26 +182,27 @@ const createHighlight = (indicesList) => {
   return { fields }
 }
 
-const defaultExcludes = [ 'contentString', 'resolved' ]
+const defaultExcludes = ['contentString', 'resolved']
 const createQuery = (
-  searchTerm, filter, sort, indicesList, user, scheduledAt, withoutContent, withoutAggs
+  searchTerm, filter, sort, indicesList, user, scheduledAt, withoutChildren, withoutAggs, ignorePrepublished
 ) => ({
   query: {
     bool: {
       should: createShould(
-        searchTerm, filter, indicesList, user, scheduledAt
+        searchTerm, filter, indicesList, user, scheduledAt, ignorePrepublished
       )
     }
   },
   sort: createSort(sort),
   highlight: createHighlight(indicesList),
-  ...withoutAggs ? {} : { aggs: extractAggs(documentSchema) },
+  stored_fields: ['contentString.count'],
+  ...withoutAggs ? {} : { aggs: schemaAggregations },
   _source: {
-    'excludes': [
+    excludes: [
       ...defaultExcludes,
-      ...withoutContent
-        ? [ 'content.children' ]
-        : [ ]
+      ...withoutChildren
+        ? ['content.children']
+        : []
     ]
   }
 })
@@ -188,6 +212,8 @@ const mapHit = (hit) => {
   const entity = type === 'User'
     ? transformUser(hit._source)
     : hit._source
+
+  Object.assign(entity, { _storedFields: hit.fields })
 
   const highlights = []
   Object.keys(hit.highlight || {}).forEach(path => {
@@ -298,14 +324,14 @@ const parseOptions = (options) => {
 
 const MAX_NODES = 10000 // Limit, but exceedingly high
 
-const getFirst = (first, filter, user, recursive) => {
+const getFirst = (first, filter, user, recursive, unrestricted) => {
   // we only restrict the nodes array
   // making totalCount always available
   // querying a single document by path is always allowed
   const path = getFilterValue(filter, 'path')
   const repoId = getFilterValue(filter, 'repoId')
   const oneRepoId = repoId && (!Array.isArray(repoId) || repoId.length === 1)
-  if (DOCUMENTS_RESTRICT_TO_ROLES && !recursive && !path && !oneRepoId) {
+  if (DOCUMENTS_RESTRICT_TO_ROLES && !recursive && !path && !oneRepoId && !unrestricted) {
     const roles = DOCUMENTS_RESTRICT_TO_ROLES.split(',')
     if (!userIsInRoles(user, roles)) {
       return 0
@@ -322,7 +348,7 @@ const getFirst = (first, filter, user, recursive) => {
 const getIndicesList = (filter) => {
   const limitType = getFilterValue(filter, 'type')
   const typeFilter = limitType
-    ? ({type}) => type === limitType
+    ? ({ type }) => type === limitType
     : Boolean
   const searchableFilter = ({ searchable = true }) => searchable
 
@@ -331,7 +357,10 @@ const getIndicesList = (filter) => {
 
 const hasFieldRequested = (fieldName, GraphQLResolveInfo) => {
   const fields = getFieldList(GraphQLResolveInfo, true)
-  return !!fields.find(field => field.indexOf(`.${fieldName}`) > -1)
+  return !!fields.find(field => (
+    field === fieldName ||
+    field.split('.').find(f => f === fieldName)
+  ))
 }
 
 const search = async (__, args, context, info) => {
@@ -342,7 +371,9 @@ const search = async (__, args, context, info) => {
     after,
     before,
     recursive = false,
+    unrestricted = false,
     scheduledAt,
+    ignorePrepublished,
     trackingId = uuid(),
     withoutContent: _withoutContent,
     withoutRelatedDocs = false,
@@ -350,12 +381,14 @@ const search = async (__, args, context, info) => {
   } = args
 
   // detect if Document.content is requested
-  let withoutContent
-  if (info) {
-    withoutContent = _withoutContent !== undefined ||
-      !hasFieldRequested('Document.content', info)
-  } else {
-    withoutContent = _withoutContent || false
+  let withoutContent = _withoutContent || false
+  let withoutChildren = withoutContent
+  if (info && _withoutContent === undefined) {
+    withoutContent = !hasFieldRequested('content', info)
+    withoutChildren = (
+      withoutContent &&
+      !hasFieldRequested('children', info)
+    )
   }
 
   const options = after
@@ -389,19 +422,19 @@ const search = async (__, args, context, info) => {
 
   debug('filter', JSON.stringify(filter))
 
-  const first = getFirst(_first, filter, user, recursive)
+  const first = getFirst(_first, filter, user, recursive, unrestricted)
 
   const indicesList = getIndicesList(filter)
   const query = {
     index: indicesList.map(({ name }) => getIndexAlias(name, 'read')),
     from,
     size: first,
-    body: createQuery(search, filter, sort, indicesList, user, scheduledAt, withoutContent, withoutAggs)
+    body: createQuery(search, filter, sort, indicesList, user, scheduledAt, withoutChildren, withoutAggs, ignorePrepublished)
   }
   debug('ES query', JSON.stringify(query))
 
   let result = await cache.get(query)
-  let cacheHIT = !!result
+  const cacheHIT = !!result
   if (!result) {
     result = await elastic.search(query)
     await cache.set(query, result, options)
@@ -440,48 +473,47 @@ const search = async (__, args, context, info) => {
   if (!recursive && !withoutRelatedDocs && (!filter.type || filter.type === 'Document')) {
     await addRelatedDocs({
       connection: response,
-      context
+      context,
+      withoutContent
     })
   }
 
   if (!recursive && SEARCH_TRACK) {
-    try {
-      const took = cacheHIT ? 0 : result.took
-      const total = result.hits.total
-      const hits = result.hits.hits
-        .map(hit => _.omit(hit, '_source'))
-      const aggs = result.aggregations
+    const took = cacheHIT ? 0 : result.took
+    const total = result.hits.total
+    const hits = result.hits.hits
+      .map(hit => _.omit(hit, '_source'))
+    const aggs = result.aggregations
 
-      const filters = options.filters
-        ? options.filters.map(filter => {
-          if (typeof filter.value !== 'string') {
-            filter.value = JSON.stringify(filter.value)
-          }
-
-          return filter
-        })
-        : []
-
-      await elastic.index({
-        index: getDateIndex('searches'),
-        type: 'Search',
-        body: {
-          date: new Date(),
-          trackingId,
-          roles: user && user.roles,
-          took,
-          cache: cacheHIT,
-          options: Object.assign({}, options, { filters }),
-          query,
-          total,
-          hits,
-          aggs
+    const filters = options.filters
+      ? options.filters.map(filter => {
+        if (typeof filter.value !== 'string') {
+          filter.value = JSON.stringify(filter.value)
         }
+
+        return filter
       })
-    } catch (err) {
-      // Log but do not fail
+      : []
+
+    // not await tracking
+    elastic.index({
+      index: getDateIndex('searches'),
+      type: 'Search',
+      body: {
+        date: new Date(),
+        trackingId,
+        roles: user && user.roles,
+        took,
+        cache: cacheHIT,
+        options: Object.assign({}, options, { filters }),
+        query,
+        total,
+        hits,
+        aggs
+      }
+    }).catch(err => {
       console.error('search, tracking', err)
-    }
+    })
   }
 
   return response

@@ -1,5 +1,5 @@
 const search = require('@orbiting/backend-modules-search/graphql/resolvers/_queries/search')
-const getFieldList = require('graphql-list-fields')
+const getFieldList = require('@orbiting/graphql-list-fields')
 
 module.exports = {
   async document (result, args, context, info) {
@@ -13,6 +13,7 @@ module.exports = {
     const withoutContent = fields.indexOf('content') === -1
     const relatedDocsNamespaces = [
       'meta.series',
+      'meta.section',
       'meta.format',
       'meta.dossier',
       'meta.discussion'

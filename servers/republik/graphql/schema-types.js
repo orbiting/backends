@@ -1,11 +1,5 @@
 module.exports = `
 
-type Credential {
-  description: String!
-  verified: Boolean!
-  isListed: Boolean!
-}
-
 enum AccessRole {
   ADMIN
   EDITOR
@@ -13,11 +7,12 @@ enum AccessRole {
   PUBLIC
 }
 
+# deprecated: use ImageProperties instead
 enum PortraitSize {
   # 384x384
-  SMALL @deprecated(reason: "use ImageProperties instead")
+  SMALL @deprecated(reason: "use \`ImageProperties\` instead")
   # 1000x1000
-  SHARE @deprecated(reason: "use ImageProperties instead")
+  SHARE @deprecated(reason: "use \`ImageProperties\` instead")
   # original, in color
   # not exposed
   # ORIGINAL
@@ -33,19 +28,17 @@ input ImageProperties {
 }
 
 extend type User {
+  slug: String
+
   address: Address
   hasAddress: Boolean
-  credentials: [Credential]!
+  credentials: [Credential!]!
   badges: [Badge]
-  comments(
-    after: String
-    first: Int
-  ): CommentConnection!
   isEligibleForProfile: Boolean
 
   # url to portrait image
   portrait(
-    size: PortraitSize @deprecated(reason: "use ImageProperties instead"),
+    size: PortraitSize # deprecated: "use ImageProperties instead"
     properties: ImageProperties
   ): String
 
@@ -73,9 +66,6 @@ extend type User {
   sequenceNumber: Int
 
   newsletterSettings: NewsletterSettings!
-
-  defaultDiscussionNotificationOption: DiscussionNotificationOption
-  discussionNotificationChannels: [DiscussionNotificationChannel!]!
 }
 
 type NewsletterSettings {
@@ -97,6 +87,13 @@ type WebNotification {
   url: String!
   # see https://developer.mozilla.org/en-US/docs/Web/API/Notification/tag
   tag: String!
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
 }
 
 type UserConnection {
@@ -133,7 +130,6 @@ enum Badge {
 enum NewsletterName {
   DAILY
   WEEKLY
-  FEUILLETON
   PROJECTR
 }
 
@@ -173,186 +169,20 @@ type Update {
   socialMediaImage: String
 }
 
+type MediaResponse {
+  medium: String
+  publishDate: String
+  title: String
+  url: String
+}
+
 type Employee {
   group: String
   subgroup: String
   name: String
   title: String
+  greeting: String
   user: User
-}
-
-enum Permission {
-  ALLOWED
-  ENFORCED
-  FORBIDDEN
-}
-
-enum DiscussionNotificationOption {
-  MY_CHILDREN
-  ALL
-  NONE
-}
-enum DiscussionNotificationChannel {
-  WEB
-  EMAIL
-  APP
-}
-
-type DiscussionRules {
-  # max length of a comments content
-  maxLength: Int
-  # min milliseconds between comments of one user
-  minInterval: Int
-  anonymity: Permission!
-  disableTopLevelComments: Boolean
-}
-
-type DiscussionPreferences {
-  anonymity: Boolean!
-  credential: Credential
-  notifications: DiscussionNotificationOption!
-}
-input DiscussionPreferencesInput {
-  anonymity: Boolean
-  credential: String
-  notifications: DiscussionNotificationOption
-}
-
-enum DiscussionOrder {
-  DATE
-  VOTES
-  HOT
-  REPLIES
-}
-
-type PageInfo {
-  # If endCursor is null and hasNextPage is true
-  # this node would have child nodes.
-  # Get them with this nodes id as parentId.
-  #
-  # If endCursor is not null and hasNextPage is true
-  # there exist more child nodes than currently delivered.
-  # Get them with endCursor as after.
-  endCursor: String
-  # If endCursor is null and hasNextPage is true
-  # this node would have child nodes.
-  # Get them with this nodes id as parentId.
-  #
-  # If endCursor is not null and hasNextPage is true
-  # there exist more nodes than currently delivered.
-  # Get them with endCursor as after.
-  hasNextPage: Boolean
-}
-type CommentConnection {
-  id: ID!
-  # recursive down the tree
-  totalCount: Int!
-  directTotalCount: Int
-  pageInfo: PageInfo
-  nodes: [Comment]!
-  focus: Comment
-}
-
-type Discussion {
-  id: ID!
-  title: String
-  documentPath: String
-  closed: Boolean!
-  collapsable: Boolean!
-  comments(
-    # get children of this parent
-    parentId: ID
-    # Get next page after cursor.
-    # If after is specified parentId, focusId,
-    # orderBy and orderDirection are ignored
-    after: String
-    # Limit result to num of first elements in respect
-    # to orderBy and orderDirection. Please note that the
-    # number of returned elements might exceed first if the
-    # first elements are deep inside the tree, all coresponding
-    # parents are returned as well.
-    first: Int
-    # sort comments so that focus and it's parents are on top
-    # focus comment might not be returned in first query if
-    # it's too deep nested but it's always returned on
-    # the root CommentConnection
-    focusId: ID
-    orderBy: DiscussionOrder
-    orderDirection: OrderDirection
-    # if set, the tree is returned flat instead of nested up upon
-    # the specified depth
-    flatDepth: Int
-  ): CommentConnection!
-  rules: DiscussionRules!
-  # only null for guests (not signedIn)
-  userPreference: DiscussionPreferences
-  displayAuthor: DisplayUser
-  # date the user is allowed to submit new comments
-  # if null the user can submit immediately
-  userWaitUntil: DateTime
-  userCanComment: Boolean!
-}
-
-type DisplayUser {
-  id: ID!
-  name: String!
-  credential: Credential
-  profilePicture: String
-  anonymity: Boolean!
-  username: String
-}
-
-type Preview {
-  string: String!
-  more: Boolean!
-}
-
-enum CommentVote {
-  UP
-  DOWN
-}
-
-type Comment {
-  discussion: Discussion!
-  id: ID!
-  parent: Comment
-  parentIds: [ID!]!
-  comments: CommentConnection!
-  # mdast
-  content: JSON
-  text: String
-  preview(
-    # How many chars a preview string should contain at the most
-    length: Int
-  ): Preview
-  published: Boolean!
-  adminUnpublished: Boolean
-  upVotes: Int!
-  downVotes: Int!
-  # score based on votes
-  score: Int!
-  # admin/mod only
-  author: User
-  displayAuthor: DisplayUser!
-  userVote: CommentVote
-  userCanEdit: Boolean
-  createdAt: DateTime!
-  updatedAt: DateTime!
-
-  depth: Int!
-  _depth: Int!
-  hotness: Float!
-}
-
-enum MutationType {
-  CREATED
-  UPDATED
-  DELETED
-}
-
-type CommentUpdate {
-  mutation: MutationType!
-  node: Comment!
 }
 
 type Greeting {
@@ -368,6 +198,22 @@ type MembershipStats {
   # number of distinct users with an active memberships
   count: Int!
   monthlys: [MonthlyMembershipStat!]!
+  periods(
+    minEndDate: Date!
+    maxEndDate: Date!
+    # filter by membershipTypes
+    # default: [ABO]
+    membershipTypes: [String!]
+  ): MembershipPeriodStats!
+  """
+  Returns membership evolution in monthly buckets.
+  """
+  evolution(
+    "Minimum month (YYYY-MM)"
+    min: YearMonthDate!
+    "Maximum month (YYYY-MM)"
+    max: YearMonthDate!
+  ): MembershipStatsEvolution!
 }
 type MemberStats {
   count: Int!
@@ -380,4 +226,97 @@ type MonthlyMembershipStat {
   renewedCount: Int!
   renewedRatio: Float!
 }
+
+type MembershipPeriodStats {
+  # combination: minEndDate-maxEndDate-membershipTypes
+  id: ID!
+  totalMemberships: Int!
+  # any day that an action occurred that affected a period that ended within the specified end dates
+  days: [MembershipPeriodStatsDay!]!
+}
+
+type MembershipPeriodStatsDay {
+  # combination: dayDate-membershipTypes
+  id: ID!
+  date: Date!
+  cancelCount: Int!
+  prolongCount: Int!
+}
+
+type StatementUserConnection {
+  totalCount: Int!
+  pageInfo: PageInfo
+  nodes: [StatementUser!]!
+}
+type StatementUser {
+  id: ID!
+  name: String!
+  slug: String
+  portrait(
+    properties: ImageProperties
+  ): String
+  statement: String
+  credentials: [Credential!]!
+  updatedAt: DateTime!
+  sequenceNumber: Int
+  hasPublicProfile: Boolean!
+}
+
+type RevenueStats {
+  """
+  Returns surplus, an amount of money payments exceeds their pledge values ("revenue").
+  Example: [pledge total] - [memerships] - [goodies] = [surplus].
+  """
+  surplus(
+    min: DateTime!
+    max: DateTime
+  ): RevenueStatsSurplus!
+}
+
+type RevenueStatsSurplus {
+  total: Int!
+  updatedAt: DateTime!
+}
+
+type MembershipStatsEvolution {
+  buckets: [MembershipStatsEvolutionBucket!]
+  updatedAt: DateTime!
+}
+
+type MembershipStatsEvolutionBucket {
+  "Bucket key (YYYY-MM)"
+  key: String!
+
+  "Amount of active memberships at beginning of month"
+  activeBeginningOfMonth: Int!
+
+  "Amount of memberships gained during month"
+  gaining: Int!
+  "Amount of memberships gained during month with donation"
+  gainingWithDonation: Int!
+  "Amount of memberships gained during month without donation"
+  gainingWithoutDonation: Int!
+
+  "Amount of memberships ending during month"
+  ending: Int!
+  "Amount of memberships ending during month but still prolongable"
+  prolongable: Int!
+  "Amount of memberships ended during month due to expiration"
+  expired: Int!
+  "Amount of memberships ended during month due to cancellation"
+  cancelled: Int!
+
+  "Amount of active memberships at end of month"
+  activeEndOfMonth: Int!
+  "Amount of active memberships at end of month with a donation"
+  activeEndOfMonthWithDonation: Int!
+  "Amount of active memberships at end of month without a donation"
+  activeEndOfMonthWithoutDonation: Int!
+
+  "Amount of all memberships pending at end of month (ending but still prolongable)"
+  pending: Int!
+  "Amount of all subscriptions (e.g. MONTHLY_ABO) pending at end of month (ending but still prolongable)"
+  pendingSubscriptionsOnly: Int!
+}
+
 `

@@ -3,11 +3,13 @@ const moment = require('moment')
 const Promise = require('bluebird')
 
 const { ensureSignedIn } = require('@orbiting/backend-modules-auth')
+const { hasUserActiveMembership } = require('@orbiting/backend-modules-utils')
 
 const cancelMembership = require('./cancelMembership')
 const createCache = require('../../../lib/cache')
 
-module.exports = async (_, args, {pgdb, req, t, mail: {enforceSubscriptions}}) => {
+module.exports = async (_, args, context) => {
+  const { pgdb, req, t, mail: { enforceSubscriptions } } = context
   ensureSignedIn(req)
 
   let pledgerId
@@ -34,12 +36,7 @@ module.exports = async (_, args, {pgdb, req, t, mail: {enforceSubscriptions}}) =
 
     pledgerId = membership.userId
 
-    const activeMemberships = await transaction.public.memberships.find({
-      userId: req.user.id,
-      active: true
-    })
-
-    const hasActiveMembership = activeMemberships.length > 0
+    const hasActiveMembership = await hasUserActiveMembership(req.user, transaction)
 
     // transfer new membership, and remove voucherCode
     await transaction.public.memberships.updateOne(
@@ -70,12 +67,16 @@ module.exports = async (_, args, {pgdb, req, t, mail: {enforceSubscriptions}}) =
         beginDate,
         endDate
       })
+
+      const cache = createCache({ prefix: `User:${req.user.id}` }, context)
+      cache.invalidate()
     } else {
       // Cancel active memberships.
       await Promise.map(
         await transaction.public.memberships.find({
           'id !=': membership.id,
           userId: req.user.id,
+          active: true,
           renew: true
         }),
         m => cancelMembership(
@@ -84,17 +85,15 @@ module.exports = async (_, args, {pgdb, req, t, mail: {enforceSubscriptions}}) =
             id: m.id,
             details: {
               type: 'SYSTEM',
-              reason: 'Auto Cancellation (claimMembership)'
-            },
-            suppressNotifications: true
+              reason: 'Auto Cancellation (claimMembership)',
+              suppressConfirmation: true,
+              suppressWinback: true
+            }
           },
-          { req, t, pgdb: transaction }
+          { ...context, pgdb: transaction }
         )
       )
     }
-
-    const cache = createCache({ prefix: `User:${req.user.id}` })
-    cache.invalidate()
 
     // commit transaction
     await transaction.transactionCommit()

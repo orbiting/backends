@@ -1,50 +1,103 @@
 const { Roles } = require('@orbiting/backend-modules-auth')
-const logger = console
+const debug = require('debug')('crowdfundings:importPostfinanceCSV')
 const matchPayments = require('../../../lib/payments/matchPayments')
-const {dsvFormat} = require('d3-dsv')
+const { dsvFormat } = require('d3-dsv')
 const csvParse = dsvFormat(';').parse
 
-const parsePostfinanceExport = (inputFile) => {
-  // sanitize input
-  // trash first 5 lines as they contain another table with (Buchungsart, Konto, etc)
-  // keys to lower case
-  // trash uninteresting columns
-  // parse columns
-  // extract mitteilung
-  const includeColumns = ['Buchungsdatum', 'Valuta', 'Avisierungstext', 'Gutschrift']
-  const parseDate = ['Buchungsdatum', 'Valuta']
-  const parseAmount = ['Gutschrift']
-
-  return csvParse(inputFile.split(/\r\n/).slice(3).join('\n'))
-    .filter(row => row.Gutschrift) // trash rows without gutschrift (such as lastschrift and footer)
-    .filter(row => !/^EINZAHLUNGSSCHEIN/g.exec(row.Avisierungstext)) // trash useless EINZAHLUNGSSCHEIN
-    .filter(row => !/^GUTSCHRIFT E-PAYMENT TRANSAKTION POSTFINANCE CARD/g.exec(row.Avisierungstext)) // trash PF CARD
-    .filter(row => !/^GUTSCHRIFT VON FREMDBANK (.*?) AUFTRAGGEBER: STRIPE/g.exec(row.Avisierungstext)) // trash stripe payments
-    .map(row => {
-      let newRow = {}
-      Object.keys(row).forEach(key => {
-        const value = row[key]
-        if (includeColumns.indexOf(key) > -1) {
-          const newKey = key.toLowerCase()
-          if (parseDate.indexOf(key) > -1) {
-            newRow[newKey] = new Date(value) // dates are ISO Dates (2017-08-17)
-          } else if (parseAmount.indexOf(key) > -1) {
-            newRow[newKey] = parseInt(parseFloat(value) * 100)
-          } else {
-            if (key === 'Avisierungstext') {
-              try {
-                newRow['mitteilung'] = /.*?MITTEILUNGEN:.*?\s([A-Za-z0-9]{6})(\s.*?|$)/g.exec(value)[1]
-              } catch (e) {
-                // console.log("Cloud not extract mitteilung from row:")
-                // console.log(row)
-              }
-            }
-            newRow[newKey] = value
-          }
+const parsePostfinanceExport = async (inputFile, pgdb) => {
+  const fields = [
+    {
+      name: 'buchungsdatum', // field in database
+      pattern: /^Buchungsdatum/, // pattern to match row keys
+      transform: v => new Date(v)
+    },
+    {
+      name: 'valuta',
+      pattern: /^Valuta/,
+      transform: v => new Date(v)
+    },
+    {
+      name: 'avisierungstext',
+      pattern: /^Avisierungstext/
+    },
+    {
+      name: 'mitteilung',
+      pattern: /^Avisierungstext/,
+      transform: v => {
+        if (!v) {
+          throw new Error('"Avisierungstext" not available')
         }
+
+        const match = v.match(/.*?MITTEILUNGEN:.*?\s([A-Za-z0-9]{6})(\s.*?|$)/)
+        return match ? match[1] : null
+      }
+    },
+    {
+      name: 'gutschrift',
+      pattern: /^Gutschrift/,
+      transform: v => {
+        if (!v) {
+          throw new Error('"Gutschrift" not available')
+        }
+
+        return parseInt(parseFloat(v) * 100)
+      }
+    }
+  ]
+
+  const delimitedFile = inputFile.split(/\r\n/)
+
+  const iban = delimitedFile.slice(0, 5).reduce((acc, row) => {
+    const parsedRow = row.match(/^Konto:;([A-Z0-9]{5,34})/)
+
+    if (!parsedRow) {
+      return acc
+    }
+
+    return parsedRow[1]
+  }, false)
+
+  console.log(iban)
+
+  if (!iban) {
+    throw new Error('Unable to find IBAN in provided file.')
+  }
+
+  const bankAccount = await pgdb.public.bankAccounts.findOne({ iban })
+  if (!bankAccount) {
+    throw new Error(
+      `Unable to determine bank account for IBAN "${iban}" in provided file.`
+    )
+  }
+
+  return csvParse(delimitedFile.slice(3).join('\n'))
+    .filter(row => !/^GUTSCHRIFT E-PAYMENT TRANSAKTION POSTFINANCE CARD/g.exec(row.Avisierungstext)) // trash PF CARD
+    .filter(row => !/^GUTSCHRIFT VON FREMDBANK AUFTRAGGEBER: (STRIPE|PAYPAL)/ig.exec(row.Avisierungstext)) // trash stripe payments
+    .map(row => {
+      const parsed = {}
+
+      Object.keys(row).forEach(key => {
+        fields.forEach(({ name, pattern, transform = v => v }) => {
+          const value = row[key]
+
+          if (key.match(pattern)) {
+            try {
+              parsed[name] = transform(value)
+            } catch (e) {
+              // Remove row hereafter
+              console.warn(e.message)
+              debug(e.message, { row })
+              parsed.remove = true
+            }
+          }
+        })
       })
-      return newRow
+
+      parsed.bankAccountId = bankAccount.id
+
+      return parsed
     })
+    .filter(row => !row.remove)
 }
 
 const LOG_FAILED_INSERTS = false
@@ -55,8 +108,8 @@ const insertPayments = async (paymentsInput, tableName, pgdb) => {
   await Promise.all(
     paymentsInput.map(payment => {
       return pgdb.public[tableName].insert(payment)
-        .then(() => { return {payment, status: 'resolved'} })
-        .catch(e => { numFailed += 1; return {payment, e, status: 'rejected'} })
+        .then(() => { return { payment, status: 'resolved' } })
+        .catch(e => { numFailed += 1; return { payment, e, status: 'rejected' } })
     })
   ).then(results => {
     if (LOG_FAILED_INSERTS) {
@@ -75,13 +128,13 @@ const insertPayments = async (paymentsInput, tableName, pgdb) => {
   return numPaymentsBefore
 }
 
-module.exports = async (_, args, {pgdb, req, t}) => {
+module.exports = async (_, args, { pgdb, req, t, redis }) => {
   Roles.ensureUserHasRole(req.user, 'accountant')
   const { csv } = args
 
   const input = Buffer.from(csv, 'base64').toString()
 
-  const paymentsInput = parsePostfinanceExport(input)
+  const paymentsInput = await parsePostfinanceExport(input, pgdb)
   if (paymentsInput.length === 0) {
     return 'input empty. done nothing.'
   }
@@ -98,7 +151,7 @@ module.exports = async (_, args, {pgdb, req, t}) => {
       numMatchedPayments,
       numUpdatedPledges,
       numPaymentsSuccessful
-    } = await matchPayments(transaction, t)
+    } = await matchPayments(transaction, t, redis)
 
     await transaction.transactionCommit()
 
@@ -113,7 +166,7 @@ num payments successfull: ${numPaymentsSuccessful}
     return result
   } catch (e) {
     await transaction.transactionRollback()
-    logger.info('transaction rollback', { req: req._log(), args, error: e })
+    console.info('transaction rollback', { req: req._log(), args, error: e })
     throw e
   }
 }

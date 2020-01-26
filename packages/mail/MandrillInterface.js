@@ -1,5 +1,4 @@
 const fetch = require('isomorphic-unfetch')
-const checkEnv = require('check-env')
 const { NewsletterMemberMailError } = require('./errors')
 
 const {
@@ -7,9 +6,6 @@ const {
 } = process.env
 
 const MandrillInterface = ({ logger }) => {
-  checkEnv([
-    'MANDRILL_API_KEY'
-  ])
   return {
     buildApiUrl (path) {
       return `https://mandrillapp.com/api/1.0${path}`
@@ -26,16 +22,19 @@ const MandrillInterface = ({ logger }) => {
         })
       })
     },
+    isUsable () {
+      return !!(MANDRILL_API_KEY && MANDRILL_API_KEY.length)
+    },
     async send (message, templateName, templateContent) {
       const url = this.buildApiUrl(
         templateName
-        ? '/messages/send-template.json'
-        : '/messages/send.json')
+          ? '/messages/send-template.json'
+          : '/messages/send.json')
       try {
         const body = { message }
         if (templateName) {
-          body['template_name'] = templateName
-          body['template_content'] = templateContent
+          body.template_name = templateName
+          body.template_content = templateContent
         }
         const response = await this.fetchAuthenticated('POST', url, body)
         const json = await response.json()

@@ -1,5 +1,17 @@
-const debug = require('debug')('search:lib:Documents')
 const _ = require('lodash')
+const debug = require('debug')('search:lib:Documents')
+const isUUID = require('is-uuid')
+const visit = require('unist-util-visit')
+
+const {
+  resolve: {
+    extractUserUrl,
+    getRepoId
+  },
+  meta: {
+    getWordsPerMinute
+  }
+} = require('@orbiting/backend-modules-documents/lib')
 
 const {
   termEntry,
@@ -22,8 +34,7 @@ const {
 
 const createCache = require('./cache')
 
-// mean German, see http://iovs.arvojournals.org/article.aspx?articleid=2166061
-const WORDS_PER_MIN = 180
+const { getIndexAlias, mdastContentToString } = require('./utils')
 
 const SHORT_DURATION_MINS = 5
 const MIDDLE_DURATION_MINS = 15
@@ -33,7 +44,12 @@ const { GITHUB_LOGIN, GITHUB_ORGS } = process.env
 
 const indexType = 'Document'
 
-const getDocumentId = ({repoId, commitId, versionName}) =>
+const indexRef = {
+  index: getIndexAlias(indexType.toLowerCase(), 'write'),
+  type: indexType
+}
+
+const getDocumentId = ({ repoId, commitId, versionName }) =>
   Buffer.from(`${repoId}/${commitId}/${versionName}`).toString('base64')
 
 const documentIdParser = value => {
@@ -41,9 +57,15 @@ const documentIdParser = value => {
 
   // decoded = <org>/<repoName>/<commitId>/<versionName>
   //                 ^^^^^^^^^^
-  const repoName = decoded.split('/').slice(1, 2)
+  const repoName =
+    decoded.split('/')[1] ||
+    value.split('/')[1] // fallback for plain repo ids
 
   return getResourceUrls(repoName)
+}
+
+const documentIdsParser = values => {
+  return values.reduce((all, value) => all.concat(documentIdParser(value)), [])
 }
 
 const getResourceUrls = repoName => {
@@ -78,9 +100,22 @@ const schema = {
     agg: valueCountAggBuilder('meta.format'),
     parser: documentIdParser
   },
+  formats: {
+    criteria: termCriteriaBuilder('meta.format'),
+    parser: documentIdsParser
+  },
   hasFormat: {
     criteria: hasCriteriaBuilder('meta.format'),
     agg: existsCountAggBuilder('meta.format')
+  },
+  section: {
+    criteria: termCriteriaBuilder('meta.section'),
+    agg: valueCountAggBuilder('meta.section'),
+    parser: documentIdParser
+  },
+  hasSection: {
+    criteria: hasCriteriaBuilder('meta.section'),
+    agg: existsCountAggBuilder('meta.section')
   },
   kind: termEntry('resolved.meta.format.meta.kind'),
   repoId: {
@@ -99,9 +134,8 @@ const schema = {
     criteria: termCriteriaBuilder('milestoneCommitId')
   },
   userId: {
-    ...termEntry('meta.credits.url'),
-    parser: (value) => `/~${value}`,
-    noIndexTypeImplication: true
+    criteria: termCriteriaBuilder('meta.credits.url'),
+    parser: (value) => `/~${value}`
   },
   publishedAt: {
     criteria: dateRangeCriteriaBuilder('meta.publishDate'),
@@ -113,9 +147,7 @@ const schema = {
   },
   feed: countEntry('meta.feed'),
   discussion: {
-    criteria: hasCriteriaBuilder('meta.discussionId'),
-    agg: valueCountAggBuilder('meta.discussionId'),
-    noIndexTypeImplication: true
+    criteria: termCriteriaBuilder('meta.discussionId')
   },
   audioSource: {
     criteria: hasCriteriaBuilder('meta.audioSource'),
@@ -131,38 +163,47 @@ const schema = {
     options: {
       filter: {
         bool: {
-          must: { exists: {
-            field: 'contentString.count'
-          } },
-          must_not: { terms: {
-            'meta.template': ['format', 'discussion']
-          } }
+          must: {
+            exists: {
+              field: 'contentString.count'
+            }
+          },
+          must_not: {
+            terms: {
+              'meta.template': ['format', 'discussion']
+            }
+          }
         }
       },
       ranges: [
-        { key: 'short',
-          to: WORDS_PER_MIN * SHORT_DURATION_MINS },
-        { key: 'medium',
-          from: WORDS_PER_MIN * SHORT_DURATION_MINS,
-          to: WORDS_PER_MIN * MIDDLE_DURATION_MINS },
-        { key: 'long',
-          from: WORDS_PER_MIN * MIDDLE_DURATION_MINS,
-          to: WORDS_PER_MIN * LONG_DURATION_MINS },
-        { key: 'epic',
-          from: WORDS_PER_MIN * LONG_DURATION_MINS }
+        {
+          key: 'short',
+          to: getWordsPerMinute() * SHORT_DURATION_MINS
+        },
+        {
+          key: 'medium',
+          from: getWordsPerMinute() * SHORT_DURATION_MINS,
+          to: getWordsPerMinute() * MIDDLE_DURATION_MINS
+        },
+        {
+          key: 'long',
+          from: getWordsPerMinute() * MIDDLE_DURATION_MINS,
+          to: getWordsPerMinute() * LONG_DURATION_MINS
+        },
+        {
+          key: 'epic',
+          from: getWordsPerMinute() * LONG_DURATION_MINS
+        }
       ]
     }
   }
 }
 
-const mdastToString = require('mdast-util-to-string')
-const { mdastFilter } = require('./utils.js')
-
 const getElasticDoc = (
   { doc, commitId, versionName, milestoneCommitId, resolved }
 ) => {
   const meta = doc.content.meta
-  const id = getDocumentId({repoId: meta.repoId, commitId, versionName})
+  const id = getDocumentId({ repoId: meta.repoId, commitId, versionName })
   return {
     __type: indexType,
     __sort: {
@@ -172,92 +213,61 @@ const getElasticDoc = (
     commitId,
     versionName,
     milestoneCommitId,
-    meta,
+    meta, // doc.meta === doc.content.meta
     resolved: !_.isEmpty(resolved) ? resolved : undefined,
     content: doc.content,
-    contentString: mdastToString(
-      mdastFilter(
-        doc.content,
-        node => node.type === 'code'
-      )
-    )
+    contentString: mdastContentToString(doc.content)
   }
 }
 
-const {
-  extractUserUrl,
-  getRepoId
-} = require('@orbiting/backend-modules-documents/lib/resolve')
-
-const visit = require('unist-util-visit')
-const isUUID = require('is-uuid')
-
-const addRelatedDocs = async ({ connection, scheduledAt, context }) => {
-  const search = require('../graphql/resolvers/_queries/search')
-  const { pgdb } = context
-
-  const getDocsForConnection = (connection) =>
-    [
-      ...connection.nodes
-        .filter(node => node.type === 'Document')
-        .map(node => node.entity)
-    ]
-
-  const docs = getDocsForConnection(connection)
-
-  // extract users and related repoIds (from content and meta)
-  const userIds = []
-  const repoIds = []
-  const seriesRepoIds = []
-  docs.forEach(doc => {
-    // from content
-    visit(doc.content, 'zone', node => {
-      if (node.data) {
-        repoIds.push(getRepoId(node.data.url))
-        repoIds.push(getRepoId(node.data.formatUrl))
-      }
-    })
-    visit(doc.content, 'link', node => {
-      const info = extractUserUrl(node.url)
-      if (info) {
-        node.url = info.path
-        if (isUUID.v4(info.id)) {
-          userIds.push(info.id)
-        } else {
-          debug(
-            'addRelatedDocs found nonUUID %s in repo %s',
-            info.id,
-            doc.repoId
-          )
-        }
-      }
-      const repoId = getRepoId(node.url, 'autoSlug')
-      if (repoId) {
-        repoIds.push(repoId)
-      }
-    })
-    // from meta
-    const meta = doc.content.meta
-    // TODO get keys from packages/documents/lib/resolve.js
-    repoIds.push(getRepoId(meta.dossier))
-    repoIds.push(getRepoId(meta.format))
-    repoIds.push(getRepoId(meta.discussion))
-    if (meta.series) {
-      // If a string, probably a series master (tbc.)
-      if (typeof meta.series === 'string') {
-        seriesRepoIds.push(getRepoId(meta.series))
-        repoIds.push(getRepoId(meta.series))
-      } else {
-        meta.series.episodes && meta.series.episodes.forEach(episode => {
-          repoIds.push(getRepoId(episode.document))
-        })
-      }
+const extractIdsFromNode = (haystack, contextRepoId) => {
+  const repos = []
+  const users = []
+  visit(haystack, 'zone', node => {
+    if (node.data) {
+      repos.push(getRepoId(node.data.url))
+      repos.push(getRepoId(node.data.formatUrl))
     }
   })
+  visit(haystack, 'link', node => {
+    const info = extractUserUrl(node.url)
+    if (info) {
+      node.url = info.path
+      if (isUUID.v4(info.id)) {
+        users.push(info.id)
+      } else {
+        debug(
+          'addRelatedDocs found nonUUID %s in repo %s',
+          info.id,
+          contextRepoId
+        )
+      }
+    }
+    const repoId = getRepoId(node.url, 'autoSlug')
+    if (repoId) {
+      repos.push(repoId)
+    }
+  })
+  return {
+    repos: repos.filter(Boolean),
+    users: users.filter(Boolean)
+  }
+}
 
-  // load users
-  const usernames = userIds.length
-    ? await pgdb.public.users.find(
+const getDocsForConnection = (connection) => connection.nodes
+  .filter(node => node.type === 'Document')
+  .map(node => node.entity)
+
+const loadLinkedMetaData = async ({
+  repoIds = [],
+  userIds = [],
+  context,
+  scheduledAt,
+  ignorePrepublished
+}) => {
+  const usernames = !userIds.length
+    ? []
+    : await context.pgdb.public.users.find(
       {
         id: userIds,
         hasPublicProfile: true,
@@ -267,23 +277,90 @@ const addRelatedDocs = async ({ connection, scheduledAt, context }) => {
         fields: ['id', 'username']
       }
     )
-    : []
+
+  const search = require('../graphql/resolvers/_queries/search')
+  const sanitizedRepoIds = [...new Set(repoIds.filter(Boolean))]
+  const docs = !sanitizedRepoIds.length
+    ? []
+    : await search(null, {
+      recursive: true,
+      withoutContent: true,
+      withoutAggs: true,
+      withoutRelatedDocs: true,
+      scheduledAt,
+      ignorePrepublished,
+      first: sanitizedRepoIds.length * 2,
+      filter: {
+        repoId: sanitizedRepoIds,
+        type: 'Document'
+      }
+    }, context).then(getDocsForConnection)
+
+  return {
+    usernames,
+    docs
+  }
+}
+
+const addRelatedDocs = async ({
+  connection,
+  scheduledAt,
+  ignorePrepublished,
+  context,
+  withoutContent
+}) => {
+  const docs = getDocsForConnection(connection)
+
+  // extract users and related repoIds (from content and meta)
+  let userIds = []
+  let repoIds = []
+  const seriesRepoIds = []
+  docs.forEach(doc => {
+    // from content
+    if (!withoutContent) {
+      const extractedIds = extractIdsFromNode(doc.content, doc.repoId)
+      userIds = userIds.concat(extractedIds.users)
+      repoIds = repoIds.concat(extractedIds.repos)
+    } else {
+      const extractedIds = extractIdsFromNode({ children: doc.meta.credits }, doc.repoId)
+      userIds = userIds.concat(extractedIds.users)
+      repoIds = repoIds.concat(extractedIds.repos)
+    }
+    // from meta
+    const meta = doc.content.meta
+    // TODO get keys from packages/documents/lib/resolve.js
+    repoIds.push(getRepoId(meta.dossier))
+    repoIds.push(getRepoId(meta.format))
+    repoIds.push(getRepoId(meta.section))
+    repoIds.push(getRepoId(meta.discussion))
+    if (meta.series) {
+      // If a string, probably a series master (tbc.)
+      if (typeof meta.series === 'string') {
+        const seriesRepoId = getRepoId(meta.series)
+        if (seriesRepoId) {
+          seriesRepoIds.push(seriesRepoId)
+        }
+      } else {
+        meta.series.episodes && meta.series.episodes.forEach(episode => {
+          repoIds.push(getRepoId(episode.document))
+        })
+      }
+    }
+  })
+
+  let relatedDocs = []
 
   // If there are any series master repositories, fetch these series master
   // documents and push series episodes onto the related docs stack
-  const sanitizedSeriesRepoIds = [...new Set(seriesRepoIds.filter(Boolean))]
-  if (sanitizedSeriesRepoIds.length > 0) {
-    const seriesRelatedDocs = await search(null, {
-      recursive: true,
-      withoutContent: true,
+  if (seriesRepoIds.length) {
+    const { docs: seriesRelatedDocs } = await loadLinkedMetaData({
+      context,
+      repoIds: seriesRepoIds,
       scheduledAt,
-      first: sanitizedSeriesRepoIds.length * 2,
-      filter: {
-        repoId: sanitizedSeriesRepoIds,
-        type: 'Document'
-      }
-    }, context)
-      .then(getDocsForConnection)
+      ignorePrepublished
+    })
+
+    relatedDocs = relatedDocs.concat(seriesRelatedDocs)
 
     seriesRelatedDocs.forEach(doc => {
       const meta = doc.content.meta
@@ -294,23 +371,18 @@ const addRelatedDocs = async ({ connection, scheduledAt, context }) => {
     })
   }
 
-  const sanitizedRepoIds = [...new Set(repoIds.filter(Boolean))]
+  const {
+    docs: variousRelatedDocs,
+    usernames
+  } = await loadLinkedMetaData({
+    context,
+    repoIds,
+    userIds,
+    scheduledAt,
+    ignorePrepublished
+  })
 
-  let relatedDocs = []
-
-  if (sanitizedRepoIds.length > 0) {
-    relatedDocs = await search(null, {
-      recursive: true,
-      withoutContent: true,
-      scheduledAt,
-      first: sanitizedRepoIds.length * 2,
-      filter: {
-        repoId: sanitizedRepoIds,
-        type: 'Document'
-      }
-    }, context)
-      .then(getDocsForConnection)
-  }
+  relatedDocs = relatedDocs.concat(variousRelatedDocs)
 
   debug({
     numDocs: docs.length,
@@ -325,17 +397,14 @@ const addRelatedDocs = async ({ connection, scheduledAt, context }) => {
     // for link resolving in lib/resolve
     // - including the usernames
     doc._all = [
+      ...doc._all
+        ? doc._all
+        : [],
       ...relatedDocs,
       ...docs
     ]
     doc._usernames = usernames
   })
-}
-
-const { getIndexAlias } = require('./utils')
-const indexRef = {
-  index: getIndexAlias(indexType.toLowerCase(), 'write'),
-  type: indexType
 }
 
 const switchState = async function (elastic, state, repoId, docId) {
@@ -368,7 +437,7 @@ const switchState = async function (elastic, state, repoId, docId) {
           ],
           should: queries,
           must_not: [
-            { term: { '_id': docId } }
+            { term: { _id: docId } }
           ]
         }
       },
@@ -402,7 +471,7 @@ const resetScheduledAt = async function (
             { term: { 'meta.prepublication': isPrepublication } }
           ],
           must_not: [
-            { term: { '_id': docId } }
+            { term: { _id: docId } }
           ]
         }
       },
@@ -418,6 +487,7 @@ const unpublish = async (elastic, redis, repoId) => {
   const result = await elastic.deleteByQuery({
     index: indexRef.index,
     conflicts: 'proceed',
+    refresh: true,
     body: {
       query: {
         term: {
@@ -658,13 +728,21 @@ const findPublished = async function (elastic, repoId) {
         bool: {
           must: [
             { term: { 'meta.repoId': repoId } },
-            { bool: { should: [
-              { term: { '__state.published': true } },
-              { bool: { must: [
-                { term: { 'meta.prepublication': false } },
-                { exists: { field: 'meta.scheduledAt' } }
-              ] } }
-            ] } }
+            {
+              bool: {
+                should: [
+                  { term: { '__state.published': true } },
+                  {
+                    bool: {
+                      must: [
+                        { term: { 'meta.prepublication': false } },
+                        { exists: { field: 'meta.scheduledAt' } }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
           ]
         }
       }
@@ -710,8 +788,13 @@ const findTemplates = async function (elastic, template, repoId) {
 }
 
 module.exports = {
+  SHORT_DURATION_MINS,
+  MIDDLE_DURATION_MINS,
+  LONG_DURATION_MINS,
   schema,
   getElasticDoc,
+  extractIdsFromNode,
+  loadLinkedMetaData,
   addRelatedDocs,
   unpublish,
   publish,

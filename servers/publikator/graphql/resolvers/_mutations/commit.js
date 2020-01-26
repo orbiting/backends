@@ -10,6 +10,7 @@ const superb = require('superb')
 const superheroes = require('superheroes')
 const sleep = require('await-sleep')
 const sharp = require('sharp')
+const slugify = require('slugify')
 const {
   createGithubClients,
   commitNormalizer,
@@ -31,7 +32,10 @@ const extractImage = async (url, images) => {
     } catch (e) { /* console.log('ignoring image node with url:' + url) */ }
     if (blob) {
       const meta = await sharp(blob).metadata()
-      const suffix = blob.type.split('/')[1]
+      // image/jpeg -> jpeg
+      // image/png -> png
+      // image/svg+xml -> svg
+      const suffix = blob.type.split('/')[1].split('+')[0]
       const hash = hashObject(blob)
       const path = `images/${hash}.${suffix}`
       const url = `${path}?size=${meta.width}x${meta.height}`
@@ -47,7 +51,8 @@ const extractImage = async (url, images) => {
   return url
 }
 
-module.exports = async (_, args, { pgdb, req, user, t, pubsub }) => {
+module.exports = async (_, args, context) => {
+  const { user, t, pubsub } = context
   ensureUserHasRole(user, 'editor')
   const { githubRest } = await createGithubClients()
 
@@ -80,7 +85,7 @@ module.exports = async (_, args, { pgdb, req, user, t, pubsub }) => {
     if (parentId) {
       throw new Error(t('api/commit/parentId/notAllowed', { repoId }))
     }
-    repo = await githubRest.repos.createForOrg({
+    repo = await githubRest.repos.createInOrg({
       org: login,
       name: repoName,
       private: true,
@@ -155,7 +160,7 @@ module.exports = async (_, args, { pgdb, req, user, t, pubsub }) => {
       .then(result => result.data)
       .catch(e => {
         const util = require('util')
-        console.log('createBlob failed!', util.inspect(e, {depth: null}))
+        console.log('createBlob failed!', util.inspect(e, { depth: null }))
         markdownBlob = null
       })
 
@@ -225,7 +230,7 @@ module.exports = async (_, args, { pgdb, req, user, t, pubsub }) => {
 
   Object.assign(cacheUpsert, { commit })
 
-  await repoCacheUpsert(cacheUpsert)
+  await repoCacheUpsert(cacheUpsert, context)
 
   // load heads
   const heads = await getHeads(repoId)
@@ -241,7 +246,7 @@ module.exports = async (_, args, { pgdb, req, user, t, pubsub }) => {
   let branch
   if (headParent) { // fast-forward
     branch = headParent.name
-    await githubRest.gitdata.updateReference({
+    await githubRest.gitdata.updateRef({
       owner: login,
       repo: repoName,
       ref: 'heads/' + headParent.name,
@@ -249,9 +254,12 @@ module.exports = async (_, args, { pgdb, req, user, t, pubsub }) => {
       force: !parentId
     })
   } else {
-    branch = `${superb()}-${superheroes.random().toLowerCase()}`
-      .replace(/\s/g, '-')
-    await githubRest.gitdata.createReference({
+    branch = slugify(
+      `${superb.random()}-${superheroes.random()}`
+        .replace(/\./g, '-')
+        .toLowerCase()
+    )
+    await githubRest.gitdata.createRef({
       owner: login,
       repo: repoName,
       ref: `refs/heads/${branch}`,
@@ -260,7 +268,7 @@ module.exports = async (_, args, { pgdb, req, user, t, pubsub }) => {
   }
 
   // latest commit -> default branch
-  githubRest.repos.edit({
+  await githubRest.repos.update({
     owner: login,
     repo: repoName,
     name: repoName,

@@ -1,1 +1,4 @@
-module.exports = require('export-files')(__dirname)
+module.exports = {
+  earlyAdopterBonus: require('./earlyAdopterBonus'),
+  endTooFarAway: require('./endTooFarAway')
+}

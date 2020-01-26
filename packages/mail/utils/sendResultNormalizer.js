@@ -1,7 +1,14 @@
 const sleep = require('await-sleep')
 
-module.exports = (shouldSend, sendFunc) =>
+module.exports = (shouldSchedule = false, shouldSend = true, sendFunc) =>
   async () => {
+    if (shouldSchedule) {
+      return {
+        result: { status: 'scheduled' },
+        status: 'SCHEDULED'
+      }
+    }
+
     let results
     if (shouldSend) {
       try {
@@ -15,16 +22,23 @@ module.exports = (shouldSend, sendFunc) =>
         }
       }
     } else {
-      await sleep(250)
+      await sleep(150)
       return {
         result: { status: 'sent-simulated' },
         status: 'SENT'
       }
     }
+
+    if (results && typeof results === 'object' && results.status === 'error') {
+      return {
+        status: 'FAILED',
+        error: results
+      }
+    }
+
     const result = results && results[0]
-    const wasSent = (
-      result && result.status === 'sent' && !result.reject_reason
-    )
+    const wasSent = !!result && result.status === 'sent' && !result.reject_reason
+
     return {
       result,
       status: wasSent

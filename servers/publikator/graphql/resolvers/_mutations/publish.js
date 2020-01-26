@@ -10,7 +10,6 @@ const {
   upsertRef,
   deleteRef
 } = require('../../../lib/github')
-const { channelKey } = require('../../../lib/publicationScheduler')
 const {
   createCampaign,
   updateCampaignContent,
@@ -39,13 +38,14 @@ const {
     }
   }
 } = require('@orbiting/backend-modules-documents')
-const { lib: {
-  Repo: { uploadImages }
-} } = require('@orbiting/backend-modules-assets')
+const {
+  lib: {
+    Repo: { uploadImages }
+  }
+} = require('@orbiting/backend-modules-assets')
 const uniq = require('lodash/uniq')
 const { upsert: repoCacheUpsert } = require('../../../lib/cache/upsert')
 
-const elastic = require('@orbiting/backend-modules-base/lib/elastic').client()
 const { purgeUrls } = require('@orbiting/backend-modules-keyCDN')
 
 const {
@@ -67,7 +67,7 @@ module.exports = async (
   },
   context
 ) => {
-  const { user, t, redis, pubsub } = context
+  const { user, t, redis, pubsub, elastic } = context
   ensureUserHasRole(user, 'editor')
 
   if (DISABLE_PUBLISH) {
@@ -139,16 +139,21 @@ module.exports = async (
     ]
   })
 
-  await addRelatedDocs({ connection, scheduledAt, context })
+  await addRelatedDocs({
+    connection,
+    scheduledAt,
+    ignorePrepublished: !prepublication,
+    context
+  })
 
   const { _all, _usernames } = connection.nodes[0].entity
 
   const resolvedDoc = JSON.parse(JSON.stringify(doc))
 
   const utmParams = {
-    'utm_source': 'newsletter',
-    'utm_medium': 'email',
-    'utm_campaign': repoId
+    utm_source: 'newsletter',
+    utm_medium: 'email',
+    utm_campaign: repoId
   }
 
   const searchString = '?' + querystring.stringify(utmParams)
@@ -203,11 +208,12 @@ module.exports = async (
     context
   })
 
-  // add fileds from prepareMetaForPublish to resolvedDoc
+  // add fields from prepareMetaForPublish to resolvedDoc
   resolvedDoc.content.meta = {
     ...resolvedDoc.content.meta,
     path: doc.content.meta.path,
     publishDate: doc.content.meta.publishDate,
+    lastPublishedAt: doc.content.meta.lastPublishedAt,
     discussionId: doc.content.meta.discussionId
   }
 
@@ -307,10 +313,7 @@ module.exports = async (
       name: versionName,
       message
     },
-    {
-      user,
-      pubsub
-    }
+    context
   )
 
   // move ref
@@ -333,7 +336,7 @@ module.exports = async (
       gitOps = gitOps.concat(
         upsertRef(
           repoId,
-          `tags/prepublication`,
+          'tags/prepublication',
           milestone.sha
         )
       )
@@ -373,6 +376,17 @@ module.exports = async (
     resolved.meta.format = formats.pop()
   }
 
+  if (doc.content.meta.section) {
+    const sections = await findTemplates(
+      elastic,
+      'section',
+      doc.content.meta.section
+    )
+
+    if (!resolved.meta) resolved.meta = {}
+    resolved.meta.section = sections.pop()
+  }
+
   // publish to elasticsearch
   const elasticDoc = getElasticDoc({
     indexName: getIndexAlias(indexType.toLowerCase(), 'write'),
@@ -395,9 +409,7 @@ module.exports = async (
     id: repoId,
     meta: repoMeta,
     publications: await getLatestPublications({ id: repoId })
-  })
-
-  await redis.publishAsync(channelKey, 'refresh')
+  }, context)
 
   // release for nice view on github
   // this is optional, the release is not read back again

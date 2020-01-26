@@ -5,40 +5,41 @@ module.exports = {
   name: type.toLowerCase(),
   search: {
     termFields: {
-      firstName: {
-        highlight: {}
-      },
-      lastName: {
-        highlight: {}
-      },
       name: {
         boost: 2,
-        highlight: {}
+        highlight: {
+          number_of_fragments: 0
+        }
       },
       username: {
-        highlight: {}
+        highlight: {
+          number_of_fragments: 0
+        }
       },
       biography: {
-        highlight: {}
+        highlight: {
+          boundary_scanner_locale: 'de-CH',
+          fragment_size: 300
+        }
       },
       statement: {
-        highlight: {}
+        highlight: {
+          boundary_scanner_locale: 'de-CH',
+          fragment_size: 300
+        }
       },
-      twitterHandle: {
-        highlight: {}
-      },
-      facebookId: {
-        highlight: {}
-      },
-      'resolved.credential': {}
+      'resolved.credential': {
+        highlight: {
+          number_of_fragments: 0
+        }
+      }
     },
     filter: {
       default: () => ({
         bool: {
           must: [
             { term: { __type: type } },
-            { term: { hasPublicProfile: true } },
-            { term: { verified: true } }
+            { term: { hasPublicProfile: true } }
           ]
         }
       })

@@ -10,17 +10,36 @@ const {
 const DAYS_AFTER_CANCELLATION = 3
 const MAX_DAYS_AFTER_CANCELLATION = 30
 
-const CANCELLATION_CATEGORIES = ['EDITORIAL', 'NO_TIME', 'TOO_EXPENSIVE']
+const CANCELLATION_CATEGORIES = ['NO_TIME', 'TOO_EXPENSIVE', 'NO_MONEY', 'PAPER']
 const MEMBERSHIP_TYPES = ['ABO', 'BENEFACTOR_ABO']
 
-const getCancellations = async ({ now }, { pgdb }) => {
+const TYPE = 'membership_winback'
+
+const getCancelledAtMinMax = (now = moment()) => {
   const maxCancelledAt = moment(now)
     .subtract(DAYS_AFTER_CANCELLATION, 'days')
     .endOf('day')
   const minCancelledAt = moment(now)
     .subtract(MAX_DAYS_AFTER_CANCELLATION, 'days')
     .startOf('day')
-  debug('get users for: %o', {maxCancelledAt, minCancelledAt})
+  return { maxCancelledAt, minCancelledAt }
+}
+
+const winbackCanBeSentForCancellationDate = (createdAt) => {
+  const { minCancelledAt } = getCancelledAtMinMax()
+  return moment(createdAt)
+    .isAfter(
+      moment(minCancelledAt).add(1, 'days')
+    )
+}
+
+const getCancellations = async ({ now }, { pgdb }) => {
+  const { maxCancelledAt, minCancelledAt } = getCancelledAtMinMax(now)
+
+  debug('get users for: %o', {
+    maxCancelledAt: maxCancelledAt.toISOString(),
+    minCancelledAt: minCancelledAt.toISOString()
+  })
 
   const cancellations = await pgdb.query(`
     SELECT
@@ -41,7 +60,7 @@ const getCancellations = async ({ now }, { pgdb }) => {
     WHERE
       u.id != :PARKING_USER_ID AND
       mc.category = ANY('{${CANCELLATION_CATEGORIES.join(',')}}') AND
-      mc."suppressNotifications" = false AND
+      mc."suppressWinback" = false AND
       mc."revokedAt" IS NULL AND
       m."membershipTypeId" IN (
         SELECT id FROM "membershipTypes" WHERE name = ANY('{${MEMBERSHIP_TYPES.join(',')}}')
@@ -65,7 +84,6 @@ const inform = async (args, context) => {
     cancellations,
     async ({
       userId,
-      email,
       membershipId,
       cancellationCategory,
       cancelledAt,
@@ -73,7 +91,6 @@ const inform = async (args, context) => {
     }) => {
       const templatePayload = await context.mail.prepareMembershipWinback({
         userId,
-        membershipId,
         cancellationCategory,
         cancelledAt
       }, context)
@@ -82,7 +99,7 @@ const inform = async (args, context) => {
         context,
         {
           onceFor: {
-            type: `membership_winback`,
+            type: TYPE,
             userId
           },
           info: {
@@ -99,5 +116,7 @@ const inform = async (args, context) => {
 }
 
 module.exports = {
+  TYPE,
+  winbackCanBeSentForCancellationDate,
   inform
 }

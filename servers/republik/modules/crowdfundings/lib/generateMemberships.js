@@ -4,31 +4,31 @@ const { evaluate, resolvePackages } = require('./CustomPackages')
 const createCache = require('./cache')
 const cancelMembership = require('../graphql/resolvers/_mutations/cancelMembership')
 const debug = require('debug')('crowdfundings:memberships')
-const { enforceSubscriptions, sendMembershipProlongConfirmation } = require('./Mail')
+const mail = require('./Mail')
 const Promise = require('bluebird')
 const omit = require('lodash/omit')
 
 const MONTHLY_ABO_UPGRADE_PKGS = ['ABO', 'BENEFACTOR']
 
-module.exports = async (pledgeId, pgdb, t, req, logger = console) => {
-  const pledge = await pgdb.public.pledges.findOne({id: pledgeId})
-  const user = await pgdb.public.users.findOne({id: pledge.userId})
+module.exports = async (pledgeId, pgdb, t, req, redis) => {
+  const pledge = await pgdb.public.pledges.findOne({ id: pledgeId })
+  const user = await pgdb.public.users.findOne({ id: pledge.userId })
 
   // check if pledge really has no memberships yet
-  if (await pgdb.public.memberships.count({pledgeId: pledge.id})) {
-    logger.error('tried to generate memberships for a pledge which already has memberships', { pledge })
+  if (await pgdb.public.memberships.count({ pledgeId: pledge.id })) {
+    console.error('tried to generate memberships for a pledge which already has memberships', { pledge })
     throw new Error(t('api/unexpected'))
   }
 
   // get ingredients
-  const pkg = await pgdb.public.packages.findOne({id: pledge.packageId})
+  const pkg = await pgdb.public.packages.findOne({ id: pledge.packageId })
 
   let hasRewards = false
   const pledgeOptions = await getPledgeOptionsTree(
-    await pgdb.public.pledgeOptions.find({pledgeId: pledge.id}),
+    await pgdb.public.pledgeOptions.find({ pledgeId: pledge.id }),
     pgdb
   )
-  for (let plo of pledgeOptions) {
+  for (const plo of pledgeOptions) {
     if (plo.packageOption.reward) {
       hasRewards = true
     }
@@ -62,9 +62,11 @@ module.exports = async (pledgeId, pgdb, t, req, logger = console) => {
   const userHasActiveMembership = activeMemberships.length > 0
 
   const memberships = []
+  const now = moment()
+
   let cancelableMemberships = []
   let membershipPeriod
-  const now = moment()
+  let subscribeToEditorialNewsletters = false
 
   await Promise.map(pledgeOptions, async (plo) => {
     if (plo.packageOption.reward.type === 'MembershipType') {
@@ -88,6 +90,16 @@ module.exports = async (pledgeId, pgdb, t, req, logger = console) => {
         const membership = resolvedPackage.user.memberships
           .find(m => m.id === plo.membershipId)
 
+        // Refrain from generate periods if membership already has periods which
+        // stem from passed pledge.
+        if (membership.periods.find(p => p.pledgeId === pledge.id)) {
+          debug('periods already generated', {
+            membershipId: membership.id,
+            pledgeId: pledge.id
+          })
+          return
+        }
+
         const { additionalPeriods } =
           await evaluate({
             package_: resolvedPackage,
@@ -97,7 +109,7 @@ module.exports = async (pledgeId, pgdb, t, req, logger = console) => {
           })
 
         if (!additionalPeriods || additionalPeriods.length === 0) {
-          logger.error(
+          console.error(
             'evaluation returned no additional periods',
             { pledge }
           )
@@ -125,7 +137,7 @@ module.exports = async (pledgeId, pgdb, t, req, logger = console) => {
         debug('additionalPeriods %o', additionalPeriods)
 
         if (membership.userId !== pledge.userId) {
-          await sendMembershipProlongConfirmation({
+          await mail.sendMembershipProlongConfirmation({
             pledger: user, membership, additionalPeriods, t, pgdb
           })
         }
@@ -196,11 +208,12 @@ module.exports = async (pledgeId, pgdb, t, req, logger = console) => {
         id: m.id,
         details: {
           type: 'SYSTEM',
-          reason: 'Auto Cancellation (generateMemberships)'
-        },
-        suppressNotifications: true
+          reason: 'Auto Cancellation (generateMemberships)',
+          suppressConfirmation: true,
+          suppressWinback: true
+        }
       },
-      { req, t, pgdb }
+      { req, t, pgdb, redis, mail }
     ))
   }
 
@@ -220,18 +233,20 @@ module.exports = async (pledgeId, pgdb, t, req, logger = console) => {
       updatedAt: now
     })
 
-    try {
-      await enforceSubscriptions({
-        pgdb,
-        userId: user.id,
-        isNew: !user.verified,
-        subscribeToEditorialNewsletters: true
-      })
-    } catch (e) {
-      console.error('enforceSubscriptions failed in generateMemberships', e)
-    }
+    subscribeToEditorialNewsletters = true
   }
 
-  const cache = createCache({ prefix: `User:${user.id}` })
+  try {
+    await mail.enforceSubscriptions({
+      pgdb,
+      userId: user.id,
+      isNew: !user.verified,
+      subscribeToEditorialNewsletters
+    })
+  } catch (e) {
+    console.error('enforceSubscriptions failed in generateMemberships', e)
+  }
+
+  const cache = createCache({ prefix: `User:${user.id}` }, { redis })
   cache.invalidate()
 }

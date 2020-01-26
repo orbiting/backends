@@ -1,8 +1,5 @@
 const debug = require('debug')('publikator:cache:search')
-const elasticsearch = require('@orbiting/backend-modules-base/lib/elastic')
 const utils = require('@orbiting/backend-modules-search/lib/utils')
-
-const client = elasticsearch.client()
 
 /**
  * Determines desired sorting of data when querying ElasticSearch due to
@@ -18,10 +15,10 @@ const getSort = (args) => {
 
   // see https://developer.github.com/v4/enum/repositoryorderfield/
   const map = {
-    'CREATED_AT': 'createdAt',
-    'NAME': 'name.keyword',
-    'PUSHED_AT': 'latestCommit.date',
-    'UPDATED_AT': 'updatedAt'
+    CREATED_AT: 'createdAt',
+    NAME: 'name.keyword',
+    PUSHED_AT: 'latestCommit.date',
+    UPDATED_AT: 'updatedAt'
     // 'STARGAZERS' is not implemented. Keeping in sync is hard.
   }
 
@@ -69,14 +66,15 @@ const getSourceFilter = () => ({
  * @param  {[type]}  args [description]
  * @return {Promise}      [description]
  */
-const find = async (args) => {
-  debug(args)
+const find = async (args, { elastic }) => {
+  debug('args: %o', args)
 
   const fields = [
     'contentMeta.description',
     'contentMeta.facebookDescription',
     'contentMeta.facebookTitle',
     'contentMeta.format',
+    'contentMeta.section',
     'contentMeta.seriesMaster.episodes.document',
     'contentMeta.seriesMaster.episodes.label',
     'contentMeta.seriesMaster.episodes.title',
@@ -115,7 +113,7 @@ const find = async (args) => {
     })
   }
 
-  const docs = client.search({
+  const docs = elastic.search({
     index: utils.getIndexAlias('repo', 'read'),
     from: args.from,
     size: args.first,

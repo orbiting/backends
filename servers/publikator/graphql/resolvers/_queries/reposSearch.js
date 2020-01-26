@@ -107,7 +107,7 @@ module.exports = async (__, args, context) => {
     search,
     template,
     orderBy
-  })
+  }, context)
 
   const hasNextPage = first > 0 && result.hits.total > from + first
   const hasPreviousPage = from > 0
@@ -159,6 +159,9 @@ module.exports = async (__, args, context) => {
     if (repo.latestPublications) {
       repo.latestPublications =
         repo.latestPublications.map(mapDocuments.bind(this, documents))
+    }
+    if (repo.latestCommit) {
+      repo.latestCommit.document = documents.nodes.find(d => d.commitId === repo.latestCommit.id)
     }
 
     return repo
