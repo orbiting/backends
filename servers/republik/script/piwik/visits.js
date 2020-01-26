@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
-/* eslint-disable node/no-deprecated-api, camelcase */
+/* eslint-disable camelcase */
 
 require('@orbiting/backend-modules-env').config()
 
 const fs = require('fs')
 const path = require('path')
 const mysql = require('mysql2')
-const { parse } = require('url')
+const querystring = require('querystring')
 const { ascending, descending, range, sum } = require('d3-array')
 const { timeFormat } = require('d3-time-format')
+const yargs = require('yargs')
 
 const PgDb = require('@orbiting/backend-modules-base/lib/PgDb')
 const Elasticsearch = require('@orbiting/backend-modules-base/lib/Elasticsearch')
@@ -23,6 +24,16 @@ const loaderBuilders = {
   ...require('@orbiting/backend-modules-discussions/loaders'),
   ...require('@orbiting/backend-modules-documents/loaders')
 }
+
+const argv = yargs
+  .option('fileBaseData', {
+    alias: 'fbd',
+    boolean: true,
+    default: false
+  })
+  .help()
+  .version()
+  .argv
 
 const getContext = (payload) => {
   const loaders = {}
@@ -42,6 +53,12 @@ const getContext = (payload) => {
 }
 
 // node --max-old-space-size=4096 script/piwik/visits.js
+
+// file base data?
+// node --max-old-space-size=4096 script/piwik/visits.js --fbd
+
+// hash file for secret url?
+// shasum -a 256 script/piwik/stats.json
 
 // https://developer.matomo.org/guides/persistence-and-the-mysql-backend
 
@@ -79,20 +96,25 @@ const referrerNames = {
 }
 const shortDays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
-const analyse = async (context, { fileBaseData = false } = {}) => {
+const analyse = async (context) => {
   const { pgdb } = context
-  const con = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    database: 'piwik190307'
-  })
+  const {
+    MATOMO_MYSQL_URL
+  } = process.env
+
+  const con = mysql.createConnection(MATOMO_MYSQL_URL.match(/rds\.amazonaws\.com/)
+    ? `${MATOMO_MYSQL_URL}?ssl=Amazon RDS`
+    : MATOMO_MYSQL_URL)
+
+  console.log('mysql via ssl', !!con.config.ssl)
+
   const connection = con.promise()
 
   const [urlActions] = await connection.query('SELECT idaction, name FROM piwik_log_action WHERE type = 1')
 
   console.log('url actions', urlActions.length)
 
-  const documents = fileBaseData
+  const documents = argv.fileBaseData
     ? require('./documents.json').data.documents.nodes.filter(doc => doc.meta.template === 'article') // https://api.republik.ch/graphiql?query=%7B%0A%20%20documents(first%3A%202000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
     : await search(null, {
       first: 10000,
@@ -109,12 +131,12 @@ const analyse = async (context, { fileBaseData = false } = {}) => {
 
   console.log('documents', documents.length)
 
-  const redirections = fileBaseData
+  const redirections = argv.fileBaseData
     ? require('./redirections.json') // https://ultradashboard.republik.ch/question/181
     : await pgdb.query('SELECT source, target FROM redirections WHERE "deletedAt" is null')
   console.log('redirections', redirections.length)
 
-  const pledges = fileBaseData
+  const pledges = argv.fileBaseData
     ? require('./pledges.json').filter(p => p.name !== 'PROLONG') // https://ultradashboard.republik.ch/question/182
     : await pgdb.query(`
       SELECT p.id, p.total, p."createdAt", pack.name
@@ -155,13 +177,12 @@ const analyse = async (context, { fileBaseData = false } = {}) => {
   const pledgeIds = new Set()
   const actionIdToPledgeId = urlActions.reduce((agg, d) => {
     if (d.name.startsWith('republik.ch/konto')) {
-      const url = parse(
-        d.name.replace('republik.ch', ''),
-        true
+      const query = querystring.parse(
+        d.name.split('?')[1]
       )
-      if (url.query.id) {
-        agg[d.idaction] = url.query.id
-        pledgeIds.add(url.query.id)
+      if (query.id) {
+        agg[d.idaction] = query.id
+        pledgeIds.add(query.id)
       }
     }
     return agg
@@ -410,6 +431,7 @@ const analyse = async (context, { fileBaseData = false } = {}) => {
   fs.writeFileSync(
     path.join(__dirname, 'stats.json'),
     JSON.stringify({
+      createdAt: new Date().toISOString(),
       segments: segments.map(segment => segment.key),
       total: toJS(stat),
       docs: Array.from(docStats).map(([doc, stat]) => ({
