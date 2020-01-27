@@ -52,13 +52,13 @@ const getContext = (payload) => {
   return context
 }
 
-// node --max-old-space-size=4096 script/piwik/visits.js
+// node --max-old-space-size=4096 servers/republik/script/piwik/visits.js
 
 // file base data?
-// node --max-old-space-size=4096 script/piwik/visits.js --fbd
+// node --max-old-space-size=4096 servers/republik/script/piwik/visits.js --fbd
 
 // hash file for secret url?
-// shasum -a 256 script/piwik/stats.json
+// shasum -a 256 servers/republik/script/piwik/stats.json
 
 // https://developer.matomo.org/guides/persistence-and-the-mysql-backend
 
@@ -66,16 +66,15 @@ const getContext = (payload) => {
 const getMonth = timeFormat('%m')
 
 const referrerNames = {
-  'm.facebook.com': 'Facebook',
-  'l.facebook.com': 'Facebook',
   'lm.facebook.com': 'Facebook',
-  'www.facebook.com': 'Facebook',
+  'facebook.com': 'Facebook',
   't.co': 'Twitter',
   'twitter.com': 'Twitter',
   'mobile.twitter.com': 'Twitter',
   'com.twitter.android': 'Twitter',
   'com.samruston.twitter': 'Twitter',
   'tweetdeck.twitter.com': 'Twitter',
+  'daily.spiegel.de': 'spiegel.de',
   'en.m.wikipedia.org': 'Wikipedia',
   'en.wikipedia.org': 'Wikipedia',
   'de.m.wikipedia.org': 'Wikipedia',
@@ -94,6 +93,15 @@ const referrerNames = {
   'idlmail04.lotus.uzh.ch': 'Webmail',
   'com.google.android.googlequicksearchbox': 'Google'
 }
+const normalizeReferrerName = input => {
+  let name = input
+  if (name.match(/\.cdn\.ampproject\.org$/)) {
+    name = name.replace(/\.cdn\.ampproject\.org$/, '').replace('-', '.')
+  }
+  name = name.replace(/^(www|m|l)\./, '')
+  return referrerNames[name] || name
+}
+
 const shortDays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
 const analyse = async (context) => {
@@ -106,16 +114,12 @@ const analyse = async (context) => {
     ? `${MATOMO_MYSQL_URL}?ssl=Amazon RDS`
     : MATOMO_MYSQL_URL)
 
-  console.log('mysql via ssl', !!con.config.ssl)
+  console.log('mysql db', con.config.host, 'via ssl', !!con.config.ssl)
 
   const connection = con.promise()
 
-  const [urlActions] = await connection.query('SELECT idaction, name FROM piwik_log_action WHERE type = 1')
-
-  console.log('url actions', urlActions.length)
-
   const documents = argv.fileBaseData
-    ? require('./documents.json').data.documents.nodes.filter(doc => doc.meta.template === 'article') // https://api.republik.ch/graphiql?query=%7B%0A%20%20documents(first%3A%202000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
+    ? require('./documents.json').data.documents.nodes.filter(doc => doc.meta.template === 'article') // https://api.republik.ch/graphiql?query=%7B%0A%20%20documents(first%3A%2010000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20repoId%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
     : await search(null, {
       first: 10000,
       unrestricted: true,
@@ -158,6 +162,10 @@ const analyse = async (context) => {
     }
     return currentPath
   }
+
+  const [urlActions] = await connection.query('SELECT idaction, name FROM piwik_log_action WHERE type = 1')
+
+  console.log('url actions', urlActions.length)
   const actionIdToDocument = urlActions.reduce((agg, d) => {
     if (d.name.startsWith('republik.ch')) {
       const path = getCurrentPath(
@@ -173,6 +181,13 @@ const analyse = async (context) => {
     return agg
   }, {})
   console.log('doc actions', Object.keys(actionIdToDocument).length)
+
+  const [eventActions] = await connection.query('SELECT idaction, name FROM piwik_log_action WHERE type = 11')
+  const actionIdToEvent = eventActions.reduce((agg, d) => {
+    agg[d.idaction] = d.name
+    return agg
+  }, {})
+  console.log('event actions', Object.keys(actionIdToEvent).length)
 
   const pledgeIds = new Set()
   const actionIdToPledgeId = urlActions.reduce((agg, d) => {
@@ -223,6 +238,10 @@ const analyse = async (context) => {
   // FROM piwik_log_link_visit_action
   // WHERE idsite = 5
 
+  // time_spent in JSON_OBJECT
+  // 'time_spent', va.time_spent,
+  // 'time_spent_ref_action', va.time_spent_ref_action,
+
   const query = con.query(`
     SELECT
       v.idvisitor,
@@ -239,8 +258,7 @@ const analyse = async (context) => {
           'server_time', va.server_time,
           'idaction_url', va.idaction_url,
           'idaction_url_ref', va.idaction_url_ref,
-          'time_spent', va.time_spent,
-          'time_spent_ref_action', va.time_spent_ref_action
+          'idaction_event_action', va.idaction_event_action
         )
       ) as actions
     FROM piwik_log_visit v
@@ -255,8 +273,11 @@ const analyse = async (context) => {
   const createRecord = () => {
     return {
       visitors: new Set(),
+      sharer: new Set(),
+      pledge: new Set(),
+      preview: new Set(),
       hours: new Map(range(24).map(h => [h, 0])),
-      minutesSpent: new Map(),
+      // minutesSpent: new Map(),
       days: new Map(range(7).map(d => [d, 0])),
       pledgeIds: new Set(),
       chf: 0,
@@ -274,22 +295,24 @@ const analyse = async (context) => {
       test: () => true
     },
     {
-      key: 'guest',
-      test: visit => visit.roles === 'guest'
-    },
-    {
       key: 'member',
-      test: visit => visit.roles && visit.roles.includes('member')
-    },
-    {
-      key: 'mobile',
-      test: visit => visit.os === 'IOS' || visit.os === 'AND'
+      test: visit =>
+        (visit.roles && visit.roles.includes('member')) ||
+        (visit.referer_name && visit.referer_name.startsWith('republik/newsletter-editorial'))
     }
+    // {
+    //   key: 'guest',
+    //   test: visit => visit.roles === 'guest'
+    // },
+    // {
+    //   key: 'mobile',
+    //   test: visit => visit.os === 'IOS' || visit.os === 'AND'
+    // }
   ]
   const incrementMap = (map, key) => {
     map.set(key, (map.get(key) || 0) + 1)
   }
-  const increment = (stat, key, visit, docAction, pledgeAction) => {
+  const increment = (stat, key, visit, docAction, pledgeAction, events = []) => {
     const rec = stat[key] = stat[key] || createRecord()
 
     rec.visitors.add(visit.idvisitor)
@@ -297,10 +320,10 @@ const analyse = async (context) => {
     incrementMap(rec.days, day)
     const hour = docAction.server_time.getHours()
     incrementMap(rec.hours, hour)
-    if (docAction.time_spent) {
-      const minutesSpent = Math.floor(docAction.time_spent / 60)
-      incrementMap(rec.minutesSpent, minutesSpent)
-    }
+    // if (docAction.time_spent) {
+    //   const minutesSpent = Math.floor(docAction.time_spent / 60)
+    //   incrementMap(rec.minutesSpent, minutesSpent)
+    // }
 
     let referrer
     switch (visit.referer_type) {
@@ -311,7 +334,7 @@ const analyse = async (context) => {
         break
       case 3:
       case 2:
-        referrer = referrerNames[visit.referer_name] || visit.referer_name
+        referrer = normalizeReferrerName(visit.referer_name)
         break
       case 1:
         referrer = 'Direkt / Keine Angabe'
@@ -326,8 +349,19 @@ const analyse = async (context) => {
       const { pledgeId } = pledgeAction
       rec.pledgeIds.add(pledgeId)
     }
+    events.forEach(({ event }) => {
+      if (['share', 'twitter', 'facebook', 'mail', 'whatsapp', 'copyLink'].includes(event)) {
+        rec.sharer.add(visit.idvisitor)
+      }
+      if (event.includes('pledge')) {
+        rec.pledge.add(visit.idvisitor)
+      }
+      if (event.includes('preview')) {
+        rec.preview.add(visit.idvisitor)
+      }
+    })
   }
-  const record = (visit, docAction, pledgeAction) => {
+  const record = (visit, docAction, pledgeAction, events) => {
     const doc = docAction.doc
 
     if (!docStats.has(doc)) {
@@ -337,24 +371,33 @@ const analyse = async (context) => {
 
     segments.forEach(segment => {
       if (segment.test(visit)) {
-        increment(stat, segment.key, visit, docAction, pledgeAction)
-        increment(docStat, segment.key, visit, docAction, pledgeAction)
+        increment(stat, segment.key, visit, docAction, pledgeAction, events)
+        increment(docStat, segment.key, visit, docAction, pledgeAction, events)
       }
     })
   }
 
   await new Promise((resolve, reject) => query
     .on('result', visit => {
-      const actions = visit.actions.map(({ idaction_url, server_time, time_spent }) => {
+      const actions = visit.actions.map(({ server_time, idaction_url, idaction_url_ref, idaction_event_action }) => {
         const doc = actionIdToDocument[idaction_url]
         if (doc) {
-          const nextAction = visit.actions.find(a => a.idaction_url_ref === idaction_url)
+          // const nextAction = visit.actions.find(a => a.idaction_url_ref === idaction_url)
           return {
             server_time: new Date(server_time),
-            time_spent: nextAction
-              ? nextAction.time_spent_ref_action
-              : time_spent,
+            // time_spent: nextAction
+            //   ? nextAction.time_spent_ref_action
+            //   : time_spent,
             doc
+          }
+        }
+        const event = actionIdToEvent[idaction_event_action]
+        const eventDoc = actionIdToDocument[idaction_url_ref]
+        if (event && eventDoc) {
+          return {
+            server_time: new Date(server_time),
+            eventDoc,
+            event
           }
         }
         const pledgeId = actionIdToPledgeId[idaction_url]
@@ -368,14 +411,18 @@ const analyse = async (context) => {
         .filter(Boolean)
         .sort((a, b) => ascending(a.server_time, b.server_time))
 
-      actions.forEach((docAction, docI) => {
-        if (!docAction.doc) {
+      actions.forEach((action, docI) => {
+        if (!action.doc) {
+          return
+        }
+        const firstIndex = actions.findIndex(a => action.doc === a.doc)
+        if (firstIndex !== docI) {
           return
         }
         const pledgeAction = actions
-          .find((action, i) => i > docI && action.pledgeId)
+          .find((a, i) => i > docI && a.pledgeId)
 
-        record(visit, docAction, pledgeAction)
+        record(visit, action, pledgeAction, actions.filter(a => a.event && a.eventDoc === action.doc))
       })
     })
     .on('error', err => reject(err))
@@ -404,6 +451,9 @@ const analyse = async (context) => {
     agg[key] = {
       segment: key,
       visitors: segment.visitors.size,
+      sharer: segment.sharer.size,
+      pledge: segment.pledge.size,
+      preview: segment.preview.size,
       chf: sum(segmentPledges, p => p.total) / 100,
       pledgeMonths: mapToJs(segmentPledges
         .map(p => getMonth(new Date(p.createdAt)))
@@ -421,8 +471,8 @@ const analyse = async (context) => {
       ),
       hours: mapToJs(segment.hours),
       days: mapToJs(segment.days)
-        .map(d => ({ key: shortDays[d.key], count: d.count })),
-      minutesSpent: mapToJs(segment.minutesSpent)
+        .map(d => ({ key: shortDays[d.key], count: d.count }))
+      // minutesSpent: mapToJs(segment.minutesSpent)
     }
     return agg
   }, {})
