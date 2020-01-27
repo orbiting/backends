@@ -118,7 +118,6 @@ const shortDays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
 const analyse = async (context) => {
   const { pgdb } = context
-  process.env.MATOMO_MYSQL_URL = 'mysql://root@localhost:3306/piwik190307'
   const {
     MATOMO_MYSQL_URL
   } = process.env
@@ -204,7 +203,7 @@ const analyse = async (context) => {
 
   const pledgeIds = new Set()
   const actionIdToPledgeId = urlActions.reduce((agg, d) => {
-    if (d.name.startsWith('republik.ch/konto')) {
+    if (d.name.startsWith('republik.ch/konto') || d.name.startsWith('republik.ch/merci')) {
       const query = querystring.parse(
         d.name.split('?')[1]
       )
@@ -217,6 +216,7 @@ const analyse = async (context) => {
   }, {})
 
   console.log('pledge actions', Object.keys(actionIdToPledgeId).length)
+  console.log('pledges found', pledgeIds.size)
   console.log('chf total', sum(Array.from(pledgeIds), pledgeId => {
     const pledge = pledgeIndex[pledgeId]
     if (pledge) {
