@@ -9,7 +9,7 @@ const path = require('path')
 const mysql = require('mysql2')
 const querystring = require('querystring')
 const { ascending, descending, range, sum } = require('d3-array')
-const { timeFormat } = require('d3-time-format')
+// const { timeFormat } = require('d3-time-format')
 const yargs = require('yargs')
 
 const PgDb = require('@orbiting/backend-modules-base/lib/PgDb')
@@ -63,7 +63,18 @@ const getContext = (payload) => {
 // https://developer.matomo.org/guides/persistence-and-the-mysql-backend
 
 // const getWeek = timeFormat('%W')
-const getMonth = timeFormat('%m')
+// const getMonth = timeFormat('%m')
+
+const parseServerTime = server_time => new Date(server_time.replace(' ', 'T').replace(/(\.[0-9]+)$/, 'Z'))
+
+const shortReferrerNames = {
+  Facebook: 'Facebook',
+  Twitter: 'Twitter',
+  'getpocket.com': 'Pocket',
+  'Kampagne pocket-newtab': 'Pocket',
+  Google: 'Google',
+  'Republik-Newsletter': 'Republik-Newsletter'
+}
 
 const referrerNames = {
   'lm.facebook.com': 'Facebook',
@@ -80,6 +91,7 @@ const referrerNames = {
   'de.m.wikipedia.org': 'Wikipedia',
   'de.wikipedia.org': 'Wikipedia',
   'com.google.android.gm': 'GMail Android App',
+  'webmail2.sunrise.ch': 'Webmail',
   'deref-gmx.net': 'Webmail',
   'deref-web-02.de': 'Webmail',
   'rich-v01.bluewin.ch': 'Webmail',
@@ -106,6 +118,7 @@ const shortDays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
 const analyse = async (context) => {
   const { pgdb } = context
+  process.env.MATOMO_MYSQL_URL = 'mysql://root@localhost:3306/piwik190307'
   const {
     MATOMO_MYSQL_URL
   } = process.env
@@ -281,7 +294,9 @@ const analyse = async (context) => {
       days: new Map(range(7).map(d => [d, 0])),
       pledgeIds: new Set(),
       chf: 0,
-      referrer: new Map()
+      countries: new Map(),
+      referrer: new Map(),
+      shortRefDayHour: new Map()
 
       // afterHoursChf: new Map(),
       // afterDays: new Map(),
@@ -312,7 +327,7 @@ const analyse = async (context) => {
   const incrementMap = (map, key) => {
     map.set(key, (map.get(key) || 0) + 1)
   }
-  const increment = (stat, key, visit, docAction, pledgeAction, events = []) => {
+  const increment = (stat, key, visit, docAction, pledgeAction, events = [], referrerTime = false) => {
     const rec = stat[key] = stat[key] || createRecord()
 
     rec.visitors.add(visit.idvisitor)
@@ -324,26 +339,45 @@ const analyse = async (context) => {
     //   const minutesSpent = Math.floor(docAction.time_spent / 60)
     //   incrementMap(rec.minutesSpent, minutesSpent)
     // }
+    incrementMap(rec.countries, visit.country)
 
     let referrer
+    let shortReferrer
     switch (visit.referer_type) {
       case 6:
         referrer = visit.referer_name.startsWith('republik/newsletter-editorial')
           ? 'Republik-Newsletter'
           : `Kampagne ${visit.referer_name}`
+        shortReferrer = shortReferrerNames[referrer]
+        if (!shortReferrer) {
+          shortReferrer = visit.referer_name.match(/email|newsletter/)
+            ? 'Newsletters'
+            : 'Kampagnen'
+        }
         break
       case 3:
       case 2:
         referrer = normalizeReferrerName(visit.referer_name)
+        shortReferrer = shortReferrerNames[referrer] || 'Links'
         break
       case 1:
         referrer = 'Direkt / Keine Angabe'
+        shortReferrer = 'Direkt'
         break
       default:
         referrer = 'Unbekannt'
+        shortReferrer = 'Unbekannt'
         break
     }
     incrementMap(rec.referrer, referrer)
+    if (referrerTime) {
+      let rtRec = rec.shortRefDayHour.get(shortReferrer)
+      if (!rtRec) {
+        rtRec = new Map()
+        rec.shortRefDayHour.set(shortReferrer, rtRec)
+      }
+      incrementMap(rtRec, `${day}-${hour}`)
+    }
 
     if (pledgeAction) {
       const { pledgeId } = pledgeAction
@@ -371,7 +405,7 @@ const analyse = async (context) => {
 
     segments.forEach(segment => {
       if (segment.test(visit)) {
-        increment(stat, segment.key, visit, docAction, pledgeAction, events)
+        increment(stat, segment.key, visit, docAction, pledgeAction, events, true)
         increment(docStat, segment.key, visit, docAction, pledgeAction, events)
       }
     })
@@ -384,7 +418,7 @@ const analyse = async (context) => {
         if (doc) {
           // const nextAction = visit.actions.find(a => a.idaction_url_ref === idaction_url)
           return {
-            server_time: new Date(server_time),
+            server_time: parseServerTime(server_time),
             // time_spent: nextAction
             //   ? nextAction.time_spent_ref_action
             //   : time_spent,
@@ -395,7 +429,7 @@ const analyse = async (context) => {
         const eventDoc = actionIdToDocument[idaction_url_ref]
         if (event && eventDoc) {
           return {
-            server_time: new Date(server_time),
+            server_time: parseServerTime(server_time),
             eventDoc,
             event
           }
@@ -403,7 +437,7 @@ const analyse = async (context) => {
         const pledgeId = actionIdToPledgeId[idaction_url]
         if (pledgeId) {
           return {
-            server_time: new Date(server_time),
+            server_time: parseServerTime(server_time),
             pledgeId
           }
         }
@@ -455,20 +489,28 @@ const analyse = async (context) => {
       pledge: segment.pledge.size,
       preview: segment.preview.size,
       chf: sum(segmentPledges, p => p.total) / 100,
-      pledgeMonths: mapToJs(segmentPledges
-        .map(p => getMonth(new Date(p.createdAt)))
-        .reduce(
-          (map, month) => {
-            incrementMap(map, month)
-            return map
-          },
-          new Map()
-        )
+      // pledgeMonths: mapToJs(segmentPledges
+      //   .map(p => getMonth(new Date(p.createdAt)))
+      //   .reduce(
+      //     (map, month) => {
+      //       incrementMap(map, month)
+      //       return map
+      //     },
+      //     new Map()
+      //   )
+      // ),
+      countries: mapToJs(
+        segment.countries,
+        (a, b) => descending(a[1], b[1])
       ),
       referrer: mapToJs(
         segment.referrer,
         (a, b) => descending(a[1], b[1])
       ),
+      shortRefDayHour: segment.shortRefDayHour
+        ? Array.from(segment.shortRefDayHour)
+          .map(d => ({ key: d[0], values: mapToJs(d[1]) }))
+        : undefined,
       hours: mapToJs(segment.hours),
       days: mapToJs(segment.days)
         .map(d => ({ key: shortDays[d.key], count: d.count }))
