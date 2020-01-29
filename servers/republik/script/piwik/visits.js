@@ -67,13 +67,19 @@ const getContext = (payload) => {
 
 const parseServerTime = server_time => new Date(server_time.replace(' ', 'T').replace(/(\.[0-9]+)$/, 'Z'))
 
-const shortReferrerNames = {
-  Facebook: 'Facebook',
-  Twitter: 'Twitter',
-  'getpocket.com': 'Pocket',
-  'Kampagne pocket-newtab': 'Pocket',
-  Google: 'Google',
-  'Republik-Newsletter': 'Republik-Newsletter'
+const shortReferrerRemap = {
+  Pocket: 'Verweise',
+  Kampagne: 'Kampagnen'
+}
+
+const normalizeCampagneName = name => {
+  if (name === 'pocket-newtab') {
+    return 'Pocket'
+  }
+  if (name.startsWith('republik/newsletter-editorial')) {
+    return 'Republik-Newsletter'
+  }
+  return `Kampagne ${name}`
 }
 
 const referrerNames = {
@@ -85,6 +91,7 @@ const referrerNames = {
   'com.twitter.android': 'Twitter',
   'com.samruston.twitter': 'Twitter',
   'tweetdeck.twitter.com': 'Twitter',
+  'getpocket.com': 'Pocket',
   'daily.spiegel.de': 'spiegel.de',
   'en.m.wikipedia.org': 'Wikipedia',
   'en.wikipedia.org': 'Wikipedia',
@@ -131,7 +138,7 @@ const analyse = async (context) => {
   const connection = con.promise()
 
   const documents = argv.fileBaseData
-    ? require('./documents.json').data.documents.nodes.filter(doc => doc.meta.template === 'article') // https://api.republik.ch/graphiql?query=%7B%0A%20%20documents(first%3A%2010000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20repoId%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
+    ? require('./documents.json').data.documents.nodes.filter(doc => doc.meta.template === 'article') // https://api.republik.ch/graphiql/?query=%7B%0A%20%20documents(first%3A%2010000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20repoId%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20ownDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20linkedDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
     : await search(null, {
       first: 10000,
       unrestricted: true,
@@ -225,6 +232,16 @@ const analyse = async (context) => {
     return 0
   }) / 100)
 
+  const discussionCounts = argv.fileBaseData
+    ? require('./comments.json')
+    : await pgdb.query(`
+    SELECT "discussionId", COUNT(*) FROM comments GROUP BY "discussionId"
+    `)
+  const discussionIndex = discussionCounts.reduce((index, d) => {
+    index[d.discussionId] = d.count
+    return index
+  }, {})
+
   // «visits»
   // SELECT
   //   idvisitor,
@@ -289,11 +306,12 @@ const analyse = async (context) => {
       sharer: new Set(),
       pledge: new Set(),
       preview: new Set(),
-      hours: new Map(range(24).map(h => [h, 0])),
+      // hours: new Map(range(24).map(h => [h, 0])),
       // minutesSpent: new Map(),
       days: new Map(range(7).map(d => [d, 0])),
       pledgeIds: new Set(),
       chf: 0,
+      hits: 0,
       countries: new Map(),
       referrer: new Map(),
       shortRefDayHour: new Map()
@@ -331,34 +349,25 @@ const analyse = async (context) => {
     const rec = stat[key] = stat[key] || createRecord()
 
     rec.visitors.add(visit.idvisitor)
-    const day = docAction.server_time.getDay()
-    incrementMap(rec.days, day)
-    const hour = docAction.server_time.getHours()
-    incrementMap(rec.hours, hour)
+    // incrementMap(rec.hours, hour)
     // if (docAction.time_spent) {
     //   const minutesSpent = Math.floor(docAction.time_spent / 60)
     //   incrementMap(rec.minutesSpent, minutesSpent)
     // }
+    rec.hits += 1
     incrementMap(rec.countries, visit.country)
 
     let referrer
     let shortReferrer
     switch (visit.referer_type) {
       case 6:
-        referrer = visit.referer_name.startsWith('republik/newsletter-editorial')
-          ? 'Republik-Newsletter'
-          : `Kampagne ${visit.referer_name}`
-        shortReferrer = shortReferrerNames[referrer]
-        if (!shortReferrer) {
-          shortReferrer = visit.referer_name.match(/email|newsletter/)
-            ? 'Newsletters'
-            : 'Kampagnen'
-        }
+        referrer = normalizeCampagneName(visit.referer_name)
+        shortReferrer = referrer.split(' ')[0]
         break
       case 3:
       case 2:
         referrer = normalizeReferrerName(visit.referer_name)
-        shortReferrer = shortReferrerNames[referrer] || 'Links'
+        shortReferrer = 'Verweise'
         break
       case 1:
         referrer = 'Direkt / Keine Angabe'
@@ -366,10 +375,16 @@ const analyse = async (context) => {
         break
       default:
         referrer = 'Unbekannt'
-        shortReferrer = 'Unbekannt'
+        shortReferrer = 'Übrige'
         break
     }
+    shortReferrer = shortReferrerRemap[shortReferrer] || shortReferrer
+
     incrementMap(rec.referrer, referrer)
+
+    const day = docAction.server_time.getDay()
+    incrementMap(rec.days, day)
+    const hour = docAction.server_time.getHours()
     if (referrerTime) {
       let rtRec = rec.shortRefDayHour.get(shortReferrer)
       if (!rtRec) {
@@ -499,6 +514,7 @@ const analyse = async (context) => {
       //     new Map()
       //   )
       // ),
+      hits: segment.hits,
       countries: mapToJs(
         segment.countries,
         (a, b) => descending(a[1], b[1])
@@ -511,7 +527,7 @@ const analyse = async (context) => {
         ? Array.from(segment.shortRefDayHour)
           .map(d => ({ key: d[0], values: mapToJs(d[1]) }))
         : undefined,
-      hours: mapToJs(segment.hours),
+      // hours: mapToJs(segment.hours),
       days: mapToJs(segment.days)
         .map(d => ({ key: shortDays[d.key], count: d.count }))
       // minutesSpent: mapToJs(segment.minutesSpent)
@@ -526,10 +542,16 @@ const analyse = async (context) => {
       createdAt: new Date().toISOString(),
       segments: segments.map(segment => segment.key),
       total: toJS(stat),
-      docs: Array.from(docStats).map(([doc, stat]) => ({
-        publishDate: doc.meta.publishDate,
-        title: doc.meta.title,
-        path: doc.meta.path,
+      docs: Array.from(docStats).map(([{ meta }, stat]) => ({
+        publishDate: meta.publishDate,
+        title: meta.title,
+        path: meta.path,
+        series: meta.series && meta.series.title,
+        format: meta.format && meta.format.meta.title,
+        comments: (
+          (meta.ownDiscussion && discussionIndex[meta.ownDiscussion.id]) || 0 +
+          (meta.linkedDiscussion && discussionIndex[meta.linkedDiscussion.id]) || 0
+        ),
         stats: toJS(stat)
       }))
     }, undefined, 2)
