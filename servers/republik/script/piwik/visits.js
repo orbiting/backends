@@ -233,12 +233,30 @@ const analyse = async (context) => {
   }) / 100)
 
   const discussionCounts = argv.fileBaseData
-    ? require('./comments.json')
+    ? require('./comments.json') // https://ultradashboard.republik.ch/question/451
     : await pgdb.query(`
-    SELECT "discussionId", COUNT(*) FROM comments GROUP BY "discussionId"
+SELECT "discussionId", COUNT(*)
+FROM comments
+WHERE "discussionId" NOT IN ('af8b21a5-92f7-4673-b10c-94b198156b60', '51246466-cf5e-422e-b428-dcdc2a6c60ab') -- alte sammeldebatten
+GROUP BY "discussionId"
     `)
   const discussionIndex = discussionCounts.reduce((index, d) => {
     index[d.discussionId] = d.count
+    return index
+  }, {})
+
+  const progressCounts = argv.fileBaseData
+    ? require('./progress.json') // https://ultradashboard.republik.ch/question/452
+    : await pgdb.query(`
+SELECT "repoId", COUNT("userId")
+FROM "collectionDocumentItems"
+WHERE
+  "collectionId" = (SELECT id FROM collections WHERE name = 'progress')
+  AND (CASE WHEN data->'max'->'data'->>'percentage' IS NOT NULL THEN data->'max'->'data'->>'percentage' ELSE data->>'percentage' END)::numeric >= 0.85
+GROUP BY "repoId"
+    `)
+  const progressIndex = progressCounts.reduce((index, d) => {
+    index[d.repoId] = d.count
     return index
   }, {})
 
@@ -542,7 +560,7 @@ const analyse = async (context) => {
       createdAt: new Date().toISOString(),
       segments: segments.map(segment => segment.key),
       total: toJS(stat),
-      docs: Array.from(docStats).map(([{ meta }, stat]) => ({
+      docs: Array.from(docStats).map(([{ meta, repoId }, stat]) => ({
         publishDate: meta.publishDate,
         title: meta.title,
         path: meta.path,
@@ -552,6 +570,7 @@ const analyse = async (context) => {
           (meta.ownDiscussion && discussionIndex[meta.ownDiscussion.id]) || 0 +
           (meta.linkedDiscussion && discussionIndex[meta.linkedDiscussion.id]) || 0
         ),
+        progress85: progressIndex[repoId] || 0,
         stats: toJS(stat)
       }))
     }, undefined, 2)
