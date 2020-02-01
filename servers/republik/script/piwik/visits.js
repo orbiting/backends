@@ -156,7 +156,7 @@ const analyse = async (context) => {
 
   const redirections = argv.fileBaseData
     ? require('./redirections.json') // https://ultradashboard.republik.ch/question/181
-    : await pgdb.query('SELECT source, target FROM redirections WHERE "deletedAt" is null')
+    : await pgdb.query('SELECT source, target, "createdAt" FROM redirections WHERE "deletedAt" is null')
   console.log('redirections', redirections.length)
 
   const pledges = argv.fileBaseData
@@ -176,8 +176,16 @@ const analyse = async (context) => {
 
   const getCurrentPath = path => {
     let currentPath = path
-    while (redirections.find(r => r.source === currentPath)) {
-      currentPath = redirections.find(r => r.source === currentPath).target
+    let redirection = redirections.find(r => r.source === currentPath)
+    while (redirection) {
+      currentPath = redirection.target
+      const createdAt = new Date(redirection.createdAt)
+      redirection = redirections.find(r =>
+        r.source === currentPath && (
+          redirection.source !== r.target ||
+          new Date(r.createdAt) > createdAt
+        )
+      )
     }
     return currentPath
   }
