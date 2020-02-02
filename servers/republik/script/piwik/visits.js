@@ -8,8 +8,8 @@ const fs = require('fs')
 const path = require('path')
 const mysql = require('mysql2')
 const querystring = require('querystring')
-const { ascending, descending, range, sum } = require('d3-array')
-// const { timeFormat } = require('d3-time-format')
+const { ascending, descending, range, sum, max } = require('d3-array')
+const { timeFormat } = require('d3-time-format')
 const yargs = require('yargs')
 
 const PgDb = require('@orbiting/backend-modules-base/lib/PgDb')
@@ -58,12 +58,14 @@ const getContext = (payload) => {
 // node --max-old-space-size=4096 servers/republik/script/piwik/visits.js --fbd
 
 // hash file for secret url?
-// shasum -a 256 servers/republik/script/piwik/stats.json
+// mv servers/republik/script/piwik/stats.json "servers/republik/script/piwik/$(shasum -a 256 servers/republik/script/piwik/stats.json | cut -d " " -f1).json"
 
 // https://developer.matomo.org/guides/persistence-and-the-mysql-backend
 
 // const getWeek = timeFormat('%W')
 // const getMonth = timeFormat('%m')
+const formatDateHour = timeFormat('%Y-%m-%dT%H')
+const formatDayHour = timeFormat('%w-%H')
 
 const parseServerTime = server_time => new Date(server_time.replace(' ', 'T').replace(/(\.[0-9]+)$/, 'Z'))
 
@@ -82,6 +84,9 @@ const normalizeCampagneName = name => {
   return `Kampagne ${name}`
 }
 
+const topReferrer = [
+  'Facebook', 'Twitter', 'Google', 'Pocket'
+]
 const socialNetworks = ['Facebook', 'Twitter', 'Telegram', 'GitHub', 'reddit', 'XING', 'LinkedIn', 'Telegram', 'Vkontakte']
 const referrerNames = {
   'pinterest.com': 'Pinterest',
@@ -355,7 +360,8 @@ GROUP BY "repoId"
       hits: 0,
       countries: new Map(),
       referrer: new Map(),
-      shortRefDayHour: new Map()
+      shortRefDayHour: new Map(),
+      topRefDateHour: new Map()
 
       // afterHoursChf: new Map(),
       // afterDays: new Map(),
@@ -383,10 +389,10 @@ GROUP BY "repoId"
     //   test: visit => visit.os === 'IOS' || visit.os === 'AND'
     // }
   ]
-  const incrementMap = (map, key) => {
-    map.set(key, (map.get(key) || 0) + 1)
+  const incrementMap = (map, key, count = 1) => {
+    map.set(key, (map.get(key) || 0) + count)
   }
-  const increment = (stat, key, visit, docAction, pledgeAction, events = [], referrerTime = false) => {
+  const increment = (stat, key, visit, docAction, pledgeAction, events = [], { isDoc } = {}) => {
     const rec = stat[key] = stat[key] || createRecord()
 
     rec.visitors.add(visit.idvisitor)
@@ -428,14 +434,23 @@ GROUP BY "repoId"
 
     const day = docAction.server_time.getDay()
     incrementMap(rec.days, day)
-    const hour = docAction.server_time.getHours()
-    if (referrerTime) {
+    if (!isDoc) {
       let rtRec = rec.shortRefDayHour.get(shortReferrer)
       if (!rtRec) {
         rtRec = new Map()
         rec.shortRefDayHour.set(shortReferrer, rtRec)
       }
-      incrementMap(rtRec, `${day}-${hour}`)
+      incrementMap(rtRec, formatDayHour(docAction.server_time))
+    } else {
+      const topRef = topReferrer.includes(referrer)
+        ? referrer
+        : shortReferrer
+      let rtRec = rec.topRefDateHour.get(topRef)
+      if (!rtRec) {
+        rtRec = new Map()
+        rec.topRefDateHour.set(topRef, rtRec)
+      }
+      incrementMap(rtRec, formatDateHour(docAction.server_time))
     }
 
     if (pledgeAction) {
@@ -464,8 +479,8 @@ GROUP BY "repoId"
 
     segments.forEach(segment => {
       if (segment.test(visit)) {
-        increment(stat, segment.key, visit, docAction, pledgeAction, events, true)
-        increment(docStat, segment.key, visit, docAction, pledgeAction, events)
+        increment(stat, segment.key, visit, docAction, pledgeAction, events)
+        increment(docStat, segment.key, visit, docAction, pledgeAction, events, { isDoc: true })
       }
     })
   }
@@ -529,8 +544,37 @@ GROUP BY "repoId"
     .sort(compare)
     .map(d => ({ key: d[0], count: d[1] }))
 
+  const filterTimeMap = (map, { first = 168, threshold = 100 } = {}) => {
+    const keyCounts = new Map()
+    map.forEach((values) => {
+      values.forEach((count, key) => {
+        incrementMap(keyCounts, key, count)
+      })
+    })
+
+    const CONTEXT = 5
+    // include context before and after threshold was met
+    const getMaxProximateCount = (all, i) => max(all.slice(Math.max(i - CONTEXT, 0), i + 1 + CONTEXT), d => d[1])
+    const keysToKeep = Array.from(keyCounts)
+      .sort((a, b) => ascending(a[0], b[0]))
+      .filter(([key, count], i, all) => (
+        i < first ||
+        getMaxProximateCount(all, i) >= threshold
+      ))
+      .map(([key]) => key)
+
+    return Array.from(map).map(([key, values]) => {
+      return {
+        key,
+        values: Array.from(values)
+          .filter(([key]) => keysToKeep.includes(key))
+          .map(d => ({ key: d[0], count: d[1] }))
+      }
+    })
+  }
+
   const missingPledges = new Set()
-  const toJS = stat => Object.keys(stat).reduce((agg, key) => {
+  const toJS = (stat, { isDoc } = {}) => Object.keys(stat).reduce((agg, key) => {
     const segment = stat[key]
 
     const segmentPledges = Array.from(segment.pledgeIds).map(id => {
@@ -540,6 +584,9 @@ GROUP BY "repoId"
       }
       return pledge
     }).filter(Boolean)
+
+    const rtKey = isDoc
+      ? 'topRefDateHour' : 'shortRefDayHour'
 
     agg[key] = {
       segment: key,
@@ -567,15 +614,22 @@ GROUP BY "repoId"
         segment.referrer,
         (a, b) => descending(a[1], b[1])
       ),
-      shortRefDayHour: segment.shortRefDayHour
-        ? Array.from(segment.shortRefDayHour)
-          .map(d => ({ key: d[0], values: mapToJs(d[1]) }))
+      [rtKey]: segment[rtKey]
+        ? filterTimeMap(segment[rtKey], {
+          first: isDoc
+            ? 24 * 3 // first three days
+            : Infinity,
+          threshold: 200
+        })
         : undefined,
+      ...(!isDoc && {
+        days: mapToJs(segment.days)
+          .map(d => ({ key: shortDays[d.key], count: d.count }))
+      })
       // hours: mapToJs(segment.hours),
-      days: mapToJs(segment.days)
-        .map(d => ({ key: shortDays[d.key], count: d.count }))
       // minutesSpent: mapToJs(segment.minutesSpent)
     }
+    if (rtKey) {}
     return agg
   }, {})
 
@@ -597,7 +651,7 @@ GROUP BY "repoId"
           (meta.linkedDiscussion && discussionIndex[meta.linkedDiscussion.id]) || 0
         ),
         progress85: progressIndex[repoId] || 0,
-        stats: toJS(stat)
+        stats: toJS(stat, { isDoc: true })
       }))
     }, undefined, 2)
   )
