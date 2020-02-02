@@ -83,6 +83,20 @@ const normalizeCampagneName = name => {
 }
 
 const referrerNames = {
+  'pinterest.com': 'Pinterest',
+  'youtube.com': 'YouTube',
+  'com.stefandekanski.hackernews.free': 'Hacker News',
+  'away.vk.com': 'Vkontakte',
+  'github.com': 'GitHub',
+  'reddit.com': 'reddit',
+  'old.reddit.com': 'reddit',
+  'org.telegram.messenger': 'Telegram',
+  instagram: 'Instagram',
+  'instagram.com': 'Instagram',
+  'xing.com': 'XING',
+  'com.xing.android': 'XING',
+  'linkedin.com': 'LinkedIn',
+  'com.linkedin.android': 'LinkedIn',
   'lm.facebook.com': 'Facebook',
   'facebook.com': 'Facebook',
   't.co': 'Twitter',
@@ -390,6 +404,7 @@ GROUP BY "repoId"
         referrer = normalizeCampagneName(visit.referer_name)
         shortReferrer = referrer.split(' ')[0]
         break
+      case 7:
       case 3:
       case 2:
         referrer = normalizeReferrerName(visit.referer_name)
