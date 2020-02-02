@@ -41,7 +41,7 @@ const getContext = (payload) => {
     ...payload,
     loaders,
     user: {
-      name: 'Analystic-bot',
+      name: 'Analytics-bot',
       email: 'ruggedly@project-r.construction',
       roles: ['editor', 'member']
     }
@@ -82,6 +82,7 @@ const normalizeCampagneName = name => {
   return `Kampagne ${name}`
 }
 
+const socialNetworks = ['Facebook', 'Twitter', 'Telegram', 'GitHub', 'reddit', 'XING', 'LinkedIn', 'Telegram', 'Vkontakte']
 const referrerNames = {
   'pinterest.com': 'Pinterest',
   'youtube.com': 'YouTube',
@@ -408,7 +409,9 @@ GROUP BY "repoId"
       case 3:
       case 2:
         referrer = normalizeReferrerName(visit.referer_name)
-        shortReferrer = 'Verweise'
+        shortReferrer = visit.referer_type === 7 || socialNetworks.includes(referrer)
+          ? 'Soziale Netzwerke'
+          : 'Verweise'
         break
       case 1:
         referrer = 'Direkt / Keine Angabe'
