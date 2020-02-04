@@ -273,20 +273,21 @@ GROUP BY "discussionId"
     return index
   }, {})
 
-  const progressCounts = argv.fileBaseData
-    ? require('./progress.json') // https://ultradashboard.republik.ch/question/452
-    : await pgdb.query(`
-SELECT "repoId", COUNT("userId")
-FROM "collectionDocumentItems"
-WHERE
-  "collectionId" = (SELECT id FROM collections WHERE name = 'progress')
-  AND (CASE WHEN data->'max'->'data'->>'percentage' IS NOT NULL THEN data->'max'->'data'->>'percentage' ELSE data->>'percentage' END)::numeric >= 0.85
-GROUP BY "repoId"
-    `)
-  const progressIndex = progressCounts.reduce((index, d) => {
-    index[d.repoId] = d.count
-    return index
-  }, {})
+  // // this progress data probably does not have much meaning
+  //   const progressCounts = argv.fileBaseData
+  //     ? require('./progress.json') // https://ultradashboard.republik.ch/question/452
+  //     : await pgdb.query(`
+  // SELECT "repoId", COUNT("userId")
+  // FROM "collectionDocumentItems"
+  // WHERE
+  //   "collectionId" = (SELECT id FROM collections WHERE name = 'progress')
+  //   AND (CASE WHEN data->'max'->'data'->>'percentage' IS NOT NULL THEN data->'max'->'data'->>'percentage' ELSE data->>'percentage' END)::numeric >= 0.85
+  // GROUP BY "repoId"
+  //     `)
+  //   const progressIndex = progressCounts.reduce((index, d) => {
+  //     index[d.repoId] = d.count
+  //     return index
+  //   }, {})
 
   // «visits»
   // SELECT
@@ -650,7 +651,7 @@ GROUP BY "repoId"
           (meta.ownDiscussion && discussionIndex[meta.ownDiscussion.id]) || 0 +
           (meta.linkedDiscussion && discussionIndex[meta.linkedDiscussion.id]) || 0
         ),
-        progress85: progressIndex[repoId] || 0,
+        // progress85: progressIndex[repoId] || 0,
         stats: toJS(stat, { isDoc: true })
       }))
     }, undefined, 2)
