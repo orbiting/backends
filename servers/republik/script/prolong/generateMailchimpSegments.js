@@ -60,15 +60,22 @@ Promise.props({ pgdb: PgDb.connect(), redis: Redis.connect() }).then(async (conn
 
   debug({ memberships: memberships.length })
 
+  const questionnaireSubmissions = await pgdb.query(`
+    SELECT "userId"
+    FROM "questionnaireSubmissions" qs
+    WHERE qs."questionnaireId" = '61cf6731-ef6e-4901-8803-24a6b6814119'
+  `)
+
+  debug({ questionnaireSubmissions: questionnaireSubmissions.length })
+
   await Promise.map(
     users,
     async (user, index) => {
       users[index].memberships = memberships.filter(m => m.userId === user.id)
       users[index].accessToken = await AccessToken.generateForUser(user, 'CUSTOM_PLEDGE_EXTENDED')
+      users[index].questionnaireSubmissions = questionnaireSubmissions.filter(s => s.userId === user.id)
     }
   )
-
-  // console.log(users[0].memberships)
 
   debug('data gathered. segmenting...')
 
@@ -188,7 +195,7 @@ Promise.props({ pgdb: PgDb.connect(), redis: Redis.connect() }).then(async (conn
 
   debug({ stats })
 
-  console.log(['userId', 'userEmail', 'kampaSegment,accessToken,membershipType,price,price2'].join(','))
+  console.log(['userId', 'userEmail', 'kampaSegment,accessToken,membershipType,price,price2,questionnaireSubmissions'].join(','))
 
   await Promise.each(Object.keys(segments), async label => {
     const segmentedUser = segments[label]
@@ -202,7 +209,8 @@ Promise.props({ pgdb: PgDb.connect(), redis: Redis.connect() }).then(async (conn
         user.accessToken,
         user.membershipTypeName,
         user.price,
-        user.price && user.price * 2
+        user.price && user.price * 2,
+        user.questionnaireSubmissions.length
       ].join(','))
     })
 
