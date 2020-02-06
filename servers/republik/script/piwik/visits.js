@@ -85,7 +85,7 @@ const normalizeCampagneName = name => {
 }
 
 const topReferrer = [
-  'Facebook', 'Twitter', 'Google', 'Pocket'
+  'Facebook', 'Twitter', 'Google', 'Pocket', 'blog.fefe.de'
 ]
 const socialNetworks = ['Facebook', 'Twitter', 'Telegram', 'GitHub', 'reddit', 'XING', 'LinkedIn', 'Telegram', 'Vkontakte']
 const referrerNames = {
