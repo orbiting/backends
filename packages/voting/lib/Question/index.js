@@ -37,13 +37,20 @@ const turnout = async (question, pgdb) => {
   const numSubmittedQuestionnaires =
     (question.questionnaire.turnout && question.questionnaire.turnout.submitted) ||
     await getNumSubmittedQuestionnaires(questionnaireId, pgdb)
+
   const numSubmittedAnswers = await pgdb.public.answers.count({
     submitted: true,
     questionId
   })
+  const { includeUnsubmittedAnswers } = question.questionnaire
+  const numCountedAnswers = !includeUnsubmittedAnswers
+    ? numSubmittedAnswers
+    : await pgdb.public.answers.count({ questionId })
+
   return {
     submitted: numSubmittedAnswers,
-    skipped: numSubmittedQuestionnaires - numSubmittedAnswers
+    skipped: numSubmittedQuestionnaires - numSubmittedAnswers,
+    counted: numCountedAnswers
   }
 }
 

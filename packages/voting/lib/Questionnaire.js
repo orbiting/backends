@@ -141,12 +141,22 @@ const updateResultIncrementally = async (questionnaireId, answer, previousAnswer
     debug({ answerOptionPayload, previousAnswerOptionPayload })
 
     if (answerValue) {
-      turnout.submitted += 1
       answerOptionPayload.count += 1
+      if (answer.submitted) {
+        turnout.submitted += 1
+      }
+      if (includeUnsubmittedAnswers || answer.submitted) {
+        turnout.counted += 1
+      }
     }
     if (previousAnswerValue) {
-      turnout.submitted -= 1
       previousAnswerOptionPayload.count -= 1
+      if (previousAnswer.submitted) {
+        turnout.submitted -= 1
+      }
+      if (includeUnsubmittedAnswers || previousAnswer.submitted) {
+        turnout.counted -= 1
+      }
     }
     debug({ answerOptionPayload, previousAnswerOptionPayload })
 

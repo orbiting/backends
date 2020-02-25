@@ -232,6 +232,7 @@ interface QuestionInterface {
 type QuestionTurnout {
   submitted: Int!
   skipped: Int!
+  counted: Int!
 }
 
 type QuestionTypeText implements QuestionInterface {
