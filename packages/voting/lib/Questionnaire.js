@@ -3,6 +3,8 @@ const queries = buildQueries('questionnaires')
 
 const { resultForArchive } = require('./Question')
 const finalizeLib = require('./finalize.js')
+const difference = require('lodash/difference')
+const debug = require('debug')('voting:questionnaire')
 
 const transformQuestion = (q, questionnaire) => ({
   ...q.typePayload,
@@ -75,8 +77,9 @@ const finalize = async (questionnaire, args, context) => {
   return finalizeLib('questionnaires', questionnaire, result, args, context.pgdb)
 }
 
-const updateResultIncrementally = async (questionnaireId, answer, transaction, context) => {
+const updateResultIncrementally = async (questionnaireId, answer, previousAnswer, transaction, context) => {
   const { t } = context
+
   const questionnaire = await transaction.query(`
     SELECT *
     FROM questionnaires
@@ -88,10 +91,10 @@ const updateResultIncrementally = async (questionnaireId, answer, transaction, c
     .then(r => r && r[0])
 
   if (!questionnaire) {
-    throw new Error(t(`api/questionnaire/404`))
+    throw new Error(t('api/questionnaire/404'))
   }
 
-  let { result } = questionnaire
+  let { result, includeUnsubmittedAnswers } = questionnaire
   if (!result) {
     result = await getResult(questionnaire, { ...context, pgdb: transaction })
   }
@@ -110,19 +113,47 @@ const updateResultIncrementally = async (questionnaireId, answer, transaction, c
     throw new Error(t('api/unexpected'))
   }
 
-  const optionPayload = payload
-    .find(p => p.option.value == answer.payload.value) // eslint-disable-line eqeqeq
+  const answerValue = (includeUnsubmittedAnswers || answer.submitted)
+    ? answer.payload.value
+    : null
+  const previousAnswerValue = (includeUnsubmittedAnswers || (previousAnswer && previousAnswer.submitted))
+    ? previousAnswer && previousAnswer.payload && previousAnswer.payload.value
+    : null
 
-  if (!optionPayload) {
-    console.error('optionPayload not found', payload)
-    throw new Error(t('api/unexpected'))
+  const valueChanged =
+    (answerValue && !previousAnswerValue) ||
+    (!answerValue && previousAnswerValue) ||
+    (Array.isArray(answerValue || previousAnswerValue) && difference(answerValue, previousAnswerValue).length > 0) ||
+    (!Array.isArray(answerValue || previousAnswerValue) && previousAnswerValue != answerValue)
+
+  debug({ valueChanged, previousAnswerValue, answerValue, diff: difference(answerValue, previousAnswerValue) })
+  if (!questionnaire.result && valueChanged) {
+    const answerOptionPayload = payload
+      .find(p => p.option.value == answerValue) // eslint-disable-line eqeqeq
+
+    const previousAnswerOptionPayload = previousAnswerValue && payload
+      .find(p => p.option.value == previousAnswerValue) // eslint-disable-line eqeqeq
+
+    if (!answerOptionPayload || (previousAnswerValue && !previousAnswerOptionPayload)) {
+      console.error('optionPayload not found', payload)
+      throw new Error(t('api/unexpected'))
+    }
+    debug({ answerOptionPayload, previousAnswerOptionPayload })
+
+    if (answerValue) {
+      turnout.submitted += 1
+      answerOptionPayload.count += 1
+    }
+    if (previousAnswerValue) {
+      turnout.submitted -= 1
+      previousAnswerOptionPayload.count -= 1
+    }
+    debug({ answerOptionPayload, previousAnswerOptionPayload })
+
+    result.updatedAt = new Date()
   }
 
-  turnout.submitted += 1
-  optionPayload.count += 1
-  result.updatedAt = new Date()
-
-  await transaction.public.questionnaires.updateOne(
+  return transaction.public.questionnaires.updateAndGetOne(
     { id: questionnaireId },
     { result }
   )

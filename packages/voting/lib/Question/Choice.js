@@ -10,7 +10,7 @@ const validate = (value, question, { t }) => {
     if (question.typePayload.cardinality > 0 && value.length > question.typePayload.cardinality) {
       throw new Error(t('api/questionnaire/answer/Choice/tooMany', { max: question.typePayload.cardinality }))
     }
-    for (let v of value) {
+    for (const v of value) {
       if (!question.typePayload.options.find(ov => ov.value === v)) {
         throw new Error(t('api/questionnaire/answer/Choice/value/404', { value: v }))
       }
@@ -21,6 +21,7 @@ const validate = (value, question, { t }) => {
 
 const result = async (question, { top, min }, context) => {
   const { pgdb } = context
+  const { includeUnsubmittedAnswers } = question.questionnaire
   const aggs = await pgdb.query(`
     SELECT
       COUNT(*) AS count,
@@ -28,7 +29,7 @@ const result = async (question, { top, min }, context) => {
     FROM
       answers
     WHERE
-      submitted = true AND
+      ${includeUnsubmittedAnswers ? '' : 'submitted = true AND'}
       "questionId" = :questionId
     GROUP BY
       2

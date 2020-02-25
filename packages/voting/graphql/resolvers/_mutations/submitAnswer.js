@@ -8,6 +8,7 @@ const {
 const {
   validateAnswer
 } = require('../../../lib/Question')
+const Promise = require('bluebird')
 
 module.exports = async (_, { answer }, context) => {
   const { pgdb, user: me, t, req } = context
@@ -27,7 +28,14 @@ module.exports = async (_, { answer }, context) => {
     await ensureReadyToSubmit(questionnaire, me.id, now, { ...context, pgdb: transaction })
 
     // check client generated ID
-    const existingAnswer = await transaction.public.answers.findOne({ id })
+    const [existingAnswer, answerToSameQuestion] = await Promise.all([
+      transaction.public.answers.findOne({ id }),
+      transaction.public.answers.findOne({
+        'id !=': id,
+        userId: me.id,
+        questionId
+      })
+    ])
     if (existingAnswer) {
       if (existingAnswer.userId !== me.id) {
         throw new Error(t('api/questionnaire/answer/idExists'))
@@ -36,19 +44,19 @@ module.exports = async (_, { answer }, context) => {
         throw new Error(t('api/questionnaire/answer/noQuestionRemapping'))
       }
     }
-    const sameAnswer = await transaction.public.answers.findOne({
-      'id !=': id,
-      userId: me.id,
-      questionId
-    })
     if (
       (existingAnswer && existingAnswer.submitted) ||
-      (sameAnswer && sameAnswer.submitted)
+      (answerToSameQuestion && answerToSameQuestion.submitted)
     ) {
       throw new Error(t('api/questionnaire/answer/immutable'))
     }
-    if (sameAnswer) {
-      await transaction.public.answers.deleteOne({ id: sameAnswer.id })
+
+    if (answerToSameQuestion) {
+      await transaction.public.answers.updateOne(
+        { id: answerToSameQuestion.id },
+        { id }
+      )
+      answerToSameQuestion.id = id
     }
 
     // validate
@@ -76,24 +84,18 @@ module.exports = async (_, { answer }, context) => {
       throw new Error(t('api/questionnaire/answer/empty'))
     }
 
-    if (questionnaire.updateResultIncrementally) {
-      await updateResultIncrementally(
-        questionnaire.id,
-        answer,
-        transaction,
-        context
-      )
-    }
+    const previousAnswer = existingAnswer || answerToSameQuestion // only one exists at a time
 
     // write
+    let newAnswer
     const findQuery = { id }
     if (emptyAnswer) {
-      if (existingAnswer) {
+      if (previousAnswer) {
         await transaction.public.answers.deleteOne(findQuery)
       }
     } else {
-      if (existingAnswer) {
-        await transaction.public.answers.updateOne(
+      if (previousAnswer) {
+        newAnswer = await transaction.public.answers.updateAndGetOne(
           findQuery,
           {
             questionId,
@@ -102,7 +104,7 @@ module.exports = async (_, { answer }, context) => {
           }
         )
       } else {
-        await transaction.public.answers.insert({
+        newAnswer = await transaction.public.answers.insertAndGet({
           id,
           questionId,
           questionnaireId: questionnaire.id,
@@ -113,9 +115,20 @@ module.exports = async (_, { answer }, context) => {
       }
     }
 
+    let updatedQuestionnaire
+    if (questionnaire.updateResultIncrementally) {
+      updatedQuestionnaire = await updateResultIncrementally(
+        questionnaire.id,
+        newAnswer,
+        previousAnswer,
+        transaction,
+        context
+      )
+    }
+
     await transaction.transactionCommit()
 
-    return transformQuestion(question, questionnaire)
+    return transformQuestion(question, updatedQuestionnaire || questionnaire)
   } catch (e) {
     await transaction.transactionRollback()
     throw e

@@ -38,7 +38,8 @@ Promise.props({
       endDate: moment(now).add(99, 'year'),
       allowedRoles: [],
       liveResult: true,
-      submitAnswersImmediately: true,
+      submitAnswersImmediately: false,
+      includeUnsubmittedAnswers: true,
       updateResultIncrementally: true,
       noEmptyAnswers: true
     })
