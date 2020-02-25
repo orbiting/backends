@@ -127,7 +127,7 @@ const updateResultIncrementally = async (questionnaireId, answer, previousAnswer
     (!Array.isArray(answerValue || previousAnswerValue) && previousAnswerValue != answerValue) // eslint-disable-line eqeqeq
 
   debug({ valueChanged, previousAnswerValue, answerValue, diff: difference(answerValue, previousAnswerValue) })
-  if (!questionnaire.result && valueChanged) {
+  if (questionnaire.result && valueChanged) {
     const answerOptionPayload = payload
       .find(p => p.option.value == answerValue) // eslint-disable-line eqeqeq
 
