@@ -124,7 +124,7 @@ const updateResultIncrementally = async (questionnaireId, answer, previousAnswer
     (answerValue && !previousAnswerValue) ||
     (!answerValue && previousAnswerValue) ||
     (Array.isArray(answerValue || previousAnswerValue) && difference(answerValue, previousAnswerValue).length > 0) ||
-    (!Array.isArray(answerValue || previousAnswerValue) && previousAnswerValue != answerValue)
+    (!Array.isArray(answerValue || previousAnswerValue) && previousAnswerValue != answerValue) // eslint-disable-line eqeqeq
 
   debug({ valueChanged, previousAnswerValue, answerValue, diff: difference(answerValue, previousAnswerValue) })
   if (!questionnaire.result && valueChanged) {
