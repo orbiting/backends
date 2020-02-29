@@ -14,7 +14,8 @@ const mailings = require('./owners/mailings')
 const charging = require('./owners/charging')
 
 const {
-  PARKING_USER_ID
+  PARKING_USER_ID,
+  MEMBERSHIP_SCHEDULER_USER_LIMIT = 100
 } = process.env
 
 const STATS_INTERVAL_SECS = 3
@@ -42,7 +43,7 @@ const createBuckets = (now) => [
       max: getMaxEndDate(now, DAYS_BEFORE_END_DATE)
     },
     predicate: ({ id: userId, membershipType, membershipAutoPay, autoPay }) => {
-      return ['ABO'].includes(membershipType) && (
+      return ['ABO', 'BENEFACTOR_ABO'].includes(membershipType) && (
         membershipAutoPay === false ||
         (
           membershipAutoPay === true && (
@@ -60,11 +61,11 @@ const createBuckets = (now) => [
   {
     name: 'membership_owner_prolong_notice_7',
     endDate: {
-      min: getMinEndDate(now, 5),
+      min: getMinEndDate(now, 3),
       max: getMaxEndDate(now, 7)
     },
     predicate: ({ id: userId, membershipType, membershipAutoPay, autoPay }) => {
-      return ['ABO'].includes(membershipType) && (
+      return ['ABO', 'BENEFACTOR_ABO'].includes(membershipType) && (
         membershipAutoPay === false ||
         (
           membershipAutoPay === true && (
@@ -86,7 +87,7 @@ const createBuckets = (now) => [
       max: getMaxEndDate(now, 0)
     },
     predicate: ({ id: userId, membershipType, membershipAutoPay, autoPay }) => {
-      return ['ABO'].includes(membershipType) && (
+      return ['ABO', 'BENEFACTOR_ABO'].includes(membershipType) && (
         membershipAutoPay === false ||
         (
           membershipAutoPay === true && (
@@ -98,6 +99,28 @@ const createBuckets = (now) => [
     },
     payload: {
       templateName: 'membership_owner_prolong_notice_0'
+    },
+    handler: mailings
+  },
+  {
+    name: 'membership_owner_prolong_winback_7',
+    endDate: {
+      min: getMinEndDate(now, -10),
+      max: getMaxEndDate(now, -7)
+    },
+    predicate: ({ id: userId, membershipType, membershipAutoPay, autoPay }) => {
+      return ['ABO', 'BENEFACTOR_ABO'].includes(membershipType) && (
+        membershipAutoPay === false ||
+        (
+          membershipAutoPay === true && (
+            !autoPay ||
+            (autoPay && userId !== autoPay.userId)
+          )
+        )
+      )
+    },
+    payload: {
+      templateName: 'membership_owner_prolong_winback_7'
     },
     handler: mailings
   },
@@ -163,8 +186,10 @@ const getBuckets = async ({ now }, context) => {
       AND m.active = true
       AND m.renew = true
     ORDER BY RANDOM()
+    LIMIT :MEMBERSHIP_SCHEDULER_USER_LIMIT
   `, {
-    PARKING_USER_ID
+    PARKING_USER_ID,
+    MEMBERSHIP_SCHEDULER_USER_LIMIT
   })
     .then(users => users
       .map(user => ({

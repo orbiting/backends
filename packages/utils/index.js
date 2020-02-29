@@ -4,5 +4,8 @@ module.exports = {
   paginate: require('./paginate'),
   naming: require('./naming'),
   mdastToString: require('./mdastToString'),
-  hasUserActiveMembership: require('./hasUserActiveMembership')
+  hasUserActiveMembership: require('./hasUserActiveMembership'),
+  fetchWithTimeout: require('./fetchWithTimeout'),
+  getUrls: require('./getUrls'),
+  truncate: require('./truncate')
 }
