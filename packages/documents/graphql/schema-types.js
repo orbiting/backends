@@ -8,12 +8,18 @@ type Series {
   episodes: [Episode!]!
 }
 
+type EpisodePart {
+  title: String
+  document: Document
+}
+
 type Episode {
   title: String
   label: String
   image: String
   publishDate: DateTime
   document: Document
+  parts: [EpisodePart]
 }
 
 type AudioSource implements PlayableMedia {

@@ -243,7 +243,14 @@ const metaFieldResolver = (meta, allDocuments = [], errors) => {
       ...series,
       episodes: (series.episodes || []).map(episode => ({
         ...episode,
-        document: resolver(episode.document)
+        document: resolver(episode.document),
+        parts: (episode.parts || []).map(part => {
+          console.log(part.document, resolver(part.document))
+          return {
+            ...part,
+            document: resolver(part.document)
+          }
+        })
       }))
     }
   }
