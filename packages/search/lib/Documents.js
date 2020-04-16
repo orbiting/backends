@@ -367,6 +367,11 @@ const addRelatedDocs = async ({
       } else {
         meta.series.episodes && meta.series.episodes.forEach(episode => {
           repoIds.push(getRepoId(episode.document).repoId)
+          if (episode.parts && episode.parts.length) {
+            episode.parts.forEach(part => {
+              repoIds.push(getRepoId(part.document).repoId)
+            })
+          }
         })
       }
     }
@@ -391,6 +396,10 @@ const addRelatedDocs = async ({
       meta.series.episodes && meta.series.episodes.forEach(episode => {
         debug(getRepoId(episode.document).repoId)
         repoIds.push(getRepoId(episode.document).repoId)
+        episode.parts.forEach(part => {
+          debug(getRepoId(part.document).repoId)
+          repoIds.push(getRepoId(part.document).repoId)
+        })
       })
     })
   }

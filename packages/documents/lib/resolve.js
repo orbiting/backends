@@ -245,7 +245,6 @@ const metaFieldResolver = (meta, allDocuments = [], errors) => {
         ...episode,
         document: resolver(episode.document),
         parts: (episode.parts || []).map(part => {
-          console.log(part.document, resolver(part.document))
           return {
             ...part,
             document: resolver(part.document)
