@@ -5,6 +5,9 @@ scalar JSON
 
 type Series {
   title: String!
+  primaryColor: String,
+  textColor: String,
+  bgColor: String,
   episodes: [Episode!]!
 }
 
