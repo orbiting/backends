@@ -19,7 +19,7 @@ type Episode {
   image: String
   publishDate: DateTime
   document: Document
-  parts: [EpisodePart]
+  parts: [EpisodePart!]!
 }
 
 type AudioSource implements PlayableMedia {
