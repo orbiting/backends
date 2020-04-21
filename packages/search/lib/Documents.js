@@ -396,7 +396,7 @@ const addRelatedDocs = async ({
       meta.series.episodes && meta.series.episodes.forEach(episode => {
         debug(getRepoId(episode.document).repoId)
         repoIds.push(getRepoId(episode.document).repoId)
-        episode.parts.forEach(part => {
+        episode.parts && episode.parts.forEach(part => {
           debug(getRepoId(part.document).repoId)
           repoIds.push(getRepoId(part.document).repoId)
         })
