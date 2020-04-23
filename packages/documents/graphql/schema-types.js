@@ -5,10 +5,11 @@ scalar JSON
 
 type Series {
   title: String!
-  primaryColor: String,
-  textColor: String,
-  bgColor: String,
+  primaryColor: String
+  textColor: String
+  bgColor: String
   episodes: [Episode!]!
+  displayParents: Boolean
 }
 
 type EpisodePart {
