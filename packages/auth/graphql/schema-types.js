@@ -39,7 +39,6 @@ type User {
   enabledFirstFactors: [SignInTokenType!]!
   preferredFirstFactor: SignInTokenType
   enabledSecondFactors: [SignInTokenType!]!
-  eventLog: [EventLog!]!
   # is this the user of the requesting session
   isUserOfCurrentSession: Boolean!
   # get an access token

@@ -42,11 +42,6 @@ const deleteRelatedData = async ({ id: userId }, hasPledges, unpublishComments, 
     table: 'discussionPreferences',
     column: 'userId'
   })
-  relations.push({ // needs to be last
-    schema: 'public',
-    table: 'eventLog',
-    column: 'userId'
-  })
   return Promise.all([
     pgdb.query(`
       DELETE
@@ -54,7 +49,7 @@ const deleteRelatedData = async ({ id: userId }, hasPledges, unpublishComments, 
       WHERE
         ARRAY[(s.sess #>> '{passport, user}')::uuid] && :userIds
     `, {
-      userIds: [ userId ]
+      userIds: [userId]
     }),
     // pull user from comments.votes, leaving upVotes, downVotes untouched
     pgdb.query(`
@@ -100,7 +95,7 @@ const deleteRelatedData = async ({ id: userId }, hasPledges, unpublishComments, 
 }
 
 const getNulledColumnsForUsers = async (pgdb) => {
-  const keepColumns = [ 'firstName', 'lastName', 'addressId', 'createdAt', 'updatedAt', 'deletedAt' ]
+  const keepColumns = ['firstName', 'lastName', 'addressId', 'createdAt', 'updatedAt', 'deletedAt']
   return pgdb.queryOneColumn(`
     SELECT
       column_name
@@ -168,7 +163,7 @@ module.exports = async (_, args, context) => {
     }
 
     const grants = await transaction.public.accessGrants.find({
-      or: [{granterUserId: userId}, {recipientUserId: userId}]
+      or: [{ granterUserId: userId }, { recipientUserId: userId }]
     })
     const hasGrants = grants.length > 0
 

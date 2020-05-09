@@ -163,7 +163,6 @@ module.exports = async (_, args, context) => {
       })
       await transaction.public.sessions.updateOne({ id: session.id }, { sess })
     }
-    await transaction.public.eventLog.update(from, to)
 
     // remove addresses
     const addressIds = users
