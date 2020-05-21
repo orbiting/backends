@@ -37,6 +37,7 @@ const loaderBuilders = {
 
 const { AccessScheduler, graphql: access } = require('@orbiting/backend-modules-access')
 
+const RepublikScheduler = require('.//lib/scheduler')
 const MembershipScheduler = require('./modules/crowdfundings/lib/scheduler')
 const mail = require('./modules/crowdfundings/lib/Mail')
 
@@ -46,6 +47,7 @@ const {
   SEARCH_PG_LISTENER,
   NODE_ENV,
   ACCESS_SCHEDULER,
+  REPUBLIK_SCHEDULER,
   MEMBERSHIP_SCHEDULER,
   SERVER = 'republik',
   DYNO
@@ -203,6 +205,15 @@ const runOnce = async (...args) => {
     accessScheduler = await AccessScheduler.init(context)
   }
 
+  let republikScheduler
+  if (REPUBLIK_SCHEDULER === 'false' || (DEV && REPUBLIK_SCHEDULER !== 'true')) {
+    console.log('REPUBLIK_SCHEDULER prevented scheduler from begin started',
+      { MEMBERSHIP_SCHEDULER, DEV }
+    )
+  } else {
+    republikScheduler = await RepublikScheduler.init(context)
+  }
+
   let membershipScheduler
   if (MEMBERSHIP_SCHEDULER === 'false' || (DEV && MEMBERSHIP_SCHEDULER !== 'true')) {
     console.log('MEMBERSHIP_SCHEDULER prevented scheduler from begin started',
@@ -217,6 +228,7 @@ const runOnce = async (...args) => {
       slackGreeter && slackGreeter.close(),
       searchNotifyListener && searchNotifyListener.close(),
       accessScheduler && accessScheduler.close(),
+      republikScheduler && republikScheduler.close(),
       membershipScheduler && membershipScheduler.close()
     ].filter(Boolean))
     await ConnectionContext.close(context)

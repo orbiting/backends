@@ -1,7 +1,7 @@
 const moment = require('moment')
 
 const createCache = require('../../../modules/crowdfundings/lib/cache')
-const QUERY_CACHE_TTL_SECONDS = 60 * 5 // 5 min
+const QUERY_CACHE_TTL_SECONDS = 60 * 60 * 24 // 24 hours
 
 const getCount = (min, max, pgdb) => () => pgdb.queryOneField(`
   SELECT

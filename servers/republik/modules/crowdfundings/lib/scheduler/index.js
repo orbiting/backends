@@ -15,17 +15,13 @@ const { run: membershipsOwnersHandler } = require('./owners')
 const { deactivate } = require('./deactivate')
 const { changeover } = require('./changeover')
 
-const surplus = require('../../../../graphql/resolvers/RevenueStats/surplus')
-const { populate: populateMembershipStatsEvolution } = require('../../../../lib/MembershipStats/evolution')
-const countRange = require('../../../../graphql/resolvers/MembershipStats/countRange')
-
 const init = async (context) => {
   debug('init')
 
   const schedulers = []
 
   schedulers.push(
-    timeScheduler.init({
+    await timeScheduler.init({
       name: 'memberships-givers',
       context,
       runFunc: informGivers,
@@ -36,7 +32,7 @@ const init = async (context) => {
   )
 
   schedulers.push(
-    intervalScheduler.init({
+    await intervalScheduler.init({
       name: 'memberships-owners',
       context,
       runFunc: membershipsOwnersHandler,
@@ -46,7 +42,7 @@ const init = async (context) => {
   )
 
   schedulers.push(
-    timeScheduler.init({
+    await timeScheduler.init({
       name: 'winback',
       context,
       runFunc: informCancellers,
@@ -58,7 +54,7 @@ const init = async (context) => {
   )
 
   schedulers.push(
-    intervalScheduler.init({
+    await intervalScheduler.init({
       name: 'changeover-deactivate',
       context,
       runFunc: async (args, context) => {
@@ -67,21 +63,6 @@ const init = async (context) => {
       },
       lockTtlSecs,
       runIntervalSecs: 60 * 10
-    })
-  )
-
-  schedulers.push(
-    intervalScheduler.init({
-      name: 'stats-cache',
-      context,
-      runFunc: (args, context) =>
-        Promise.all([
-          surplus(null, { min: '2019-12-01', forceRecache: true }, context),
-          populateMembershipStatsEvolution(context),
-          countRange(null, { min: '2020-02-29T23:00:00Z', max: '2020-03-31T23:00:00Z', forceRecache: true }, context)
-        ]),
-      lockTtlSecs: 10,
-      runIntervalSecs: 60
     })
   )
 
