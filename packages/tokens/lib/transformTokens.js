@@ -16,6 +16,5 @@ module.exports = (tokens) => {
 }
 
 function isActive (token) {
-  return token.expiresAt !== undefined &&
-    (token.expiresAt == null || token.expiresAt > Date.now())
+  return token.expiresAt > Date.now()
 }
