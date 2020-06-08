@@ -1,5 +1,5 @@
 {
-  "updated": "2020-03-23T20:34:06.306Z",
+  "updated": "2020-05-24T13:10:16.770Z",
   "title": "live",
   "data": [
     {
@@ -17,6 +17,22 @@
     {
       "key": "api/reclaim/verified",
       "value": "Die von Ihnen eingegebene E-Mail-Adresse ist schon besetzt. Wir können Ihren Kauf daher nicht übertragen. Bitte melden Sie sich bei kontakt@republik.ch. (Pledge E-Mail: {pledgeEmail}, gewünschte E-Mail: {targetEmail})"
+    },
+    {
+      "key": "api/membership/activate/hasPeriods",
+      "value": "Mitgliedschaft enthält bereits Perioden, kann nicht aktiviert werden."
+    },
+    {
+      "key": "api/membership/activate/alreadyActive",
+      "value": "Mitgliedschaft ist bereits aktiv."
+    },
+    {
+      "key": "api/membership/activate/userMissing",
+      "value": "Besitzer der Mitgliedschaft nicht gefunden."
+    },
+    {
+      "key": "api/membership/activate/missingActivatedMembership",
+      "value": "Aktivieren der Mitgliedschaft schlug fehl."
     },
     {
       "key": "api/membership/claim/alreadyHave",
@@ -739,6 +755,10 @@
       "value": "Bestätigen Sie Ihre Anmeldung zum Covid-19-Uhr-Newsletter."
     },
     {
+      "key": "api/newsletters/request/notSupported",
+      "value": "Diese Art der Anmeldung zum gewählten Newsletter wird noch nicht unterstützt."
+    },
+    {
       "key": "api/statements/maxNodes",
       "value": "Sie können maximal 100 Statements auf einmal abfragen"
     },
@@ -781,26 +801,6 @@
     {
       "key": "api/faq/mail/subject",
       "value": "Danke für Ihre Frage"
-    },
-    {
-      "key": "api/preview/mail/404",
-      "value": "Das Preview-Mail steht zur Zeit nicht zur Verfügung. Bitte versuchen Sie es später nochmal."
-    },
-    {
-      "key": "api/preview/mail/subject",
-      "value": "Preview Mail"
-    },
-    {
-      "key": "api/preview/mail/tooEarly",
-      "value": "Das Preview-Mail kann nur einmal pro Tag angefordert werden, bitte versuchen Sie es morgen nochmals."
-    },
-    {
-      "key": "api/preview/email/onboarding/subject",
-      "value": "Probelesen der Republik"
-    },
-    {
-      "key": "api/preview/email/followup/subject",
-      "value": "Zeit für eine Entscheidung"
     },
     {
       "key": "profile/generic/tooLong",
@@ -1499,6 +1499,10 @@
       "value": "Zu viele Anmeldeversuche. Probieren Sie es in {mins} Minuten erneut."
     },
     {
+      "key": "api/auth/errorAccessToken",
+      "value": "Access Token kann nicht verwendet werden"
+    },
+    {
       "key": "api/signin/mail/subject",
       "value": "Zugriff bestätigen: {phrase}"
     },
@@ -1639,6 +1643,14 @@
       "value": "Kollision des zu generierenden Codes"
     },
     {
+      "key": "api/auth/accessToken/accessTokenMissing",
+      "value": "Access Token fehlt"
+    },
+    {
+      "key": "api/auth/accessToken/tokensExceeded",
+      "value": "Anzahl der gleichzeitig gültigen Tokens überschritten"
+    },
+    {
       "key": "api/commit/parentId/required",
       "value": "Please provide a parentId to commit to the existing repo \"{repoId}\"."
     },
@@ -1681,6 +1693,18 @@
     {
       "key": "api/publish/disabled",
       "value": "Artikel können im Moment weder veröffentlicht noch zurückgezogen werden. Bitte versuche es in ein paar Minuten noch einmal, ansonsten kontaktiere bitte die IT."
+    },
+    {
+      "key": "api/publish/error/createCampaign",
+      "value": "Kampagne auf MailChimp konnte nicht angelegt werden."
+    },
+    {
+      "key": "api/publish/error/updateCampaign",
+      "value": "Kampagne auf MailChimp konnte nicht aktualisiert werden."
+    },
+    {
+      "key": "api/publish/error/updateCampaignContent",
+      "value": "Kampagne auf MailChimp konnte nicht aktualisiert werden."
     },
     {
       "key": "api/archive/error/published",
@@ -1745,18 +1769,6 @@
     {
       "key": "api/email/payment_successful_donate_pot/subject",
       "value": "Vielen Dank! Wir haben Ihre Zahlung erhalten."
-    },
-    {
-      "key": "api/email/access_granter_claim_notice/subject",
-      "value": "Die von Ihnen finanzierte Mitgliedschaft wurde soeben eingelöst."
-    },
-    {
-      "key": "api/email/access_recipient_invitation_gifted_membership/subject",
-      "value": "Glückwunsch: eine Jahresmitgliedschaft liegt für Sie bereit."
-    },
-    {
-      "key": "api/email/access_recipient_onboarding_gifted_membership/subject",
-      "value": "Willkommen bei der Republik"
     },
     {
       "key": "api/notifications/doc/title",

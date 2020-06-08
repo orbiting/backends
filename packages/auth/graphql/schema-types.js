@@ -7,7 +7,6 @@ type Session {
   email: String!
   expiresAt: DateTime!
   country: String
-  countryFlag: String
   city: String
   isCurrent: Boolean!
   phrase: String
@@ -76,6 +75,7 @@ enum QRCodeErrorCorrectionLevel {
 enum SignInTokenType {
   EMAIL_TOKEN
   EMAIL_CODE
+  ACCESS_TOKEN
   TOTP
   SMS
   APP
@@ -96,7 +96,6 @@ type RequestInfo {
   userAgent: String
   isApp: Boolean!
   country: String
-  countryFlag: String
   city: String
 }
 
@@ -128,5 +127,6 @@ enum AccessTokenScope {
   CUSTOM_PLEDGE
   CUSTOM_PLEDGE_EXTENDED
   CLAIM_CARD
+  AUTHORIZE_SESSION
 }
 `
