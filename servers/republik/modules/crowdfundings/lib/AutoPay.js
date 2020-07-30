@@ -108,6 +108,9 @@ const suggest = async (membershipId, pgdb) => {
       additionalPeriods: prolongOption.additionalPeriods,
       total: pledgeOptions.length > 1 ? prolongOption.price : pledge.total,
       defaultPrice: prolongOption.price,
+      sourceId: payment.pspPayload &&
+        payment.pspPayload.source &&
+        payment.pspPayload.source.id,
       card: payment.pspPayload &&
         payment.pspPayload.source &&
         payment.pspPayload.source.card,
