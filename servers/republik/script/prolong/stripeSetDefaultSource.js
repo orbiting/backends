@@ -11,6 +11,13 @@ const { suggest } = require('../../modules/crowdfundings/lib/AutoPay')
 
 const applicationName = 'backends republik script prolong stripeSetDefaultSource'
 
+const dry = process.argv[2] === '--dry'
+const simulatedRecords = []
+if (!dry) {
+  console.warn('!!!! not dry mode, this is for real !!!!')
+}
+
+
 ConnectionContext.create(applicationName).then(async context => {
   const { pgdb } = context
   const { platform } = await getClients(pgdb)
@@ -80,14 +87,22 @@ ConnectionContext.create(applicationName).then(async context => {
 
     console.log(`userId:${membership.userId}`, `set default_source to ${suggestion.sourceId}`)
 
-    await addSource({
-      sourceId: suggestion.sourceId,
-      userId: membership.userId,
-      pgdb,
-      deduplicate: true,
-      makeDefault: true
-    })
+    if (dry) {
+      simulatedRecords.push({
+        email: await pgdb.public.users.findOneFieldOnly({ id: membership.userId }, 'email')
+      })
+    } else {
+      await addSource({
+        sourceId: suggestion.sourceId,
+        userId: membership.userId,
+        pgdb,
+        deduplicate: true,
+        makeDefault: true
+      })
+    }
   }, { concurrency: 5 })
+
+  console.log(simulatedRecords.length)
 
   console.log('Done.')
 
