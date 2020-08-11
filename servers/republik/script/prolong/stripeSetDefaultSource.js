@@ -83,6 +83,7 @@ ConnectionContext.create(applicationName).then(async context => {
     // Check if card/sourceId is available we would like to default to (in case it was deleted)
     if (!stripeCustomer.sources.data.find(s => s.id === suggestion.sourceId)) {
       console.error(`userId:${membership.userId}`, 'ERROR: source.id not available')
+      return
     }
 
     console.log(`userId:${membership.userId}`, `set default_source to ${suggestion.sourceId}`)
