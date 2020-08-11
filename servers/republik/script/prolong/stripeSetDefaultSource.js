@@ -80,7 +80,8 @@ ConnectionContext.create(applicationName).then(async context => {
       return
     }
 
-    // Check if card/sourceId is available we would like to default to (in case it was deleted)
+    // Check if card/sourceId is available we would like to default to
+    // (in case it was deleted or belongs to another customer (ABO_GIVE))
     if (!stripeCustomer.sources.data.find(s => s.id === suggestion.sourceId)) {
       console.error(`userId:${membership.userId}`, 'ERROR: source.id not available')
       return
