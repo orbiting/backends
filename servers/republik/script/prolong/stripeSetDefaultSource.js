@@ -99,6 +99,9 @@ ConnectionContext.create(applicationName).then(async context => {
         deduplicate: true,
         makeDefault: true
       })
+        .catch(e => {
+          console.error(`error for: userId:${membership.userId}`, `set default_source to ${suggestion.sourceId}`, e)
+        })
     }
   }, { concurrency: 5 })
 
