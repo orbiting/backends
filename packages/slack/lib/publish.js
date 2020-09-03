@@ -11,35 +11,37 @@ if (SLACK_API_TOKEN) {
   console.warn('Posting to slack disabled: missing SLACK_API_TOKEN')
 }
 
-const publish = async (channel, content, options = {}) => {
-  if (webClient && channel) {
-    await webClient.chat.postMessage({
-      ...options,
-      channel,
-      text: content
-    })
-      .catch((e) => {
-        console.error(e)
-      })
-  } else {
-    console.warn(
-      `Slack cannot publish: missing SLACK_API_TOKEN or channel.\n\tmessage: ${content}\n`
-    )
-  }
-}
+const publish = (channel, content, options = {}) => postMessage({
+  ...options,
+  channel,
+  text: content
+})
 
-const postMessage = async (message) => {
-  if (webClient) {
-    await webClient.chat.postMessage(message)
-      .catch((e) => {
-        console.error(e)
-      })
-  } else {
-    console.warn(
-      'Slack cannot publish: missing SLACK_API_TOKEN or channel.',
-      { message }
-    )
+const postMessage = (message) => {
+  if (!webClient) {
+    const errorMessage = [
+      'Slack cannot publish the following message, missing SLACK_API_TOKEN or channel:',
+      JSON.stringify(message, null, 2)
+    ].join('\n')
+    const error = new Error(errorMessage)
+
+    console.warn(error)
+    return Promise.reject(error)
   }
+
+  return webClient.chat.postMessage(message)
+    .catch((e) => {
+      const errorMessage = [
+        'Slack cannot publish the following message:',
+        JSON.stringify(message, null, 2),
+        'due to the folloing error:',
+        JSON.stringify(e, null, 2)
+      ].join('\n')
+      const error = new Error(errorMessage)
+      console.error(error)
+
+      return Promise.reject(e)
+    })
 }
 
 module.exports = publish

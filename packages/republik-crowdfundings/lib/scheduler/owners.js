@@ -314,14 +314,10 @@ async function setAutoPayToFalse (user, pgdb) {
       user,
       `setAutoPayToFalse: \`autoPay\` was set to \`false\` due to missing default credit card\n{ADMIN_FRONTEND_BASE_URL}/users/${user.id}`
     )
-
     await pgdb.public.memberships.update({
       userId: user.id
     }, {
       autoPay: false
     })
-  } catch (e) {
-    // swallow slack message
-    console.warn(`publish to slack failed - autoPayMailings - user id ${user.id}`)
-  }
+  } catch (e) {}
 }
