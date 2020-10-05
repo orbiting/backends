@@ -30,6 +30,8 @@ const getPath = (docMeta) => {
     case 'front':
     case 'section':
       return `/${cleanedSlug || ''}`
+    case 'staticPage':
+      return `/${cleanedSlug || ''}`
     case 'dossier':
       return `/dossier/${cleanedSlug}`
     case 'format':

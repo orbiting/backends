@@ -76,6 +76,7 @@ const find = async (args, { elastic }) => {
     'contentMeta.facebookTitle',
     'contentMeta.format',
     'contentMeta.section',
+    'contentMeta.staticPage',
     'contentMeta.seriesMaster.episodes.document',
     'contentMeta.seriesMaster.episodes.label',
     'contentMeta.seriesMaster.episodes.title',

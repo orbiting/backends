@@ -73,6 +73,9 @@ module.exports = {
       'resolved.meta.section.meta.title': {
         boost: 3,
       },
+      'resolved.meta.staticPage.meta.title': {
+        boost: 3,
+      },
     },
     functionScore: (query) => ({
       query,
@@ -80,7 +83,7 @@ module.exports = {
         {
           filter: {
             terms: {
-              'meta.template': ['format', 'section', 'dossier'],
+              'meta.template': ['format', 'section', 'dossier', 'staticPage'],
             },
           },
           weight: 20,

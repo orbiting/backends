@@ -207,7 +207,15 @@ module.exports = {
 
     const hasSectionRepoId = doc.meta.template === 'section' && doc.meta.repoId
 
-    if (!hasDossierRepoId && !hasFormatRepoId && !hasSectionRepoId) {
+    const hasStaticPageRepoId =
+      doc.meta.template === 'staticPage' && doc.meta.repoId
+
+    if (
+      !hasDossierRepoId &&
+      !hasFormatRepoId &&
+      !hasSectionRepoId &&
+      !hasStaticPageRepoId
+    ) {
       return {
         pageInfo: {
           endCursor: null,
@@ -230,6 +238,11 @@ module.exports = {
 
     if (hasSectionRepoId) {
       args.section = doc.id
+      args.unrestricted = true
+    }
+
+    if (hasStaticPageRepoId) {
+      args.staticPage = doc.id
       args.unrestricted = true
     }
 

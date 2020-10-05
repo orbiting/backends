@@ -15,9 +15,11 @@ type queries {
     repoIds: [ID!]
     section: String
     template: String
+    staticPage: String
     hasDossier: Boolean
     hasFormat: Boolean
     hasSection: Boolean
+    hasStaticPage: Boolean
     first: Int
     last: Int
     before: String

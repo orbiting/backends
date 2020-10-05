@@ -379,6 +379,17 @@ module.exports = async (
     resolved.meta.section = sections.pop()
   }
 
+  if (doc.content.meta.staticPage) {
+    const staticPage = await findTemplates(
+      elastic,
+      'staticPage',
+      doc.content.meta.staticPage,
+    )
+
+    if (!resolved.meta) resolved.meta = {}
+    resolved.meta.staticPage = staticPage.pop()
+  }
+
   // publish to elasticsearch
   const elasticDoc = getElasticDoc({
     indexName: getIndexAlias(indexType.toLowerCase(), 'write'),

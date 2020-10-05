@@ -62,6 +62,7 @@ type Meta {
   section: Document
   format: Document
   dossier: Document
+  staticPage: Document
 
   credits: JSON
   audioSource: AudioSource

@@ -14,6 +14,7 @@ module.exports = {
     const relatedDocsNamespaces = [
       'meta.series',
       'meta.section',
+      'meta.staticPage',
       'meta.format',
       'meta.dossier',
       'meta.discussion',

@@ -46,6 +46,7 @@ const transform = function (row) {
       firstName: user.firstName,
       lastName: user.lastName,
       name: `${user.firstName} ${user.lastName}`,
+      email: user.email,
       credential: credential ? credential.description : undefined,
       twitterHandle: user.twitterHandle,
       username: user.username,

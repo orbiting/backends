@@ -206,6 +206,10 @@ const contentUrlResolver = (
             linkedDoc.meta.template === 'section'
               ? linkedDoc.meta.repoId
               : getRepoId(linkedDoc.meta.section).repoId,
+          staticPage:
+            linkedDoc.meta.template === 'staticPage'
+              ? linkedDoc.meta.repoId
+              : getRepoId(linkedDoc.meta.staticPage).repoId,
           format:
             linkedDoc.meta.template === 'format'
               ? linkedDoc.meta.repoId

@@ -11,6 +11,12 @@ module.exports = {
           number_of_fragments: 0,
         },
       },
+      email: {
+        boost: 2,
+        highlight: {
+          number_of_fragments: 0,
+        },
+      },
       username: {
         highlight: {
           number_of_fragments: 0,

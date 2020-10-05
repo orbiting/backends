@@ -130,6 +130,15 @@ const schema = {
     criteria: hasCriteriaBuilder('meta.section'),
     agg: existsCountAggBuilder('meta.section'),
   },
+  staticPage: {
+    criteria: termCriteriaBuilder('meta.staticPage'),
+    agg: valueCountAggBuilder('meta.staticPage'),
+    parser: documentIdParser,
+  },
+  hasStaticPage: {
+    criteria: hasCriteriaBuilder('meta.staticPage'),
+    agg: existsCountAggBuilder('meta.staticPage'),
+  },
   kind: termEntry('resolved.meta.format.meta.kind'),
   repoId: {
     criteria: termCriteriaBuilder('meta.repoId'),

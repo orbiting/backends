@@ -39,6 +39,7 @@ const resolveRepoId = (field) => async (meta, args, context) => {
 module.exports = {
   format: resolveRepoId('format'),
   section: resolveRepoId('section'),
+  staticPage: resolveRepoId('staticPage'),
   dossier: resolveRepoId('dossier'),
   series: resolveRepoId('series'),
 }

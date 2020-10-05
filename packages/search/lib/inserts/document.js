@@ -116,6 +116,14 @@ const after = async ({ indexName, type: indexType, elastic, pgdb }) => {
     type: 'section',
     elastic,
   })
+
+  const staticPages = await findTemplates(elastic, 'staticPage')
+  await upsertResolvedMeta({
+    indexName,
+    entities: staticPages,
+    type: 'staticPages',
+    elastic,
+  })
 }
 
 const iterateRepos = async (context, callback) => {
