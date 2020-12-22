@@ -84,6 +84,7 @@ const find = async (args, { elastic }) => {
     'contentMeta.slug',
     'contentMeta.subject',
     'contentMeta.template',
+    'contentMeta.templateRepoId',
     'contentMeta.title',
     'contentMeta.twitterDescription',
     'contentMeta.twitterTitle',

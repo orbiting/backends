@@ -275,6 +275,7 @@ const DOCUMENT_META_PARTIAL = `
     gallery
     subject
     template
+    templateRepoId
   }
 `
 

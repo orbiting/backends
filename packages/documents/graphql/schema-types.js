@@ -77,6 +77,8 @@ type Meta {
 
   # template of the article
   template: String
+  
+  templateRepoId: String
 
   indicateChart: Boolean
   indicateGallery: Boolean
