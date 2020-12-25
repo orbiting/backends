@@ -62,7 +62,6 @@ module.exports = async (
     const promises = [
       transaction.public.pledges.updateOne({ id: pledge.id }, to),
       transaction.public.memberships.update(from, to),
-      transaction.public.paymentSources.update(from, to),
       transaction.public.consents.update(from, to),
       transaction.public.users.updateOne(
         { id: newUser.id },

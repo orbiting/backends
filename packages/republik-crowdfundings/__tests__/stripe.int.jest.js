@@ -548,11 +548,6 @@ describe('addPaymentSource', () => {
       ],
     })
 
-    const paymentSources = await pgDatabase().public.paymentSources.find({
-      userId,
-    })
-    expect(paymentSources.length).toBe(0)
-
     await signOut()
   })
 })

@@ -135,7 +135,6 @@ module.exports = async (_, args, context) => {
     // transfer belongings
     const from = { userId: sourceUser.id }
     const to = { userId: targetUser.id }
-    await transaction.public.paymentSources.update(from, to)
     await transaction.public.pledges.update(from, to)
     await transaction.public.memberships.update(from, to)
     await transaction.public.comments.update(from, to)

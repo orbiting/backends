@@ -259,20 +259,6 @@ module.exports = async (_, args, context) => {
         throw new Error(t('api/unexpected'))
       }
       user = req.user._raw
-
-      // load possible exising PF alias, only exists if the user is logged in,
-      // otherwise he can't have an alias already
-      const paymentSource = await transaction.public.paymentSources.findFirst(
-        {
-          userId: user.id,
-          method: 'POSTFINANCECARD',
-        },
-        { orderBy: ['createdAt desc'] },
-      )
-
-      if (paymentSource) {
-        pfAliasId = paymentSource.pspId
-      }
     } else {
       if (accessTokenUser) {
         if (pledge.user.email !== accessTokenUser.email) {

@@ -71,25 +71,6 @@ module.exports = async ({
     pspPayload,
   })
 
-  if (pspPayload.ALIAS) {
-    const paymentSourceExists = !!(await transaction.public.paymentSources.findFirst(
-      {
-        userId,
-        pspId: pspPayload.ALIAS,
-        method: 'POSTFINANCECARD',
-      },
-    ))
-    if (!paymentSourceExists) {
-      // save alias to user
-      await transaction.public.paymentSources.insert({
-        userId,
-        method: 'POSTFINANCECARD',
-        pspId: pspPayload.ALIAS,
-        pspPayload,
-      })
-    }
-  }
-
   let pledgeStatus = 'SUCCESSFUL'
 
   // check if amount is correct
@@ -100,15 +81,6 @@ module.exports = async ({
       pspPayload,
     })
     pledgeStatus = 'PAID_INVESTIGATE'
-  }
-
-  // save alias to user
-  if (pspPayload.ALIAS) {
-    await transaction.public.paymentSources.insert({
-      userId,
-      method: 'POSTFINANCECARD',
-      pspId: pspPayload.ALIAS,
-    })
   }
 
   // insert pledgePayment
