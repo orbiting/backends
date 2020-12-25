@@ -76,6 +76,7 @@ packages/auth/index.js
 packages/auth/lib/index.js
 packages/auth/lib/transformUser.js
 packages/auth/loaders/User.js
+packages/databroom/**/*.js
 packages/dataloader/**/*.js
 packages/invoices/**/*.js
 packages/publikator/lib/phases.js
