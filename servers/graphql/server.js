@@ -230,7 +230,7 @@ const runOnce = async () => {
 
   let accessScheduler
   if (ACCESS_SCHEDULER === 'false' || (DEV && ACCESS_SCHEDULER !== 'true')) {
-    console.log('ACCESS_SCHEDULER prevented scheduler from begin started', {
+    console.log('ACCESS_SCHEDULER prevented scheduler from being started', {
       ACCESS_SCHEDULER,
       DEV,
     })
@@ -243,7 +243,7 @@ const runOnce = async () => {
     MEMBERSHIP_SCHEDULER === 'false' ||
     (DEV && MEMBERSHIP_SCHEDULER !== 'true')
   ) {
-    console.log('MEMBERSHIP_SCHEDULER prevented scheduler from begin started', {
+    console.log('MEMBERSHIP_SCHEDULER prevented scheduler from being started', {
       MEMBERSHIP_SCHEDULER,
       DEV,
     })
@@ -257,7 +257,7 @@ const runOnce = async () => {
     (DEV && PUBLICATION_SCHEDULER !== 'true')
   ) {
     console.log(
-      'PUBLICATION_SCHEDULER prevented scheduler from begin started',
+      'PUBLICATION_SCHEDULER prevented scheduler from being started',
       { PUBLICATION_SCHEDULER, DEV },
     )
   } else {
