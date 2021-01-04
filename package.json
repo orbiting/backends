@@ -82,6 +82,7 @@
     "db:migrate:up": "db-migrate up --migrations-dir packages/migrations/migrations",
     "db:migrate:down": "db-migrate down --migrations-dir packages/migrations/migrations --verbose",
     "db:seed": "packages/republik-crowdfundings/seeds/script/seed.js",
+    "databroom": "node packages/databroom/script/run.js --no-dry-run --verbose",
     "sendNotification": "cd packages/republik && node ../push-notifications/script/sendNotification.js",
     "test": "TZ=Europe/Amsterdam jest --verbose --detectOpenHandles --forceExit",
     "test:unit": "TZ=Europe/Amsterdam jest --verbose --detectOpenHandles --forceExit --testPathPattern \"\\.(u)|(unit)\\.jest\"",
