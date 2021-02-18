@@ -1,8 +1,11 @@
 const isNewsletterReferer = (ref) => ref?.startsWith('republik/')
 
 const normalizeCampagneName = (name) => {
-  if (name === 'pocket-newtab') {
+  if (name.startsWith('pocket-newtab')) {
     return 'Pocket'
+  }
+  if (name.startsWith('ta_dermorgen_')) {
+    return 'Tagi-Newsletter: Der Morgen'
   }
   if (isNewsletterReferer(name)) {
     return 'Republik-Newsletter'
@@ -25,6 +28,7 @@ const referrerNames = {
   'com.xing.android': 'XING',
   'linkedin.com': 'LinkedIn',
   'com.linkedin.android': 'LinkedIn',
+  'com.slack': 'Slack',
   'lm.facebook.com': 'Facebook',
   'facebook.com': 'Facebook',
   't.co': 'Twitter',
@@ -59,7 +63,7 @@ const normalizeReferrerName = (input) => {
   if (name.match(/\.cdn\.ampproject\.org$/)) {
     name = name.replace(/\.cdn\.ampproject\.org$/, '').replace('-', '.')
   }
-  name = name.replace(/^(www|m|l)\./, '')
+  name = name.replace(/^(www|m|l|amp)\./, '').replace(/-ch$/, '.ch')
   return referrerNames[name] || name
 }
 
