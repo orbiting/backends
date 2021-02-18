@@ -35,6 +35,9 @@ const argv = yargs
     boolean: true,
     default: false,
   })
+  .option('year', {
+    alias: 'y',
+  })
   .help()
   .version().argv
 
@@ -250,6 +253,13 @@ GROUP BY "discussionId"
     FROM piwik_log_visit v
     JOIN piwik_log_link_visit_action va ON va.idvisit = v.idvisit
     WHERE v.idsite = 5
+      ${
+        argv.year
+          ? `AND va.server_time BETWEEN '${argv.year}-01-01 01:00:00' and '${
+              +argv.year + 1
+            }-01-01 01:00:00'`
+          : ''
+      }
     GROUP BY v.idvisit
   `)
 
@@ -532,10 +542,11 @@ GROUP BY "discussionId"
 
   console.log('visitors', stat.all.visitors.size)
   fs.writeFileSync(
-    path.join(__dirname, 'data/stats.json'),
+    path.join(__dirname, `data/stats${argv.year ? `-${argv.year}` : ''}.json`),
     JSON.stringify(
       {
         createdAt: new Date().toISOString(),
+        filter: argv.year,
         segments: segments.map((segment) => segment.key),
         total: toJS(stat),
         docs: Array.from(docStats).map(([{ meta, repoId }, stat]) => ({
