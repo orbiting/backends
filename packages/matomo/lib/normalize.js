@@ -1,6 +1,6 @@
 const isNewsletterReferer = (ref) => ref?.startsWith('republik/')
 
-const normalizeCampagneName = (name) => {
+const normalizeCampagneName = (name, customNewsletters = []) => {
   if (name.startsWith('pocket-newtab')) {
     return 'Pocket'
   }
@@ -8,6 +8,12 @@ const normalizeCampagneName = (name) => {
     return 'Tagi-Newsletter: Der Morgen'
   }
   if (isNewsletterReferer(name)) {
+    const customNewsletter = customNewsletters.find(({ values }) =>
+      values.includes(name),
+    )
+    if (customNewsletter) {
+      return customNewsletter.name
+    }
     return 'Republik-Newsletter'
   }
   return `Kampagne ${name}`

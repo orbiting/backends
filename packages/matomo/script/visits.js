@@ -10,6 +10,7 @@ const mysql = require('mysql2')
 const { ascending, descending, range, max } = require('d3-array')
 const { timeFormat } = require('d3-time-format')
 const yargs = require('yargs')
+const { v4: uuid } = require('uuid')
 
 const { t } = require('@orbiting/backend-modules-translate')
 const {
@@ -65,10 +66,8 @@ const getContext = (payload) => {
 // generating base data
 // redirections.json: https://ultradashboard.republik.ch/question/181
 // comments.json: https://ultradashboard.republik.ch/question/451
-// documents.json: https://api.republik.ch/graphiql/?query=%7B%0A%20%20documents(first%3A%2010000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20repoId%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20ownDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20linkedDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
-
-// hash file for secret url?
-// mv packages/matomo/script/data/stats.json "packages/matomo/script/data/$(shasum -a 256 packages/matomo/script/data/stats.json | cut -d " " -f1).json"
+// documents.json: https://api.republik.ch/graphiql/?query=%7B%0A%20%20documents(first%3A%2010000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20repoId%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20estimatedReadingMinutes%0A%20%20%20%20%20%20%20%20ownDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20linkedDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
+// covid19nls.json: https://api.republik.ch/graphiql/?query=%7B%0A%20%20documents(first%3A%2010000%2C%20format%3A%20%22republik%2Fformat-covid-19-uhr-newsletter%22)%20%7B%0A%20%20%20%20totalCount%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20repoId%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D
 
 // https://developer.matomo.org/guides/persistence-and-the-mysql-backend
 
@@ -81,6 +80,7 @@ const parseServerTime = (server_time) =>
   new Date(server_time.replace(' ', 'T').replace(/(\.[0-9]+)$/, 'Z'))
 
 const shortReferrerRemap = {
+  'Tagi-Newsletter:': 'Verweise',
   Pocket: 'Verweise',
   Kampagne: 'Kampagnen',
 }
@@ -100,6 +100,11 @@ const socialNetworks = [
 
 const shortDays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
+const clearLine = () => {
+  process.stdout.clearLine()
+  process.stdout.cursorTo(0)
+}
+
 const analyse = async (context) => {
   const { pgdb } = context
   const { MATOMO_MYSQL_URL } = process.env
@@ -114,17 +119,14 @@ const analyse = async (context) => {
 
   const connection = con.promise()
 
-  const documents = argv.fileBaseData
-    ? require('./data/documents.json').data.documents.nodes.filter(
-        (doc) => doc.meta.template === 'article',
-      )
+  const documents = (argv.fileBaseData
+    ? require('./data/documents.json').data.documents.nodes.filter(Boolean)
     : await search(
         null,
         {
           first: 10000,
           unrestricted: true,
           filter: {
-            template: 'article',
             type: 'Document',
           },
           sort: {
@@ -134,8 +136,33 @@ const analyse = async (context) => {
         },
         context,
       ).then((d) => d.nodes.map((n) => n.entity))
-
+  ).filter(
+    (doc) =>
+      doc.meta.template === 'article' ||
+      doc.meta.template === 'editorialNewsletter',
+  )
   console.log('documents', documents.length)
+
+  const covid19NLRepoIds = (argv.fileBaseData
+    ? require('./data/covid19nls.json').data.documents.nodes.filter(Boolean)
+    : await search(
+        null,
+        {
+          first: 10000,
+          unrestricted: true,
+          filter: {
+            format: 'republik/format-covid-19-uhr-newsletter',
+            type: 'Document',
+          },
+          sort: {
+            key: 'publishedAt',
+            direction: 'DESC',
+          },
+        },
+        context,
+      ).then((d) => d.nodes.map((n) => n.entity))
+  ).map((doc) => doc.repoId)
+  console.log('covid19 nls', covid19NLRepoIds.length)
 
   const redirections = argv.fileBaseData
     ? require('./data/redirections.json')
@@ -178,6 +205,16 @@ const analyse = async (context) => {
     return agg
   }, {})
   console.log('doc actions', Object.keys(actionIdToDocument).length)
+
+  const [emailActions] = await connection.query(
+    `SELECT idaction, name FROM piwik_log_action WHERE type = 4 AND name LIKE 'Email: %'`,
+  )
+
+  console.log('email actions', emailActions.length)
+  const actionIdIsEmail = emailActions.reduce((agg, d) => {
+    agg[d.idaction] = true
+    return agg
+  }, {})
 
   const [eventActions] = await connection.query(
     'SELECT idaction, name FROM piwik_log_action WHERE type = 11',
@@ -247,6 +284,7 @@ GROUP BY "discussionId"
           'server_time', va.server_time,
           'idaction_url', va.idaction_url,
           'idaction_url_ref', va.idaction_url_ref,
+          'idaction_name', va.idaction_name,
           'idaction_event_action', va.idaction_event_action
         )
       ) as actions
@@ -296,7 +334,9 @@ GROUP BY "discussionId"
       key: 'member',
       test: (visit) =>
         (visit.roles && visit.roles.includes('member')) ||
-        (visit.referer_name && isNewsletterReferer(visit.referer_name)),
+        (visit.referer_name &&
+          isNewsletterReferer(visit.referer_name) &&
+          !covid19NLRepoIds.includes(visit.referer_name)),
     },
     // {
     //   key: 'guest',
@@ -333,7 +373,12 @@ GROUP BY "discussionId"
     let shortReferrer
     switch (visit.referer_type) {
       case 6:
-        referrer = normalizeCampagneName(visit.referer_name)
+        referrer = normalizeCampagneName(visit.referer_name, [
+          {
+            name: 'Covid-19-Uhr-Newsletter',
+            values: covid19NLRepoIds,
+          },
+        ])
         shortReferrer = referrer.split(' ')[0]
         break
       case 7:
@@ -405,7 +450,10 @@ GROUP BY "discussionId"
 
     segments.forEach((segment) => {
       if (segment.test(visit)) {
-        increment(stat, segment.key, visit, docAction, events)
+        // email visitor ids are not persitent and should not be counted
+        if (!docAction.isEmail) {
+          increment(stat, segment.key, visit, docAction, events)
+        }
         increment(docStat, segment.key, visit, docAction, events, {
           isDoc: true,
         })
@@ -413,6 +461,7 @@ GROUP BY "discussionId"
     })
   }
 
+  let rowsProcessed = 0
   await new Promise((resolve, reject) =>
     query
       .on('result', (visit) => {
@@ -422,6 +471,7 @@ GROUP BY "discussionId"
               server_time,
               idaction_url,
               idaction_url_ref,
+              idaction_name,
               idaction_event_action,
             }) => {
               const doc = actionIdToDocument[idaction_url]
@@ -433,6 +483,7 @@ GROUP BY "discussionId"
                   //   ? nextAction.time_spent_ref_action
                   //   : time_spent,
                   doc,
+                  isEmail: actionIdIsEmail[idaction_name],
                 }
               }
               const event = actionIdToEvent[idaction_event_action]
@@ -464,9 +515,20 @@ GROUP BY "discussionId"
             actions.filter((a) => a.event && a.eventDoc === action.doc),
           )
         })
+        if (rowsProcessed) {
+          clearLine()
+        }
+        rowsProcessed += 1
+        process.stdout.write(`row ${rowsProcessed}`)
       })
       .on('error', (err) => reject(err))
-      .on('end', () => resolve()),
+      .on('end', () => {
+        if (rowsProcessed) {
+          clearLine()
+          console.log('rows', rowsProcessed)
+        }
+        return resolve()
+      }),
   )
 
   const mapToJs = (map, compare = (a, b) => ascending(a[0], b[0])) =>
@@ -541,8 +603,12 @@ GROUP BY "discussionId"
     }, {})
 
   console.log('visitors', stat.all.visitors.size)
+
+  const fileName = `${argv.year ? `${argv.year}` : 'all'}-${uuid()}.json`
+  console.log('writing', fileName)
+
   fs.writeFileSync(
-    path.join(__dirname, `data/stats${argv.year ? `-${argv.year}` : ''}.json`),
+    path.join(__dirname, `data/${fileName}`),
     JSON.stringify(
       {
         createdAt: new Date().toISOString(),
@@ -553,6 +619,17 @@ GROUP BY "discussionId"
           publishDate: meta.publishDate,
           title: meta.title,
           path: meta.path,
+          template: meta.template,
+          credits: meta.credits
+            .filter((c) => c.type === 'link')
+            .map((c) => {
+              return {
+                name:
+                  c.title || (c.children?.length ? c.children[0].value : c.url),
+                url: c.url,
+              }
+            }),
+          estimatedReadingMinutes: meta.estimatedReadingMinutes,
           series: meta.series && meta.series.title,
           format: meta.format && meta.format.meta.title,
           comments:
