@@ -59,14 +59,17 @@ const getContext = (payload) => {
   return context
 }
 
+// over all time
 // node --max-old-space-size=4096 packages/matomo/script/visits.js
+// specific year
+// node --max-old-space-size=4096 packages/matomo/script/visits.js --year 2020
 
 // load file base data from file system?
-// node --max-old-space-size=4096 packages/matomo/script/visits.js --fbd
+// node --max-old-space-size=4096 packages/matomo/script/visits.js --fbd --year 2020
 // generating base data
 // redirections.json: https://ultradashboard.republik.ch/question/181
 // comments.json: https://ultradashboard.republik.ch/question/451
-// documents.json: https://api.republik.ch/graphiql/?query=%7B%0A%20%20documents(first%3A%2010000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20repoId%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20estimatedReadingMinutes%0A%20%20%20%20%20%20%20%20ownDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20linkedDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
+// documents.json: https://api.republik.ch/graphiql/?query=%7B%0A%20%20documents(first%3A%2010000)%20%7B%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20id%0A%20%20%20%20%20%20repoId%0A%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20path%0A%20%20%20%20%20%20%20%20template%0A%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20emailSubject%0A%20%20%20%20%20%20%20%20publishDate%0A%20%20%20%20%20%20%20%20feed%0A%20%20%20%20%20%20%20%20credits%0A%20%20%20%20%20%20%20%20estimatedReadingMinutes%0A%20%20%20%20%20%20%20%20ownDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20linkedDiscussion%20%7B%0A%20%20%20%20%20%20%20%20%20%20id%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20series%20%7B%0A%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20format%20%7B%0A%20%20%20%20%20%20%20%20%20%20meta%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20title%0A%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D%0A
 // covid19nls.json: https://api.republik.ch/graphiql/?query=%7B%0A%20%20documents(first%3A%2010000%2C%20format%3A%20%22republik%2Fformat-covid-19-uhr-newsletter%22)%20%7B%0A%20%20%20%20totalCount%0A%20%20%20%20nodes%20%7B%0A%20%20%20%20%20%20repoId%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D
 
 // https://developer.matomo.org/guides/persistence-and-the-mysql-backend
@@ -192,6 +195,7 @@ const analyse = async (context) => {
   )
 
   console.log('url actions', urlActions.length)
+  const actionIdToPath = {}
   const actionIdToDocument = urlActions.reduce((agg, d) => {
     if (d.name.startsWith('republik.ch')) {
       const path = getCurrentPath(
@@ -201,6 +205,7 @@ const analyse = async (context) => {
       if (doc) {
         agg[d.idaction] = doc
       }
+      actionIdToPath[d.idaction] = path
     }
     return agg
   }, {})
@@ -212,7 +217,7 @@ const analyse = async (context) => {
 
   console.log('email actions', emailActions.length)
   const actionIdIsEmail = emailActions.reduce((agg, d) => {
-    agg[d.idaction] = true
+    agg[d.idaction] = d.name
     return agg
   }, {})
 
@@ -270,7 +275,7 @@ GROUP BY "discussionId"
 
   const query = con.query(`
     SELECT
-      v.idvisitor,
+      conv(hex(v.idvisitor), 16, 16) as idvisitor,
       v.idvisit,
       v.referer_type,
       v.referer_url,
@@ -306,22 +311,20 @@ GROUP BY "discussionId"
 
   const createRecord = () => {
     return {
+      visits: new Set(),
       visitors: new Set(),
+      emailors: new Set(),
       sharer: new Set(),
       preview: new Set(),
       // hours: new Map(range(24).map(h => [h, 0])),
       // minutesSpent: new Map(),
       days: new Map(range(7).map((d) => [d, 0])),
-      chf: 0,
       hits: 0,
       countries: new Map(),
       referrer: new Map(),
       shortRefDayHour: new Map(),
       topRefDateHour: new Map(),
 
-      // afterHoursChf: new Map(),
-      // afterDays: new Map(),
-      // countries: new Map(),
       // os: new Map()
     }
   }
@@ -339,10 +342,6 @@ GROUP BY "discussionId"
           !covid19NLRepoIds.includes(visit.referer_name)),
     },
     // {
-    //   key: 'guest',
-    //   test: visit => visit.roles === 'guest'
-    // },
-    // {
     //   key: 'mobile',
     //   test: visit => visit.os === 'IOS' || visit.os === 'AND'
     // }
@@ -350,24 +349,37 @@ GROUP BY "discussionId"
   const incrementMap = (map, key, count = 1) => {
     map.set(key, (map.get(key) || 0) + count)
   }
+  const incrementUniqMap = (map, key, id) => {
+    let set = map.get(key)
+    if (!set) {
+      set = new Set()
+      map.set(key, set)
+    }
+    set.add(id)
+  }
   const increment = (
     stat,
     key,
     visit,
-    docAction,
+    urlAction,
     events = [],
     { isDoc } = {},
   ) => {
     const rec = (stat[key] = stat[key] || createRecord())
 
     rec.visitors.add(visit.idvisitor)
+    if (urlAction.isEmail) {
+      rec.emailors.add(visit.idvisitor)
+    }
+    // we only count everyone once per country
+    incrementUniqMap(rec.countries, visit.country, visit.idvisitor)
+
     // incrementMap(rec.hours, hour)
-    // if (docAction.time_spent) {
-    //   const minutesSpent = Math.floor(docAction.time_spent / 60)
+    // if (urlAction.time_spent) {
+    //   const minutesSpent = Math.floor(urlAction.time_spent / 60)
     //   incrementMap(rec.minutesSpent, minutesSpent)
     // }
     rec.hits += 1
-    incrementMap(rec.countries, visit.country)
 
     let referrer
     let shortReferrer
@@ -401,9 +413,11 @@ GROUP BY "discussionId"
     }
     shortReferrer = shortReferrerRemap[shortReferrer] || shortReferrer
 
-    incrementMap(rec.referrer, referrer)
+    rec.visits.add(visit.idvisit)
+    // one could come in with a different referrer each visit
+    incrementUniqMap(rec.referrer, referrer, visit.idvisit)
 
-    const day = docAction.server_time.getDay()
+    const day = urlAction.server_time.getDay()
     incrementMap(rec.days, day)
     if (!isDoc) {
       let rtRec = rec.shortRefDayHour.get(shortReferrer)
@@ -411,7 +425,7 @@ GROUP BY "discussionId"
         rtRec = new Map()
         rec.shortRefDayHour.set(shortReferrer, rtRec)
       }
-      incrementMap(rtRec, formatDayHour(docAction.server_time))
+      incrementMap(rtRec, formatDayHour(urlAction.server_time))
     } else {
       const topRef = topReferrer.includes(referrer) ? referrer : shortReferrer
       let rtRec = rec.topRefDateHour.get(topRef)
@@ -419,7 +433,7 @@ GROUP BY "discussionId"
         rtRec = new Map()
         rec.topRefDateHour.set(topRef, rtRec)
       }
-      incrementMap(rtRec, formatDateHour(docAction.server_time))
+      incrementMap(rtRec, formatDateHour(urlAction.server_time))
     }
 
     events.forEach(({ event }) => {
@@ -440,8 +454,8 @@ GROUP BY "discussionId"
       }
     })
   }
-  const record = (visit, docAction, events) => {
-    const doc = docAction.doc
+  const recordDoc = (visit, urlAction, events) => {
+    const doc = urlAction.doc
 
     if (!docStats.has(doc)) {
       docStats.set(doc, {})
@@ -450,13 +464,19 @@ GROUP BY "discussionId"
 
     segments.forEach((segment) => {
       if (segment.test(visit)) {
-        // email visitor ids are not persitent and should not be counted
-        if (!docAction.isEmail) {
-          increment(stat, segment.key, visit, docAction, events)
-        }
-        increment(docStat, segment.key, visit, docAction, events, {
+        increment(docStat, segment.key, visit, urlAction, events, {
           isDoc: true,
         })
+      }
+    })
+  }
+  const recordUrl = (visit, urlAction) => {
+    segments.forEach((segment) => {
+      if (segment.test(visit)) {
+        // email visitor ids are not persitent and should not be counted
+        if (!urlAction.isEmail) {
+          increment(stat, segment.key, visit, urlAction)
+        }
       }
     })
   }
@@ -478,12 +498,23 @@ GROUP BY "discussionId"
               if (doc) {
                 // const nextAction = visit.actions.find(a => a.idaction_url_ref === idaction_url)
                 return {
+                  urlActionId: idaction_url,
+                  isEmail:
+                    actionIdIsEmail[idaction_name] &&
+                    (!doc.meta.title.startsWith('Email: ') ||
+                      actionIdIsEmail[idaction_name] ===
+                        `Email: ${doc.meta.emailSubject}`),
                   server_time: parseServerTime(server_time),
                   // time_spent: nextAction
                   //   ? nextAction.time_spent_ref_action
                   //   : time_spent,
                   doc,
-                  isEmail: actionIdIsEmail[idaction_name],
+                }
+              }
+              if (actionIdToPath[idaction_url]) {
+                return {
+                  urlActionId: idaction_url,
+                  server_time: parseServerTime(server_time),
                 }
               }
               const event = actionIdToEvent[idaction_event_action]
@@ -500,20 +531,24 @@ GROUP BY "discussionId"
           .filter(Boolean)
           .sort((a, b) => ascending(a.server_time, b.server_time))
 
-        actions.forEach((action, docI) => {
-          if (!action.doc) {
+        actions.forEach((action, actionIndex) => {
+          if (!action.urlActionId) {
             return
           }
-          const firstIndex = actions.findIndex((a) => action.doc === a.doc)
-          if (firstIndex !== docI) {
-            return
-          }
-
-          record(
-            visit,
-            action,
-            actions.filter((a) => a.event && a.eventDoc === action.doc),
+          const firstIndex = actions.findIndex(
+            (a) => action.urlActionId === a.urlActionId,
           )
+          if (firstIndex !== actionIndex) {
+            return
+          }
+          recordUrl(visit, action)
+          if (action.doc) {
+            recordDoc(
+              visit,
+              action,
+              actions.filter((a) => a.event && a.eventDoc === action.doc),
+            )
+          }
         })
         if (rowsProcessed) {
           clearLine()
@@ -531,10 +566,17 @@ GROUP BY "discussionId"
       }),
   )
 
-  const mapToJs = (map, compare = (a, b) => ascending(a[0], b[0])) =>
+  const mapToJs = (map, compare = (a, b) => ascending(a.key, b.key)) =>
     Array.from(map)
-      .sort(compare)
       .map((d) => ({ key: d[0], count: d[1] }))
+      .sort(compare)
+  const mapSetToJs = (
+    mapSet,
+    compare = (a, b) => descending(a.count, b.count),
+  ) =>
+    Array.from(mapSet)
+      .map((d) => ({ key: d[0], count: d[1].size }))
+      .sort(compare)
 
   const filterTimeMap = (map, { first = 168, threshold = 100 } = {}) => {
     const keyCounts = new Map()
@@ -575,11 +617,13 @@ GROUP BY "discussionId"
       agg[key] = {
         segment: key,
         visitors: segment.visitors.size,
+        emailors: segment.emailors.size,
+        visits: segment.visits.size,
+        hits: segment.hits,
         sharer: segment.sharer.size,
         preview: segment.preview.size,
-        hits: segment.hits,
-        countries: mapToJs(segment.countries, (a, b) => descending(a[1], b[1])),
-        referrer: mapToJs(segment.referrer, (a, b) => descending(a[1], b[1])),
+        countries: mapSetToJs(segment.countries),
+        referrer: mapSetToJs(segment.referrer),
         [rtKey]: segment[rtKey]
           ? filterTimeMap(segment[rtKey], {
               first: isDoc
