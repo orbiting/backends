@@ -60,12 +60,12 @@ const getContext = (payload) => {
 }
 
 // over all time
-// node --max-old-space-size=4096 packages/matomo/script/visits.js
+// node --max-old-space-size=8192 packages/matomo/script/visits.js
 // specific year
-// node --max-old-space-size=4096 packages/matomo/script/visits.js --year 2020
+// node --max-old-space-size=8192 packages/matomo/script/visits.js --year 2020
 
 // load file base data from file system?
-// node --max-old-space-size=4096 packages/matomo/script/visits.js --fbd --year 2020
+// node --max-old-space-size=8192 packages/matomo/script/visits.js --fbd --year 2020
 // generating base data
 // redirections.json: https://ultradashboard.republik.ch/question/181
 // comments.json: https://ultradashboard.republik.ch/question/451
@@ -275,7 +275,9 @@ GROUP BY "discussionId"
 
   const query = con.query(`
     SELECT
-      conv(hex(v.idvisitor), 16, 16) as idvisitor,
+      -- [warning] converting the idvisitor to string leads to lower numbers than in the matomo ui
+      -- conv(hex(v.idvisitor), 16, 16) as idvisitor,
+      v.idvisitor,
       v.idvisit,
       v.referer_type,
       v.referer_url,
