@@ -1,22 +1,24 @@
 const isNewsletterReferer = (ref) => ref?.startsWith('republik/')
 
 const normalizeCampagneName = (name, customNewsletters = []) => {
-  if (name.startsWith('pocket-newtab')) {
-    return 'Pocket'
-  }
-  if (name.startsWith('ta_dermorgen_')) {
-    return 'Tagi-Newsletter: Der Morgen'
-  }
-  if (isNewsletterReferer(name)) {
-    const customNewsletter = customNewsletters.find(({ values }) =>
-      values.includes(name),
-    )
-    if (customNewsletter) {
-      return customNewsletter.name
+  if (name) {
+    if (name.startsWith('pocket-newtab')) {
+      return 'Pocket'
     }
-    return 'Republik-Newsletter'
+    if (name.startsWith('ta_dermorgen_')) {
+      return 'Tagi-Newsletter: Der Morgen'
+    }
+    if (isNewsletterReferer(name)) {
+      const customNewsletter = customNewsletters.find(({ values }) =>
+        values.includes(name),
+      )
+      if (customNewsletter) {
+        return customNewsletter.name
+      }
+      return 'Republik-Newsletter'
+    }
   }
-  return `Kampagne ${name}`
+  return `Kampagne ${name || 'Unbekannt'}`
 }
 
 const referrerNames = {
