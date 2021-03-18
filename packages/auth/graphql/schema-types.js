@@ -97,6 +97,7 @@ type RequestInfo {
   isApp: Boolean!
   country: String
   city: String
+  cookie: String
 }
 
 enum EventLogType {
