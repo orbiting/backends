@@ -19,7 +19,7 @@ if (!FRONTEND_BASE_URL) {
 }
 
 const getCommentLink = async (comment, discussion, context) => {
-  const discussionUrl = await getDiscussionUrl(discussion, context)
+  const discussionUrl = getDiscussionUrl(discussion)
   return `${discussionUrl}${
     discussionUrl.indexOf('?') === -1 ? '?' : '&'
   }focus=${comment.id}`

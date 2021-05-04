@@ -25,21 +25,21 @@ const {
   DEFAULT_MAIL_FROM_ADDRESS,
   DEFAULT_MAIL_FROM_NAME,
   FRONTEND_BASE_URL,
-  GENERAL_FEEDBACK_DISCUSSION_ID,
 } = process.env
 
-const getDiscussionUrl = async (discussion, context) => {
-  const communityUrl = `${FRONTEND_BASE_URL}/dialog?id=${discussion.id}`
-  if (discussion.id === GENERAL_FEEDBACK_DISCUSSION_ID) {
-    return `${communityUrl}&t=general`
+const getDiscussionPath = (discussion) => {
+  // currently discussion.path is synched with document path on publish
+  // - for template discussion the document path is always suffixed with /diskussion
+  //   in that case we don't want to rewrite the path
+  // - in all other cases, mainly template article,
+  //   we rewrite to /dialog with the discussion id
+  if (discussion.repoId && !discussion.path.match(/\/diskussion$/)) {
+    return `/dialog?t=article&id=${discussion.id}`
   }
-  const document =
-    discussion.repoId &&
-    (await context.loaders.Document.byRepoId.load(discussion.repoId))
-  if (document && document.meta && document.meta.template === 'article') {
-    return `${communityUrl}&t=article`
-  }
-  return `${FRONTEND_BASE_URL}${discussion.path}`
+  return discussion.path
+}
+const getDiscussionUrl = (discussion) => {
+  return `${FRONTEND_BASE_URL}${getDiscussionPath(discussion)}`
 }
 
 const getDisplayAuthor = (comment, context) => {
@@ -55,7 +55,7 @@ const getCommentInfo = async (comment, displayAuthor, discussion, context) => {
 
   const { preview, discussionUrl, contentMdast } = await Promise.props({
     preview: getPreview(comment, { length: 128 }, context),
-    discussionUrl: getDiscussionUrl(discussion, context),
+    discussionUrl: getDiscussionUrl(discussion),
     contentMdast: getContent(comment, { strip: false }, context),
   })
 
@@ -300,4 +300,5 @@ const submitComment = async (comment, discussion, context, testUsers) => {
 module.exports = {
   submitComment,
   getDiscussionUrl,
+  getDiscussionPath,
 }
