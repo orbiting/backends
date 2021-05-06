@@ -33,7 +33,11 @@ const getDiscussionPath = (discussion) => {
   //   in that case we don't want to rewrite the path
   // - in all other cases, mainly template article,
   //   we rewrite to /dialog with the discussion id
-  if (discussion.repoId && !discussion.path.match(/\/diskussion$/) && discussion.path.match(/^\/[0-9]{4}\/[0-9]{2}\/[0-9]{2}\//)) {
+  if (
+    discussion.repoId &&
+    !discussion.path.match(/\/diskussion$/) &&
+    discussion.path.match(/^\/[0-9]{4}\/[0-9]{2}\/[0-9]{2}\//)
+  ) {
     return `/dialog?t=article&id=${discussion.id}`
   }
   return discussion.path
