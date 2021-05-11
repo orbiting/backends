@@ -12473,6 +12473,11 @@ ts-invariant@^0.7.0:
   dependencies:
     tslib "^2.1.0"
 
+ts-tokenizr@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/ts-tokenizr/-/ts-tokenizr-1.1.1.tgz#977d17d993183260d4321da99b873f7a8260baa8"
+  integrity sha512-g6TkS9PjJV0eJtyqF6VvWQH1QwabayQjvLEv+QA/LCVolWcA+UJWRd24gn05v1C4vUTvV76JVPSPxMQI8vxZFQ==
+
 tsconfig-paths@^3.9.0:
   version "3.9.0"
   resolved "https://registry.yarnpkg.com/tsconfig-paths/-/tsconfig-paths-3.9.0.tgz#098547a6c4448807e8fcb8eae081064ee9a3c90b"
