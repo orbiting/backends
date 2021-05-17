@@ -43,16 +43,16 @@ module.exports = (
     schema: executableSchema,
     context: ({ req, connection }) =>
       connection ? connection.context : createContext({ user: req.user, req }),
-    debug: true,
+    debug: NODE_ENV !== 'production',
+    tracing: NODE_ENV !== 'production',
     introspection: true,
     playground: false, // see ./graphiql.js
-    tracing: NODE_ENV === 'development',
     subscriptions: {
       onConnect: async (connectionParams, websocket) => {
         try {
           // apollo-fetch used in tests sends cookie on the connectionParams
           const cookiesRaw =
-            NODE_ENV === 'development' && connectionParams.cookies
+            NODE_ENV !== 'production' && connectionParams.cookies
               ? connectionParams.cookies
               : websocket.upgradeReq.headers.cookie
           if (!cookiesRaw) {
