@@ -11,59 +11,66 @@ const termCriteriaBuilder = (fieldName) => (value, options) => ({
   },
 })
 
-const hasCriteriaBuilder = (fieldName) => (value, { filter, not = false }) => ({
-  clause: not || !value ? 'must_not' : 'must',
-  filter: [
-    filter || { match_all: {} },
-    {
-      exists: {
-        field: fieldName,
-      },
-    },
-  ],
-})
-
-const dateRangeCriteriaBuilder = (fieldName) => (
-  range,
-  { filter, not = false },
-) => ({
-  clause: not ? 'must_not' : 'must',
-  filter: [
-    filter || { match_all: {} },
-    {
-      range: {
-        [fieldName]: {
-          ...(range.from ? { gte: range.from } : {}),
-          ...(range.to ? { lte: range.to } : {}),
+const hasCriteriaBuilder =
+  (fieldName) =>
+  (value, { filter, not = false }) => ({
+    clause: not || !value ? 'must_not' : 'must',
+    filter: [
+      filter || { match_all: {} },
+      {
+        exists: {
+          field: fieldName,
         },
       },
-    },
-  ],
-})
+    ],
+  })
 
-const rangeCriteriaBuilder = (fieldName) => (value, { filter, ranges }) => {
-  const range = ranges.find((range) => range.key === value.toLowerCase())
-
-  return {
-    clause: 'must',
+const dateRangeCriteriaBuilder =
+  (fieldName) =>
+  (range, { filter, not = false }) => ({
+    clause: not ? 'must_not' : 'must',
     filter: [
       filter || { match_all: {} },
       {
         range: {
           [fieldName]: {
-            gte: range.from || undefined,
-            lte: range.to || undefined,
+            ...(range.from ? { gte: range.from } : {}),
+            ...(range.to ? { lte: range.to } : {}),
           },
         },
       },
     ],
+  })
+
+const rangeCriteriaBuilder =
+  (fieldName) =>
+  (value, { filter, ranges }) => {
+    const range = ranges.find(
+      (range) =>
+        range.key === value.toLowerCase() ||
+        String(range.from) === value.toLowerCase(),
+    )
+
+    return {
+      clause: 'must',
+      filter: [
+        filter || { match_all: {} },
+        {
+          range: {
+            [fieldName]: {
+              gte: range.from || undefined,
+              lte: range.to || undefined,
+            },
+          },
+        },
+      ],
+    }
   }
-}
 
 // converts a filter array (with generic value as string) to a (typed) filter obj
 // adds a type filter if the schema implies it and no type filter
 // is explicitly added
-const filterReducer = (schema) => (filters) => {
+const filterReducer = (schemas) => (filters) => {
   const getFilter = (key, value, not) => {
     const filterData = {
       key,
@@ -84,8 +91,9 @@ const filterReducer = (schema) => (filters) => {
   let filter = filters.reduce((filterObj, { key, value, not }) => {
     debug('filterReducer', { key, value, not })
 
-    const schemaEntry = schema[key]
-    debug('schemaEntry', schema[key])
+    const schema = schemas.find((schema) => !!schema[key])
+    const schemaEntry = schema?.[key]
+    debug('schemaEntry', schemaEntry)
     if (!schemaEntry) {
       console.warn('missing schemaEntry for filter:', { key, value })
       return filterObj
@@ -148,11 +156,12 @@ const getFilterValue = (filter, key) => {
 }
 
 // converts a filter obj to elastic syntax
-const elasticFilterBuilder = (schema) => (filterInput) => {
+const elasticFilterBuilder = (schemas) => (filterInput) => {
   return {
     bool: Object.keys(filterInput).reduce((boolFilter, hash) => {
       const { key, value, options } = filterInput[hash]
 
+      const schema = schemas.find((schema) => !!schema[key])
       const schemaEntry = schema[key]
       if (!schemaEntry) {
         throw new Error(`Missing schemaEntry for filter: ${key}`)
@@ -171,7 +180,7 @@ const elasticFilterBuilder = (schema) => (filterInput) => {
       boolFilter[created.clause] = [
         ...(boolFilter[created.clause] || []),
         created.filter,
-      ]
+      ].flat()
 
       return boolFilter
     }, {}),
