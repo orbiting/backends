@@ -26,7 +26,7 @@ const _ = require('lodash')
 const { v4: uuid } = require('uuid')
 
 const indices = require('../../../lib/indices')
-const { getIndexAlias, getDateIndex } = require('../../../lib/utils')
+const { getIndexAlias } = require('../../../lib/utils')
 
 const reduceFilters = filterReducer([documentSchema, documentZoneSchema])
 const createElasticFilter = elasticFilterBuilder([
@@ -38,8 +38,6 @@ const schemaAggregations = extractAggs([documentSchema, documentZoneSchema])
 const getFieldList = require('@orbiting/graphql-list-fields')
 
 const createCache = require('../../../lib/cache')
-
-const { SEARCH_TRACK = false } = process.env
 
 const DEV = process.env.NODE_ENV && process.env.NODE_ENV !== 'production'
 
@@ -320,7 +318,7 @@ const parseOptions = (options) => {
   try {
     return JSON.parse(Buffer.from(options, 'base64').toString())
   } catch (e) {
-    console.info('failed to parse options:', options, e)
+    console.warn('failed to parse options:', options, e)
   }
   return {}
 }
@@ -398,11 +396,13 @@ const search = async (__, args, context, info) => {
     withoutChildren = withoutContent && !hasFieldRequested('children', info)
   }
 
-  const options = after
-    ? { ...args, ...parseOptions(after) }
-    : before
-    ? { ...args, ...parseOptions(before) }
-    : args
+  /**
+   * If cursors {after} (1) or {before} (2) are provided, their contents
+   * replace options provided: Changing search term or {first} won't have
+   * any effect.
+   */
+  const options =
+    (after && parseOptions(after)) || (before && parseOptions(before)) || args
 
   const {
     search,
@@ -418,11 +418,27 @@ const search = async (__, args, context, info) => {
 
   debug('options', JSON.stringify(options))
 
+  /**
+   * {filterObj} is a shorthand for adding items to {filterArray}.
+   *
+   * Here we iterate through {filterObj} props, transform them into a
+   * filter item (key, value, not) and append them to {filterArray}. It
+   * will no append a filter item if present already.
+   */
   Object.keys(filterObj).forEach((key) => {
-    filterArray.push({
-      key,
-      value: filterObj[key],
-    })
+    const value = filterObj[key]
+    const not = false
+
+    const hasFilter = !!filterArray.find(
+      (f) =>
+        f.key === key &&
+        JSON.stringify(f.value) === JSON.stringify(value) &&
+        f.not === not,
+    )
+
+    if (!hasFilter) {
+      filterArray.push({ key, value, not })
+    }
   })
 
   const filter = reduceFilters(filterArray)
@@ -436,6 +452,7 @@ const search = async (__, args, context, info) => {
     index: indicesList.map(({ name }) => getIndexAlias(name, 'read')),
     from,
     size: first,
+    track_total_hits: true,
     body: createQuery(
       search,
       filter,
@@ -451,7 +468,6 @@ const search = async (__, args, context, info) => {
   debug('ES query', JSON.stringify(query))
 
   let result = await cache.get(query)
-  const cacheHIT = !!result
   if (!result) {
     const { body } = await elastic.search(query)
     result = body
@@ -459,13 +475,16 @@ const search = async (__, args, context, info) => {
     cache.set(query, result, options)
   }
 
-  const hasNextPage = first > 0 && result.hits.total > from + first
+  const { total } = result.hits
+  const totalCount = Number.isFinite(total?.value) ? total.value : total
+
+  const hasNextPage = first > 0 && totalCount > from + first
   const hasPreviousPage = from > 0
 
   const response = {
     nodes: result.hits.hits.map(mapHit),
     aggregations: mapAggregations(result, t),
-    totalCount: result.hits.total,
+    totalCount,
     pageInfo: {
       hasNextPage,
       endCursor: hasNextPage
@@ -503,45 +522,6 @@ const search = async (__, args, context, info) => {
       context,
       withoutContent,
     })
-  }
-
-  if (!recursive && SEARCH_TRACK) {
-    const took = cacheHIT ? 0 : result.took
-    const total = result.hits.total
-    const hits = result.hits.hits.map((hit) => _.omit(hit, '_source'))
-    const aggs = result.aggregations
-
-    const filters = options.filters
-      ? options.filters.map((filter) => {
-          if (typeof filter.value !== 'string') {
-            filter.value = JSON.stringify(filter.value)
-          }
-
-          return filter
-        })
-      : []
-
-    // not await tracking
-    elastic
-      .index({
-        index: getDateIndex('searches'),
-        type: 'Search',
-        body: {
-          date: new Date(),
-          trackingId,
-          roles: user && user.roles,
-          took,
-          cache: cacheHIT,
-          options: Object.assign({}, options, { filters }),
-          query,
-          total,
-          hits,
-          aggs,
-        },
-      })
-      .catch((err) => {
-        console.error('search, tracking', err)
-      })
   }
 
   return response

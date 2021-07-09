@@ -203,6 +203,10 @@
       "value": "Während der Bearbeitung der Karte ist ein Fehler aufgetreten."
     },
     {
+      "key": "api/pay/stripe/subscription_payment_intent_requires_action",
+      "value": "Ihre Kreditkarte lässt sich nicht dazu verwenden, um ein Monats-Abo zu reaktivieren. Bitte melden Sie sich bei kontakt@republik.ch"
+    },
+    {
       "key": "api/paypal/deny",
       "value": "Die Zahlung ist leider fehlgeschlagen. Bitte wählen Sie ein anderes Zahlungsmittel, um Ihre Bestellung abzuschliessen."
     },
@@ -1197,6 +1201,10 @@
     {
       "key": "api/access/perk/giftMembership/selfClaim/error",
       "value": "Sie können diese Mitgliedschaft nicht auf Ihr eigenes Konto einlösen."
+    },
+    {
+      "key": "api/access/perk/accessWithRole/grantRevoked/error",
+      "value": "Ihr Gutscheincode ist leider ungültig. Da hat sich vielleicht ein Vertipper eingeschlichen, oder der Gutscheincode ist bereits abgelaufen."
     },
     {
       "key": "api/access/resolvers/AccessGrant/status/invalidated",
