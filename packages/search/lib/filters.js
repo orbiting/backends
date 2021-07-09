@@ -180,7 +180,7 @@ const elasticFilterBuilder = (schemas) => (filterInput) => {
       boolFilter[created.clause] = [
         ...(boolFilter[created.clause] || []),
         created.filter,
-      ]
+      ].flat()
 
       return boolFilter
     }, {}),
