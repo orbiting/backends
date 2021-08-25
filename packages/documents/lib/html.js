@@ -1,15 +1,22 @@
 const {
   newsletterEmailSchema,
   editorialNewsletterSchema,
+  articleEmailSchema,
 } = require('@orbiting/backend-modules-styleguide')
 const { renderEmail } = require('mdast-react-render/lib/email')
 
 const get = (doc) => {
-  const emailSchema =
-    doc.content.meta.template === 'editorialNewsletter'
-      ? editorialNewsletterSchema.default() // Because styleguide currently doesn't support module.exports
-      : newsletterEmailSchema
-  return renderEmail(doc.content, emailSchema)
+  const { template } = doc.content.meta
+
+  if (template === 'editorialNewsletter') {
+    return renderEmail(doc.content, editorialNewsletterSchema.default())
+  }
+
+  if (template === 'article') {
+    return renderEmail(doc.content, articleEmailSchema)
+  }
+
+  return renderEmail(doc.content, newsletterEmailSchema)
 }
 
 module.exports = {
