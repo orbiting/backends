@@ -13,8 +13,8 @@ const {
       createPublish,
       getElasticDoc,
       isPathUsed,
-      findTemplates,
       addRelatedDocs,
+      getResolvedMeta,
     },
     utils: { getIndexAlias },
   },
@@ -310,40 +310,7 @@ module.exports = async (
     throw e
   }
 
-  const resolved = {}
-
-  if (doc.content.meta.dossier) {
-    const dossiers = await findTemplates(
-      elastic,
-      'dossier',
-      doc.content.meta.dossier,
-    )
-
-    if (!resolved.meta) resolved.meta = {}
-    resolved.meta.dossier = dossiers.pop()
-  }
-
-  if (doc.content.meta.format) {
-    const formats = await findTemplates(
-      elastic,
-      'format',
-      doc.content.meta.format,
-    )
-
-    if (!resolved.meta) resolved.meta = {}
-    resolved.meta.format = formats.pop()
-  }
-
-  if (doc.content.meta.section) {
-    const sections = await findTemplates(
-      elastic,
-      'section',
-      doc.content.meta.section,
-    )
-
-    if (!resolved.meta) resolved.meta = {}
-    resolved.meta.section = sections.pop()
-  }
+  const resolved = { meta: getResolvedMeta(resolvedDoc.content.meta, _all) }
 
   // publish to elasticsearch
   const elasticDoc = getElasticDoc({
@@ -396,7 +363,17 @@ module.exports = async (
     })
 
     // Update campaign content (HTML)
-    let html = getHTML(resolvedDoc)
+    // Merge resolved.meta w/ resolvedDoc.content.meta
+    let html = getHTML({
+      ...resolvedDoc,
+      content: {
+        ...resolvedDoc.content,
+        meta: {
+          ...resolvedDoc.content.meta,
+          ...resolved.meta,
+        },
+      },
+    })
 
     if (PIWIK_URL_BASE && PIWIK_SITE_ID) {
       const openBeacon = `${PIWIK_URL_BASE}/piwik.php?${querystring.stringify({
