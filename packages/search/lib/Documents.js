@@ -868,6 +868,49 @@ const findTemplates = async function (elastic, template, repoId) {
   return body.hits.hits.map((hit) => hit._source)
 }
 
+/**
+ * Wanders through {meta} object and attempts to resolve resource URLs with
+ * provided {docs}. It does does so recursivly e.g. meta.format.meta.section
+ */
+const getResolvedMeta = (meta = {}, docs = [], depth = 0) => {
+  const resolvedMeta = {}
+
+  // Prevent circular resolution
+  if (depth > 2) {
+    return resolvedMeta
+  }
+
+  // Check each key if meta can be resolved
+  META_RESOLVABLE_KEYS.forEach((key) => {
+    const resource = meta[key]
+
+    // If key does not exist, exit early
+    if (!resource) {
+      return
+    }
+
+    const { repoId } = getRepoId(resource)
+    const doc = docs.find((d) => d.meta?.repoId === repoId)
+
+    if (doc?.meta) {
+      resolvedMeta[key] = {
+        repoId: doc.meta.repoId,
+        meta: {
+          title: doc.meta.title,
+          description: doc.meta.description,
+          kind: doc.meta.kind,
+          template: doc.meta.template,
+          path: doc.meta.path,
+          color: doc.meta.color,
+          ...getResolvedMeta(doc.meta, docs, depth + 1), // recursive resolution
+        },
+      }
+    }
+  })
+
+  return resolvedMeta
+}
+
 module.exports = {
   SHORT_DURATION_MINS,
   MIDDLE_DURATION_MINS,
@@ -889,4 +932,5 @@ module.exports = {
   getResourceUrls,
   getDocumentId,
   getParsedDocumentId,
+  getResolvedMeta,
 }
