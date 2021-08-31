@@ -40,6 +40,8 @@ const LONG_DURATION_MINS = 30
 // Seconds to wait for ElasticSearch to reindex update data
 const REINDEX_AWAIT_SECS = 2
 
+const META_RESOLVABLE_KEYS = ['dossier', 'format', 'section', 'discussion']
+
 const { GITHUB_LOGIN, GITHUB_ORGS } = process.env
 
 const indexType = 'Document'
@@ -355,11 +357,10 @@ const addRelatedDocs = async ({
     }
     // from meta
     const meta = doc.content.meta
-    // TODO get keys from packages/documents/lib/resolve.js
-    repoIds.push(getRepoId(meta.dossier).repoId)
-    repoIds.push(getRepoId(meta.format).repoId)
-    repoIds.push(getRepoId(meta.section).repoId)
-    repoIds.push(getRepoId(meta.discussion).repoId)
+    META_RESOLVABLE_KEYS.forEach((key) =>
+      repoIds.push(getRepoId(meta[key]).repoId),
+    )
+
     if (meta.series) {
       // If a string, probably a series master (tbc.)
       if (typeof meta.series === 'string') {
@@ -403,6 +404,7 @@ const addRelatedDocs = async ({
     })
   }
 
+  // Fetches related documents
   const { docs: variousRelatedDocs, usernames } = await loadLinkedMetaData({
     context,
     repoIds,
@@ -411,13 +413,31 @@ const addRelatedDocs = async ({
     ignorePrepublished,
   })
 
-  relatedDocs = relatedDocs.concat(variousRelatedDocs)
+  // Fetches further related document e.g. meta.format.meta.section
+  const furtherRelatedRepoIds = [...relatedDocs, ...variousRelatedDocs]
+    .map((d) => META_RESOLVABLE_KEYS.map((key) => d.meta?.[key]))
+    .flat()
+    .filter(Boolean)
+    .map((url) => getRepoId(url).repoId)
+    .filter(
+      (repoId) =>
+        !variousRelatedDocs?.map((d) => d.meta?.repoId).includes(repoId),
+    )
+
+  const { docs: furtherRelatedDocs } = await loadLinkedMetaData({
+    context,
+    repoIds: furtherRelatedRepoIds,
+    scheduledAt,
+    ignorePrepublished,
+  })
 
   debug({
     numDocs: docs.length,
     numUserIds: userIds.length,
     numRepoIds: repoIds.length,
     numRelatedDocs: relatedDocs.length,
+    numVariousRelatedDocs: variousRelatedDocs.length,
+    numFurtherRelatedDocs: furtherRelatedDocs.length,
   })
 
   // mutate docs
@@ -425,7 +445,13 @@ const addRelatedDocs = async ({
     // expose all documents to each document
     // for link resolving in lib/resolve
     // - including the usernames
-    doc._all = [...(doc._all ? doc._all : []), ...relatedDocs, ...docs]
+    doc._all = [
+      ...(doc._all ? doc._all : []),
+      ...relatedDocs,
+      ...variousRelatedDocs,
+      ...furtherRelatedDocs,
+      ...docs,
+    ]
     doc._usernames = usernames
   })
 }
