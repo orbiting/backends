@@ -42,6 +42,7 @@ type Newsletter {
 }
 
 type Meta {
+  id: ID!
   title: String
   shortTitle: String
   slug: String

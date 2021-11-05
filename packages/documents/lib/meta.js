@@ -226,6 +226,7 @@ const getMeta = (doc) => {
     audioSource: getAudioSource(doc),
     ...times,
     ...resolvedFields,
+    id: Buffer.from([doc.meta.repoId, doc.versionName, 'meta'].join('/')).toString('base64'),
   }
 
   return doc._meta
