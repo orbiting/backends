@@ -29,6 +29,10 @@ module.exports = {
       return
     }
 
+    if (candidacy.postalCodeGeo) {
+      return candidacy.postalCodeGeo
+    }
+
     if (
       !candidacy.user.address ||
       !candidacy.user.address?.postalCode ||
