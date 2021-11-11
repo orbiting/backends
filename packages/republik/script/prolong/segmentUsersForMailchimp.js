@@ -3,7 +3,9 @@ require('@orbiting/backend-modules-env').config()
 
 const Promise = require('bluebird')
 const moment = require('moment')
-const debug = require('debug')('republik:script:prolong:segmentUsersForMailchimp')
+const debug = require('debug')(
+  'republik:script:prolong:segmentUsersForMailchimp',
+)
 
 const {
   lib: { ConnectionContext },
@@ -73,40 +75,39 @@ const handleRow = async (row) => {
   // if active, last price paid
   const price = mostRecentPackageOption?.price || pledgePackageOption?.price
 
-  suggestedMembershipTypeName = ['ABO', 'BENEFACTOR_ABO'].includes(membershipTypeName) ? membershipTypeName : 'ABO',
-  suggestedPrice = price >= 24000 ? price : 24000
+  ;(suggestedMembershipTypeName = ['ABO', 'BENEFACTOR_ABO'].includes(
+    membershipTypeName,
+  )
+    ? membershipTypeName
+    : 'ABO'),
+    (suggestedPrice = price >= 24000 ? price : 24000)
 
   const record = {
     id: row.id,
     EMAIL: row.email,
-    PRLG_SEG: 'others',
+    FNAME: row.firstName || '',
+    LANEM: row.lastName || '',
+    PRLG_SEG: '',
     PRLG_MT: '',
     PRLG_PRC: '',
     CP_ATOKEN: row.accessToken,
   }
 
   if (
-    !!activeMembership &&
-    !!activeMembership.renew &&
-    ['MONTHLY_ABO', 'ABO_GIVE_MONTHS'].includes(membershipTypeName) &&
-    !hasDormantMembership
+    row.roles?.includes('gen202111') &&
+    activeMembership &&
+    lastEndDate?.isBefore('2022-05-01')
   ) {
-    record.PRLG_SEG = 'has-monthly-abo' // @TODO: Raus, falls dormant membership
-  } else if (
-    !!activeMembership &&
-    !!activeMembership.renew &&
-    !['MONTHLY_ABO', 'ABO_GIVE_MONTHS'].includes(membershipTypeName) &&
-    !activeMembership.autoPay &&
-    lastEndDate?.isBefore('2022-02-01') &&
-    !hasDormantMembership
-  ) {
-    record.PRLG_SEG = 'prolong-before-feb'
+    record.PRLG_SEG = 'gen202111-prolong-before-apr'
     record.PRLG_MT = suggestedMembershipTypeName
     record.PRLG_PRC = suggestedPrice
-  } else if (
-    !activeMembership
-  ) {
-    record.PRLG_SEG = 'no-member'
+  } else if (row.roles?.includes('gen202111') && activeMembership) {
+    record.PRLG_SEG = 'gen202111'
+    record.PRLG_MT = suggestedMembershipTypeName
+    record.PRLG_PRC = suggestedPrice
+  } else if (activeMembership) {
+    record.PRLG_SEG = 'has-monthly-abo'
+  } else {
     if (!hadSomePeriods) {
       record.CP_ATOKEN = ''
     }
@@ -118,7 +119,13 @@ const handleRow = async (row) => {
     stats[record.PRLG_SEG]++
   }
 
-  console.log(Object.keys(record).map(key => record[key]).join(','))
+  if (stats[record.PRLG_SEG] < 10) {
+    console.log(
+      Object.keys(record)
+        .map((key) => record[key])
+        .join(','),
+    )
+  }
 }
 
 const handleBatch = async (rows, count, pgdb) => {
@@ -145,7 +152,18 @@ ConnectionContext.create(applicationName)
   .then(async (context) => {
     const { pgdb } = context
 
-    console.log(['id', 'EMAIL', 'PRLG_SEG', 'PRLG_MT', 'PRLG_PRC', 'CP_ATOKEN'].join(','))
+    console.log(
+      [
+        'id',
+        'EMAIL',
+        'FNAME',
+        'LNAME',
+        'PRLG_SEG',
+        'PRLG_MT',
+        'PRLG_PRC',
+        'CP_ATOKEN',
+      ].join(','),
+    )
 
     await pgdb
       .queryInBatches(
@@ -173,7 +191,7 @@ ConnectionContext.create(applicationName)
 
           GROUP BY u.id
           ORDER BY RANDOM()
-          -- LIMIT 100
+          LIMIT 4000
         `,
       )
       .catch((e) => console.error(e))
