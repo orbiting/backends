@@ -85,8 +85,8 @@ const handleRow = async (row) => {
   const record = {
     id: row.id,
     EMAIL: row.email,
-    FNAME: row.firstName || '',
-    LANEM: row.lastName || '',
+    FNAME: `"${row.firstName}"` || '',
+    LANEM: `"${row.lastName}"` || '',
     PRLG_SEG: '',
     PRLG_MT: '',
     PRLG_PRC: '',
@@ -119,13 +119,13 @@ const handleRow = async (row) => {
     stats[record.PRLG_SEG]++
   }
 
-  if (stats[record.PRLG_SEG] < 10) {
+  // if (stats[record.PRLG_SEG] <= 10) {
     console.log(
       Object.keys(record)
         .map((key) => record[key])
         .join(','),
     )
-  }
+  // }
 }
 
 const handleBatch = async (rows, count, pgdb) => {
@@ -186,12 +186,15 @@ ConnectionContext.create(applicationName)
             AND "deletedAt" IS NULL
             AND email NOT LIKE '%_deleted@republik.ch'
 
+            -- Benachrichten notwendig
+            -- AND roles @> '"gen202111"' AND m.active = TRUE
+
             -- Test specific user:
             -- AND u.id = 'd94a7540-afbd-4134-b35d-19f9f5a28598'
 
           GROUP BY u.id
           ORDER BY RANDOM()
-          LIMIT 4000
+          -- LIMIT 4000
         `,
       )
       .catch((e) => console.error(e))
