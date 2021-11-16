@@ -443,7 +443,7 @@ const resolvePackages = async ({
   const pledges = pledger.id
     ? await pgdb.public.pledges.find({
         userId: pledger.id,
-        status: 'SUCCESSFUL',
+        status: 'SUCCESSFUL', // @TODO: Broaden?
       })
     : []
 
