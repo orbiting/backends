@@ -81,6 +81,7 @@ packages/base/express/keepalive.js
 packages/dataloader/**/*.js
 packages/discussions/loaders/Comment.js
 packages/invoices/**/*.js
+packages/offers/lib/**/*.js
 packages/publikator/lib/cache/**/*.js
 packages/publikator/lib/phases.js
 packages/publikator/loaders/**/*.js
