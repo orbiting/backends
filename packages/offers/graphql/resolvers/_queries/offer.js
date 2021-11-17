@@ -6,9 +6,10 @@ const { getOffer } = require('../../../lib/offer')
 
 module.exports = async (_, args, context, info) => {
   const { accessToken } = args
+  const { user: me } = args
 
-  if (accessToken) {
-    const overrideUser = await getUserByAccessToken(args.accessToken, context)
+  if (!me && accessToken) {
+    const overrideUser = await getUserByAccessToken(accessToken, context)
 
     if (overrideUser) {
       return getOffer(context, overrideUser)
