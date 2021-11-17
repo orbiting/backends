@@ -510,17 +510,13 @@ const resolvePackages = async ({
 const resolveMemberships = async ({ memberships, pgdb }) => {
   debug('resolveMemberships')
 
+  const membershipTypes = await pgdb.public.membershipTypes.findAll()
+  const membershipTypeRewardIds = membershipTypes.map((type) => type.rewardId)
+
   const users =
     memberships.length > 0
       ? await pgdb.public.users.find({
           id: memberships.map((membership) => membership.userId),
-        })
-      : []
-
-  const membershipTypes =
-    memberships.length > 0
-      ? await pgdb.public.membershipTypes.find({
-          id: memberships.map((membership) => membership.membershipTypeId),
         })
       : []
 
@@ -538,6 +534,17 @@ const resolveMemberships = async ({ memberships, pgdb }) => {
         })
       : []
 
+  const membershipPledgePayments =
+    membershipPledges.length > 0
+    ? await pgdb.query(`
+      SELECT pay.*, pp."pledgeId"
+      FROM payments pay
+      JOIN "pledgePayments" pp
+        ON pp."paymentId" = pay.id
+        AND pp."pledgeId" = ANY ( VALUES ${membershipPledges.map(p => `('${p.id}'::uuid)`).join(',')} )
+    `)
+    : []
+
   const membershipPeriods =
     memberships.length > 0
       ? await pgdb.public.membershipPeriods.find({
@@ -545,9 +552,55 @@ const resolveMemberships = async ({ memberships, pgdb }) => {
         })
       : []
 
+  const pledgeOptions =
+    membershipPeriods.length > 0
+      ? await pgdb.public.pledgeOptions.find({
+          pledgeId: [
+            ...membershipPeriods
+              .map((period) => period.pledgeId)
+              .filter(Boolean),
+            ...membershipPledges.map((pledge) => pledge.id).filter(Boolean),
+          ],
+          'amount >': 0,
+        })
+      : []
+
+  const membershipPeriodPackageOptions =
+    pledgeOptions.length > 0
+      ? await pgdb.public.packageOptions.find({
+          id: pledgeOptions.map((option) => option.templateId),
+        })
+      : []
+
+  membershipPeriodPackageOptions.forEach(
+    (packageOption, index, packageOptions) => {
+      packageOptions[index].membershipType = membershipTypes.find(
+        (membershipType) => membershipType.rewardId === packageOption.rewardId,
+      )
+    },
+  )
+
+  pledgeOptions.forEach((pledgeOption, index, pledgeOptions) => {
+    pledgeOptions[index].packageOption = membershipPeriodPackageOptions.find(
+      (packageOption) => packageOption.id === pledgeOption.templateId,
+    )
+  })
+
   membershipPledges.forEach((pledge, index, pledges) => {
+    pledges[index].payments = membershipPledgePayments.filter(payment => payment.pledgeId === pledge.id)
     pledges[index].package = membershipPledgePackages.find(
       (package_) => package_.id === pledge.packageId,
+    )
+  })
+
+  membershipPeriods.forEach((period, index, periods) => {
+    periods[index].pledge = membershipPledges.find(
+      (pledge) => pledge.id === period.pledgeId,
+    )
+    periods[index].pledgeOption = pledgeOptions.find(
+      (option) =>
+        option.pledgeId === period.pledgeId &&
+        option.membershipId === period.membershipId,
     )
   })
 
@@ -557,6 +610,11 @@ const resolveMemberships = async ({ memberships, pgdb }) => {
     )
     memberships[index].pledge = membershipPledges.find(
       (membershipPledge) => membershipPledge.id === membership.pledgeId,
+    )
+    memberships[index].pledgeOption = pledgeOptions.find(
+      (option) =>
+        option.pledgeId === membership.pledgeId &&
+        membershipTypeRewardIds.includes(option.packageOption.rewardId),
     )
     memberships[index].periods = membershipPeriods.filter(
       (period) => period.membershipId === membership.id,
