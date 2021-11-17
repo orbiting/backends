@@ -678,6 +678,11 @@ const resolveMemberships = async ({ memberships, pgdb }) => {
         option.pledgeId === membership.pledgeId &&
         membershipTypeRewardIds.includes(option.packageOption.rewardId),
     )
+    memberships[index].pledgeOption = pledgeOptions.find(
+      (option) =>
+        option.pledgeId === membership.pledgeId &&
+        membershipTypeRewardIds.includes(option.packageOption.rewardId),
+    )
     memberships[index].periods = membershipPeriods.filter(
       (period) => period.membershipId === membership.id,
     )
