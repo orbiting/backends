@@ -19,7 +19,7 @@ export interface UserTransformed {
   [key: string]: any
 }
 
-export const transformUser = (user: UserRow, additionalFields = {}): UserTransformed | null => {
+const transformUser = (user: UserRow, additionalFields = {}): UserTransformed | null => {
   if (!user) {
     return null
   }
@@ -43,4 +43,4 @@ export const transformUser = (user: UserRow, additionalFields = {}): UserTransfo
   }
 }
 
-module.exports = transformUser
+export default transformUser
