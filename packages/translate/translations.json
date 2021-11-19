@@ -2183,6 +2183,90 @@
     {
       "key": "api/email/card/visa",
       "value": "Visa-Kreditkarte"
+    },
+    {
+      "key": "api/offer/status/label",
+      "value": "{type} {since}"
+    },
+    {
+      "key": "api/offer/status/label/type",
+      "value": "Zugang"
+    },
+    {
+      "key": "api/offer/status/label/type/ABO",
+      "value": "Mitglied"
+    },
+    {
+      "key": "api/offer/status/label/type/BENEFACTOR_ABO",
+      "value": "Mitglied"
+    },
+    {
+      "key": "api/offer/status/label/type/MONTHLY_ABO",
+      "value": "Abo"
+    },
+    {
+      "key": "api/offer/status/label/type/ABO_GIVE_MONTHS",
+      "value": "Abo"
+    },
+    {
+      "key": "api/offer/status/label/since",
+      "value": "seit {firstDay}"
+    },
+    {
+      "key": "api/offer/status/description",
+      "value": "{due}"
+    },
+    {
+      "key": "api/offer/status/description/type",
+      "value": "Ihr Zugriff"
+    },
+    {
+      "key": "api/offer/status/description/type/ABO",
+      "value": "Ihre Jahresmitgliedschaft"
+    },
+    {
+      "key": "api/offer/status/description/type/BENEFACTOR_ABO",
+      "value": "Ihre Gönner-Mitgliedschaft"
+    },
+    {
+      "key": "api/offer/status/description/type/MONTHLY_ABO",
+      "value": "Ihr Monats-Abo"
+    },
+    {
+      "key": "api/offer/status/description/type/ABO_GIVE_MONTHS",
+      "value": "Ihr Monats-Abo"
+    },
+    {
+      "key": "api/offer/status/description/due/active:false/renew:false",
+      "value": "{type} endete am {endDate}."
+    },
+    {
+      "key": "api/offer/status/description/due/active:true/renew:false",
+      "value": "{type} läuft noch bis zum {endDate}."
+    },
+    {
+      "key": "api/offer/status/description/due/active:false/renew:true",
+      "value": "{type} lief am {endDate} aus."
+    },
+    {
+      "key": "api/offer/status/description/due/active:true/renew:true",
+      "value": "Ihr nächster Beitrag ist am {endDate} fällig."
+    },
+    {
+      "key": "api/offer/status/description/due/active:true/renew:true/ABO",
+      "value": "Ihr nächster Mitgliederbeitrag ist am {endDate} fällig."
+    },
+    {
+      "key": "api/offer/status/description/due/active:true/renew:true/BENEFACTOR_ABO",
+      "value": "Ihr nächster Mitgliederbeitrag ist am {endDate} fällig."
+    },
+    {
+      "key": "api/offer/status/description/due/active:true/renew:true/MONTHLY_ABO",
+      "value": "Ihr Monats-Abo wird am {endDate} verlängert."
+    },
+    {
+      "key": "api/offer/status/description/due/active:true/renew:true/ABO_GIVE_MONTHS",
+      "value": "Ihr Monats-Abo als Geschenk wird am {endDate} verlängert."
     }
   ]
 }

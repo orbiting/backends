@@ -1,6 +1,4 @@
 import * as Bluebird from 'bluebird'
-import moment from 'moment'
-// import { PgTable } from 'pogi'
 
 import { GraphqlContext } from '@orbiting/backend-modules-types'
 import { UserTransformed } from '@orbiting/backend-modules-auth/lib/transformUser'
@@ -81,6 +79,10 @@ interface Membership {
   membershipType: MembershipTypeRow
 }
 
+interface AccessGrant {
+  endAt: Date
+}
+
 const getFirstDay = (
   memberships: Membership[],
   user: UserTransformed,
@@ -129,68 +131,97 @@ const getMembershipStatus = (
   context: GraphqlContext,
   membership: Membership,
   firstDay: string | false,
-) => {
+): Omit<OfferStatus, 'id'> => {
   const { t } = context
-  // endingDate
-  // daysUntilEnd
-  // renew
-  // (graceInterval)
-  // autoPay?
-
-  // derived:
-  // overdue?
-  //
-
-  // Mitglied seit xx
-
-  // Ihr nächster Mitgliederbeitrag ist am xx fällig
-  //
-
-  // Ihr Mitgliederbeitrag, fällig am xx ist noch nicht beglichen (Pledge Pending)
-
-  // Mitgliedschaft
-  // Mitgliedschaft wird automatisch am xx erneuert
-  // Mitgliedschaftsbeitrag ist am xx fällig
-  // Mitgliedschaftsbeitrag ist seit xx überfällig
-  // Abonnement wird am xx automatisch verlängert
-  // Abonnement ist seit xx überfällig
-  //
 
   const { latestPeriod, active, renew } = membership
 
   const endDate = dateFormat(latestPeriod.endDate)
-  const daysUntilEnd = Math.max(
-    Math.round(
-      moment
-        .duration(moment(latestPeriod.endDate).clone().diff(moment()))
-        .asDays(),
-    ),
-    0,
-  )
 
   const membershipTypeName =
     latestPeriod.pledgeOption?.packageOption?.membershipType?.name ||
     membership.membershipType.name
 
+  /* const hasWaitingPayments =
+    memberships.length &&
+    memberships
+      .map((m) => m.periods.map((p) => p.pledge?.payments).flat())
+      .flat()
+      .filter(p => p.status === 'WAITING') */
+
   const replacements = {
     firstDay,
     endDate,
-    daysUntilEnd,
+    membershipTypeName,
     active,
     renew,
-    membershipTypeName,
   }
 
   return {
     label: t(
-      'offer/status/label',
-      replacements,
+      'api/offer/status/label',
+      {
+        type: t.first(
+          [
+            `api/offer/status/label/type/${membershipTypeName}`,
+            'api/offer/status/label/type',
+          ],
+          replacements,
+        ),
+        since: t.first(
+          [
+            `api/offer/status/label/since/${membershipTypeName}`,
+            'api/offer/status/label/since',
+          ],
+          replacements,
+        ),
+      },
       `membershipTypeName: ${membershipTypeName}, firstDay: ${firstDay}`,
     ),
     description: t(
+      'api/offer/status/description',
+      {
+        due: t.first(
+          [
+            `api/offer/status/description/due/active:${active}/renew:${renew}/${membershipTypeName}`,
+            `api/offer/status/description/due/active:${active}/renew:${renew}`,
+          ],
+          { ...replacements,
+            type: t.first(
+              [
+                `api/offer/status/description/type/${membershipTypeName}`,
+                'api/offer/status/description/type',
+              ],
+              replacements,
+            )
+          },
+        ),
+      },
+      `active: ${active}, renew: ${renew}, endDate: ${endDate}`,
+    ),
+  }
+}
+
+const getAccessGrantStatus = (
+  context: GraphqlContext,
+  accessGrant: AccessGrant,
+): Omit<OfferStatus, 'id'> => {
+  const { t } = context
+
+  const lastDay = dateFormat(accessGrant.endAt)
+  const isExpired = accessGrant.endAt < new Date()
+
+  const replacements = {
+    lastDay,
+    isExpired,
+  }
+
+  return {
+    label: t('offer/status/label', replacements, `lastDay: ${lastDay}`),
+    description: t(
       'offer/status/description',
       replacements,
-      `active: ${active}, renew: ${renew}, endDate: ${endDate}, daysUntilEnd: ${daysUntilEnd}`,
+      `isExpired: ${isExpired}`,
     ),
   }
 }
@@ -220,7 +251,6 @@ export const getStatus = async function (
     ].filter(Boolean),
   })
 
-  // @TODO: Replace any with Membership[]
   const memberships: Membership[] = await resolveMemberships({
     memberships: memberships_,
     pgdb,
@@ -229,42 +259,26 @@ export const getStatus = async function (
   // A users very first day
   const firstDay = getFirstDay(memberships, user)
 
-  // @TODO: Might not use after all
-  /* const hasWaitingPayments =
-    memberships.length &&
-    memberships
-      .map((m) => m.periods.map((p) => p.pledge?.payments).flat())
-      .flat()
-      .filter(p => p.status === 'WAITING') */
-
-  // active membership
-  // last membership, which was active
-  // active gifted membership
-  // probelesen
-
-  const activeMembership = findActiveMembership(memberships, user)
-  if (activeMembership) {
+  const membership =
+    findActiveMembership(memberships, user) ||
+    findLastActiveMembership(memberships, user)
+  if (membership) {
     return {
-      ...getMembershipStatus(context, activeMembership, firstDay),
-      id: 'active-membership',
+      ...getMembershipStatus(context, membership, firstDay),
+      id: 'active-membership', // @TODO: Make this nice, please.
     }
   }
 
-  const lastActiveMembership = findLastActiveMembership(memberships, user)
-  if (lastActiveMembership) {
+  const accessGrant = await pgdb.public.accessGrants.findOne(
+    { recipientUserId: user.id },
+    { orderBy: { endAt: 'desc' }, limit: 1 },
+  )
+  if (accessGrant) {
     return {
-      ...getMembershipStatus(context, lastActiveMembership, firstDay),
-      id: 'last-active-membership',
+      ...getAccessGrantStatus(context, accessGrant),
+      id: 'access-grant', // œTODO: Make this nicesst, please.
     }
   }
-
-  /* const activeMembership = findActiveMembership(memberships, user)
-  if (activeMembership) {
-    return {
-      ...getMembershipStatus(context, activeMembership, firstDay),
-      id: 'active-membership',
-    }
-  } */
 
   return null
 }
