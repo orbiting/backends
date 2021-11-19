@@ -1,5 +1,5 @@
 const t = require('../../../lib/t')
-const transformUser = require('../../../lib/transformUser')
+const transformUser = require('../../../lib/transformUser').default
 
 const {
   ensureUserHasRole,
