@@ -12,4 +12,8 @@ type OfferStatus {
   description: String!
 }
 
+extend type User {
+  offer: Offer!
+}
+
 `
