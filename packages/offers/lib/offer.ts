@@ -1,5 +1,6 @@
 import * as Bluebird from 'bluebird'
 import moment from 'moment'
+// import { PgTable } from 'pogi'
 
 import { GraphqlContext } from '@orbiting/backend-modules-types'
 import { UserTransformed } from '@orbiting/backend-modules-auth/lib/transformUser'
@@ -80,11 +81,125 @@ interface Membership {
   membershipType: MembershipTypeRow
 }
 
+const getFirstDay = (
+  memberships: Membership[],
+  user: UserTransformed,
+): string | false => {
+  if (!memberships.length) {
+    return false
+  }
+
+  const firstDayDate = memberships
+    .filter((m) => m.userId === user.id)
+    .map((m) => m.periods.map((p) => p.beginDate).flat())
+    .flat()
+    .reduce((prev, curr) => (curr < prev ? curr : prev), new Date())
+
+  return dateFormat(firstDayDate)
+}
+
+const findActiveMembership = (
+  memberships: Membership[],
+  user: UserTransformed,
+): Membership | false => {
+  return (
+    memberships.find((m) => m.active === true && m.userId === user.id) || false
+  )
+}
+
+const findLastActiveMembership = (
+  memberships: Membership[],
+  user: UserTransformed,
+): Membership | false => {
+  if (!memberships.length) {
+    return false
+  }
+
+  const userMemberships = memberships.filter((m) => m.userId === user.id)
+  if (!userMemberships.length) {
+    return false
+  }
+
+  return userMemberships.reduce((prev, curr) =>
+    curr.latestPeriod.endDate > prev.latestPeriod.endDate ? curr : prev,
+  )
+}
+
+const getMembershipStatus = (
+  context: GraphqlContext,
+  membership: Membership,
+  firstDay: string | false,
+) => {
+  const { t } = context
+  // endingDate
+  // daysUntilEnd
+  // renew
+  // (graceInterval)
+  // autoPay?
+
+  // derived:
+  // overdue?
+  //
+
+  // Mitglied seit xx
+
+  // Ihr nächster Mitgliederbeitrag ist am xx fällig
+  //
+
+  // Ihr Mitgliederbeitrag, fällig am xx ist noch nicht beglichen (Pledge Pending)
+
+  // Mitgliedschaft
+  // Mitgliedschaft wird automatisch am xx erneuert
+  // Mitgliedschaftsbeitrag ist am xx fällig
+  // Mitgliedschaftsbeitrag ist seit xx überfällig
+  // Abonnement wird am xx automatisch verlängert
+  // Abonnement ist seit xx überfällig
+  //
+
+  const { latestPeriod, active, renew } = membership
+
+  const endDate = dateFormat(latestPeriod.endDate)
+  const daysUntilEnd = Math.max(
+    Math.round(
+      moment
+        .duration(moment(latestPeriod.endDate).clone().diff(moment()))
+        .asDays(),
+    ),
+    0,
+  )
+
+  const membershipTypeName =
+    latestPeriod.pledgeOption?.packageOption?.membershipType?.name ||
+    membership.membershipType.name
+
+  const replacements = {
+    firstDay,
+    endDate,
+    daysUntilEnd,
+    active,
+    renew,
+    membershipTypeName,
+  }
+
+  return {
+    label: t(
+      'offer/status/label',
+      replacements,
+      `membershipTypeName: ${membershipTypeName}, firstDay: ${firstDay}`,
+    ),
+    description: t(
+      'offer/status/description',
+      replacements,
+      `active: ${active}, renew: ${renew}, endDate: ${endDate}, daysUntilEnd: ${daysUntilEnd}`,
+    ),
+  }
+}
+
 export const getStatus = async function (
   context: GraphqlContext,
   overrideUser?: UserTransformed,
 ): Promise<OfferStatus | null> {
-  const { user: contextUser, pgdb, t } = context
+  const { user: contextUser, pgdb } = context
   const user = overrideUser || contextUser
   if (!user) {
     return null
@@ -98,7 +213,7 @@ export const getStatus = async function (
   // @TODO: Payments? für overdue et al.
   const memberships_: MembershipRow[] = await pgdb.public.memberships.find({
     or: [
-      { userId: user?.id },
+      { userId: user.id },
       pledges?.length > 0 && {
         pledgeId: pledges.map((pledge) => pledge.id),
       },
@@ -111,15 +226,8 @@ export const getStatus = async function (
     pgdb,
   })
 
-  const firstDay =
-    memberships.length &&
-    dateFormat(
-      memberships
-        .filter((m) => m.active === true && m.userId === user?.id)
-        .map((m) => m.periods.map((p) => p.beginDate).flat())
-        .flat()
-        .reduce((prev, curr) => (curr < prev ? curr : prev)),
-    )
+  // A users very first day
+  const firstDay = getFirstDay(memberships, user)
 
   // @TODO: Might not use after all
   /* const hasWaitingPayments =
@@ -134,74 +242,29 @@ export const getStatus = async function (
   // active gifted membership
   // probelesen
 
-  const activeMembership = memberships.find(
-    (m) => m.active === true && m.userId === user?.id,
-  )
+  const activeMembership = findActiveMembership(memberships, user)
   if (activeMembership) {
-    // endingDate
-    // daysUntilEnd
-    // renew
-    // (graceInterval)
-    // autoPay?
-
-    // derived:
-    // overdue?
-    //
-
-    // Mitglied seit xx
-
-    // Ihr nächster Mitgliederbeitrag ist am xx fällig
-    // 
-
-    // Ihr Mitgliederbeitrag, fällig am xx ist noch nicht beglichen (Pledge Pending)
-
-    // Mitgliedschaft 
-    // Mitgliedschaft wird automatisch am xx erneuert
-    // Mitgliedschaftsbeitrag ist am xx fällig
-    // Mitgliedschaftsbeitrag ist seit xx überfällig
-    // Abonnement wird am xx automatisch verlängert
-    // Abonnement ist seit xx überfällig
-    // 
-
-    const { latestPeriod, active, renew } = activeMembership
-
-    const endDate = dateFormat(latestPeriod.endDate)
-    const daysUntilEnd = Math.max(
-      Math.round(
-        moment
-          .duration(moment(latestPeriod.endDate).clone().diff(moment()))
-          .asDays(),
-      ),
-      0,
-    )
-
-    const membershipTypeName =
-      latestPeriod.pledgeOption?.packageOption?.membershipType?.name ||
-      activeMembership.membershipType.name
-
-    const replacements = {
-      firstDay,
-      endDate,
-      daysUntilEnd,
-      active,
-      renew,
-      membershipTypeName,
-    }
-
     return {
-      id: Buffer.from(['offer', 'status', 'userId', user.id].join('')).toString('base64'),
-      label: t(
-        'offer/status/label',
-        replacements,
-        `membershipTypeName: ${membershipTypeName}, firstDay: ${firstDay}`,
-      ),
-      description: t(
-        'offer/status/description',
-        replacements,
-        `active: ${active}, renew: ${renew}, endDate: ${endDate}, daysUntilEnd: ${daysUntilEnd}`,
-      ),
+      ...getMembershipStatus(context, activeMembership, firstDay),
+      id: 'active-membership',
     }
   }
+
+  const lastActiveMembership = findLastActiveMembership(memberships, user)
+  if (lastActiveMembership) {
+    return {
+      ...getMembershipStatus(context, lastActiveMembership, firstDay),
+      id: 'last-active-membership',
+    }
+  }
+
+  /* const activeMembership = findActiveMembership(memberships, user)
+  if (activeMembership) {
+    return {
+      ...getMembershipStatus(context, activeMembership, firstDay),
+      id: 'active-membership',
+    }
+  } */
 
   return null
 }
