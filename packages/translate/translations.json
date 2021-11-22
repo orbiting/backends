@@ -2247,6 +2247,42 @@
     {
       "key": "api/offer/status/description/due/active:true/renew:true/ABO_GIVE_MONTHS",
       "value": "Ihr Monats-Abo als Geschenk wird am {endDate} verlängert."
+    },
+    {
+      "key": "api/package/option/reward:MembershipType:ABO",
+      "value": "Regulär"
+    },
+    {
+      "key": "api/package/option/reward:MembershipType:BENEFACTOR_ABO",
+      "value": "Gönner"
+    },
+    {
+      "key": "api/package/option/reward:MembershipType:MONTHLY_ABO",
+      "value": "Regulär"
+    },
+    {
+      "key": "api/package/option/reward:MembershipType:ABO_GIVE_MONTHS",
+      "value": "Regulär"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:NOTEBOOK",
+      "value": "Notizbuch"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:TOTEBAG",
+      "value": "Tasche"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:TABLEBOOK",
+      "value": "Buch «Republik bei Stromausfall»"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:MASK",
+      "value": "Republik-Maske"
+    },
+    {
+      "key": "api/package:DONATE/option/order:100",
+      "value": "Spende"
     }
   ]
 }

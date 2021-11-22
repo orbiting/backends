@@ -76,6 +76,7 @@ enum PackageGroup {
 
 type PackageOption {
   id: ID! # unique ID
+  label: String!
   templateId: ID! # package option ID
   package: Package!
   reward: Reward
