@@ -16,4 +16,14 @@ extend type User {
   offer: Offer!
 }
 
+type PackageLabels {
+  title: String!
+  description: String!
+  cta: String!
+}
+
+extend type Package {
+  labels: PackageLabels
+}
+
 `
