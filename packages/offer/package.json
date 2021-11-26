@@ -1,8 +1,8 @@
 {
-  "name": "@orbiting/backend-modules-offers",
+  "name": "@orbiting/backend-modules-offer",
   "version": "0.0.1",
   "private": true,
-  "description": "Show offers",
+  "description": "Show offer",
   "main": "index.js",
   "repository": {
     "type": "git",
