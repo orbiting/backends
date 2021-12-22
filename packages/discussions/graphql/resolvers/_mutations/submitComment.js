@@ -37,6 +37,11 @@ module.exports = async (_, args, context) => {
     throw new Error(t('api/discussion/404'))
   }
 
+  // check if client-side generated ID is a UUID
+  if (id && !isUUID.v4(id)) {
+    throw new Error(t('api/comment/id/invalid'))
+  }
+
   // check if client-side generated ID already exists
   if (id && !!(await loaders.Comment.byId.load(id))) {
     throw new Error(t('api/comment/id/duplicate'))

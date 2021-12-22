@@ -721,6 +721,10 @@
       "value": "Anonym"
     },
     {
+      "key": "api/comment/id/invalid",
+      "value": "Das hat nicht geklappt. Die Kommentar-ID scheint ungültig. Bitte laden Sie die Seite neu und versuchen Sie den Komentar erneut abzusenden."
+    },
+    {
       "key": "api/comment/id/duplicate",
       "value": "ID-Kollision! Ups, da ist etwas schiefgelaufen. Bitte laden Sie die Seite neu und versuchen Sie den Komentar erneut abzusenden."
     },
