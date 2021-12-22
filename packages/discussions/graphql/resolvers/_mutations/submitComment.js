@@ -10,6 +10,7 @@ const { contentLength } = require('../Comment')
 const slack = require('../../../lib/slack')
 const { timeahead } = require('@orbiting/backend-modules-formats')
 const Promise = require('bluebird')
+const isUUID = require('is-uuid')
 
 const { submitComment: notify } = require('../../../lib/Notifications')
 
@@ -37,6 +38,10 @@ module.exports = async (_, args, context) => {
     throw new Error(t('api/discussion/404'))
   }
 
+  if (discussion.closed) {
+    throw new Error(t('api/comment/closed'))
+  }
+
   // check if client-side generated ID is a UUID
   if (id && !isUUID.v4(id)) {
     throw new Error(t('api/comment/id/invalid'))
@@ -45,10 +50,6 @@ module.exports = async (_, args, context) => {
   // check if client-side generated ID already exists
   if (id && !!(await loaders.Comment.byId.load(id))) {
     throw new Error(t('api/comment/id/duplicate'))
-  }
-
-  if (discussion.closed) {
-    throw new Error(t('api/comment/closed'))
   }
 
   const [canComment, waitUntil] = await Promise.all([
