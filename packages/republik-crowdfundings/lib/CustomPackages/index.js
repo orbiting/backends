@@ -91,7 +91,7 @@ const hasDormantMembership = ({ user, memberships }) => {
 /**
  * Evalutes whether a (resolved) package and some packageOption may be applicable
  * to a membership.
- * 
+ *
  * It returns a filtered and sorted array w/ packageOptions.
  */
 const evaluate = async ({
@@ -282,7 +282,7 @@ const evaluate = async ({
   if (packageOption.reward?.type !== 'MembershipType') {
     return {
       ...packageOption,
-      templateId: packageOption.id
+      templateId: packageOption.id,
     }
   }
 
@@ -409,12 +409,22 @@ const getCustomOptions = async (package_) => {
   }
 }
 
+const createSuggestionMap = (packageOption) => (suggestion, index) => {
+  const id = [packageOption.id, 'suggestion', index].join('/')
+
+  return {
+    ...suggestion,
+    id: Buffer.from(id).toString('base64'),
+  }
+}
+
 /*
   packages[] {
     user: {
       memberhips[] @see resolveMemberships
     }
     packageOptions[] {
+      suggestions
       reward
         reward
         membershipType
@@ -507,6 +517,17 @@ const resolvePackages = async ({
     const packageOptions = allPackageOptions
       .filter((packageOption) => packageOption.packageId === package_.id)
       .map((packageOption) => {
+        const hasDefaultSuggestion = !packageOption.suggestions.find(
+          (suggestion) => suggestion.price === packageOption.price,
+        )
+
+        const suggestions = [
+          !!hasDefaultSuggestion && { price: packageOption.price },
+          ...packageOption.suggestions,
+        ]
+          .filter(Boolean)
+          .map(createSuggestionMap(packageOption))
+
         const reward = allRewards.find(
           (reward) => packageOption.rewardId === reward.rewardId,
         )
@@ -515,7 +536,7 @@ const resolvePackages = async ({
             packageOption.rewardId === membershipType.rewardId,
         )
 
-        return { ...packageOption, reward, membershipType }
+        return { ...packageOption, suggestions, reward, membershipType }
       })
 
     return { ...package_, packageOptions, user: { ...pledger, memberships } }
