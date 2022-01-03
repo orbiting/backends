@@ -26,4 +26,17 @@ extend type Package {
   labels: PackageLabels
 }
 
+extend type PackageOption {
+  suggestions: [PackageOptionSuggestion!]!
+}
+
+type PackageOptionSuggestion {
+  id: ID!
+  label: String!
+  description: String!
+  price: Int
+  userPrice: Boolean!
+  favorite: Boolean!
+}
+
 `
