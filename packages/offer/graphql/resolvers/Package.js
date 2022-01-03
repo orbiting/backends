@@ -1,6 +1,6 @@
 module.exports = {
   labels: (package, args, context) => {
-    const { t } = context
+    const { t } = context
 
     return {
       title: t('api/offer/package/title'),
