@@ -19,14 +19,6 @@ services:
     ports:
       - 9200:9200
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana-oss:7.10.2
-    container_name: kibana
-    ports:
-      - 5601:5601
-    depends_on:
-      - elastic
-
   redis:
     image: redis:4.0.14-alpine
     ports:
@@ -43,3 +35,13 @@ services:
     ports:
       - 5432:5432
     command: ['postgres', '-c', 'log_statement=all']
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana-oss:7.10.2
+    container_name: kibana
+    ports:
+      - 5601:5601
+    depends_on:
+      - elastic
+    profiles:
+      - kibana
