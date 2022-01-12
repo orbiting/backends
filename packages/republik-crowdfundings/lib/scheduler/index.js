@@ -46,11 +46,23 @@ const init = async (context) => {
 
   schedulers.push(
     timeScheduler.init({
-      name: 'payment-reminders',
+      name: 'payment-reminders-lunch',
       context,
       runFunc: (_args, context) => sendPaymentReminders(context),
       lockTtlSecs,
       runAtTime: '12:00',
+      runAtDaysOfWeek: [1, 2, 3, 4, 5], // Send reminder Monday to Friday
+    }),
+  )
+
+  schedulers.push(
+    timeScheduler.init({
+      name: 'payment-reminders-nightshift',
+      context,
+      runFunc: (_args, context) => sendPaymentReminders(context),
+      lockTtlSecs,
+      runAtTime: '22:00',
+      runAtDaysOfWeek: [1, 2, 3, 4, 5], // Send reminder Monday to Friday
     }),
   )
 
