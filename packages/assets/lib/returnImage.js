@@ -61,7 +61,7 @@ module.exports = async ({
     try {
       ;({ width, height } = getWidthHeight(resize))
     } catch (e) {
-      res.status(400).end(e.message)
+      return res.status(400).send(e.message)
     }
   }
 
@@ -136,7 +136,7 @@ module.exports = async ({
 
     if (format === 'auto') {
       res.set('Vary', 'Accept')
-      if (req.get('Accept').includes('image/webp')) {
+      if (req.get('Accept')?.includes('image/webp')) {
         format = 'webp'
       } else {
         format = null

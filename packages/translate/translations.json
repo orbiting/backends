@@ -721,6 +721,10 @@
       "value": "Anonym"
     },
     {
+      "key": "api/comment/id/invalid",
+      "value": "Das hat nicht geklappt. Die Kommentar-ID scheint ungültig. Bitte laden Sie die Seite neu und versuchen Sie den Komentar erneut abzusenden."
+    },
+    {
       "key": "api/comment/id/duplicate",
       "value": "ID-Kollision! Ups, da ist etwas schiefgelaufen. Bitte laden Sie die Seite neu und versuchen Sie den Komentar erneut abzusenden."
     },
@@ -2301,8 +2305,36 @@
       "value": "Republik-Maske"
     },
     {
+      "key": "api/package/option/reward:Goodie:FONDUE",
+      "value": "Republik-Fondue"
+    },
+    {
       "key": "api/package:DONATE/option/order:100",
       "value": "Spende"
+    },
+    {
+      "key": "api/publikator/editMemo/error/404",
+      "value": "Memo nicht gefunden"
+    },
+    {
+      "key": "api/publikator/editMemo/error/notYours",
+      "value": "Sie können dieses Memo nicht bearbeiten."
+    },
+    {
+      "key": "api/publikator/unpublishMemo/error/404",
+      "value": "Memo nicht gefunden"
+    },
+    {
+      "key": "api/publikator/unpublishMemo/error/notYours",
+      "value": "Sie können dieses Memo nicht zurückziehen."
+    },
+    {
+      "key": "api/publikator/memo/notPublished/author/name",
+      "value": "Memo zurückgezogen"
+    },
+    {
+      "key": "api/publikator/memo/notPublished/author/email",
+      "value": "zurückgezogen"
     }
   ]
 }

@@ -19,9 +19,15 @@ export interface UserTransformed {
   [key: string]: any
 }
 
-const transformUser = (user: UserRow, additionalFields = {}): UserTransformed | null => {
+const transformUser = (user: UserRow | UserTransformed, additionalFields = {}): UserTransformed | null => {
   if (!user) {
     return null
+  }
+  if ('_raw' in user) {
+    return {
+      ...(user as UserTransformed),
+      ...additionalFields,
+    }
   }
   const name = naming.getName(user)
   return {

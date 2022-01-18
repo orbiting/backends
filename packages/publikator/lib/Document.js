@@ -2,6 +2,7 @@ const visit = require('unist-util-visit')
 const debug = require('debug')('publikator:lib:Document')
 const mp3Duration = require('@rocka/mp3-duration')
 const fetch = require('isomorphic-unfetch')
+const Promise = require('bluebird')
 
 const { timeFormat } = require('@orbiting/backend-modules-formats')
 const { mdastToString } = require('@orbiting/backend-modules-utils')
@@ -17,7 +18,7 @@ const { updateRepo } = require('./postgres')
 
 const slugDateFormat = timeFormat('%Y/%m/%d')
 
-const PREFIX_PREPUBLICATION_PATH = 'vorschau'
+const { PREFIX_PREPUBLICATION_PATH, SUPPRESS_AUDIO_DURATION_MEASURE } = process.env
 
 const getPath = ({ slug, template, publishDate, prepublication, path }) => {
   if (path) {
@@ -25,7 +26,7 @@ const getPath = ({ slug, template, publishDate, prepublication, path }) => {
       !!prepublication && PREFIX_PREPUBLICATION_PATH,
       ...path.split('/'),
     ]
-  
+
     return `/${parts.filter(Boolean).join('/')}`
   }
 
@@ -113,7 +114,7 @@ const prepareMetaForPublish = async ({
 
   const { audioSourceMp3, audioSourceAac, audioSourceOgg } = doc.content.meta
   let durationMs = 0
-  if (audioSourceMp3) {
+  if (audioSourceMp3 && !SUPPRESS_AUDIO_DURATION_MEASURE) {
     debug(repoId, 'fetching audio source', audioSourceMp3)
     durationMs = await fetch(audioSourceMp3)
       .then((res) => res.buffer())
@@ -211,30 +212,34 @@ const prepareMetaForPublish = async ({
 const handleRedirection = async (repoId, newDocMeta, context) => {
   const {
     lib: {
-      Documents: { findPublished },
+      Documents: { findPublications },
     },
   } = require('@orbiting/backend-modules-search')
 
   const newPath = newDocMeta.path
   const { elastic } = context
 
-  const docs = await findPublished(elastic, repoId)
+  const docs = await findPublications(elastic, repoId)
 
-  await Promise.all(
-    docs.map(async (doc) => {
-      if (doc.meta.path !== newPath) {
-        debug('upsertRedirection', { source: doc.meta.path, target: newPath })
-        return upsertRedirection(
-          {
-            source: doc.meta.path,
-            target: newPath,
-            resource: { repo: { id: repoId } },
-          },
-          context,
-        )
-      }
-    }),
-  )
+  const previousPaths = docs
+    .map((doc) => doc.meta.path)
+    .filter((path) => path !== newPath)
+
+  if (!previousPaths.length) {
+    return
+  }
+
+  await Promise.each([...new Set(previousPaths)], (previousPath) => {
+    debug('upsertRedirection', { source: previousPath, target: newPath, repoId })
+    return upsertRedirection(
+      {
+        source: previousPath,
+        target: newPath,
+        resource: { repo: { id: repoId } },
+      },
+      context,
+    )
+  })
 }
 
 module.exports = {

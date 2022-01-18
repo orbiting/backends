@@ -675,36 +675,6 @@ Promise.props({ pgdb: PgDb.connect(), elastic: Elasticsearch.connect() })
     }
 
     /**
-     * eventLog
-     */
-    const eventLog = await pgdb.query(
-      `
-    SELECT
-      e.*
-    FROM
-      "eventLog" e
-    WHERE
-      e."newData" #>> '{sess,email}' = :email OR
-      e."oldData" #>> '{sess,email}' = :email OR
-      e."newData" #>> '{sess,passport,user}' = :userId OR
-      e."oldData" #>> '{sess,passport,user}' = :userId OR
-      e."userId" = :userId
-  `,
-      {
-        email: user.email,
-        userId: user.id,
-      },
-    )
-    await save(
-      destination,
-      'eventLog',
-      'Änderungen an verschiedenen Datenbanktabellen',
-      eventLog.map((record) =>
-        pick(record, ['createdAt', 'schemaName', 'tableName', 'action']),
-      ),
-    )
-
-    /**
      * mailLog
      */
     const mailLog = await pgdb.public.mailLog.find({
@@ -886,30 +856,6 @@ Promise.props({ pgdb: PgDb.connect(), elastic: Elasticsearch.connect() })
         ])
       }),
     )
-
-    /**
-     * previews
-     */
-
-    const previewRequests = await pgdb.public.previewRequests.find({
-      userId: user.id,
-    })
-
-    if (previewRequests.length > 0) {
-      await save(
-        destination,
-        'previewRequests',
-        'Vorschau-Zugänge (veraltet)',
-        previewRequests.map((request) =>
-          pick(request, [
-            'createdAt',
-            'scheduledAt',
-            'expiredAt',
-            'followupAt',
-          ]),
-        ),
-      )
-    }
 
     /**
      * tokens
