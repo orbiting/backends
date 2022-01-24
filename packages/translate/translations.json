@@ -2313,6 +2313,54 @@
       "value": "Spende"
     },
     {
+      "key": "api/package/option/reward:MembershipType:ABO/gifted/suggestion/label",
+      "value": "{claimerName}"
+    },
+    {
+      "key": "api/package/option/reward:MembershipType:ABO/gifted/suggestion/description",
+      "value": "Mitgliedschaft als Geschenk läuft noch bis zum {endDate}"
+    },
+    {
+      "key": "api/package/option/reward:MembershipType:ABO_GIVE_MONTHS/gifted/suggestion/label",
+      "value": "{claimerName}"
+    },
+    {
+      "key": "api/package/option/reward:MembershipType:ABO_GIVE_MONHTS/gifted/suggestion/description",
+      "value": "Monats-Abos als Geschenk läuft noch bis zum {endDate}"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:NOTEBOOK/suggestion/label",
+      "value": "Notizbuch"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:NOTEBOOK/suggestion/description",
+      "value": "Ein Moleskin Notizbuch mit Republik-Gravierung. Lieferung innerhalb von 7 Werktagen."
+    },
+    {
+      "key": "api/package/option/reward:Goodie:TOTEBAG/suggestion/label",
+      "value": "Tasche"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:TOTEBAG/suggestion/description",
+      "value": "Mit Logo auf der Vorderseite und Manifest auf der Rückseite. Lieferung innerhalb von 7 Werktagen."
+    },
+    {
+      "key": "api/package/option/reward:Goodie:TABLEBOOK/suggestion/label",
+      "value": "Buch «Republik bei Stromausfall»"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:MASK/suggestion/label",
+      "value": "Republik-Maske"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:FONDUE/suggestion/label",
+      "value": "Republik-Fondue"
+    },
+    {
+      "key": "api/package/option/reward:Goodie:FONDUE/suggestion/description",
+      "value": "Eine von Hauskulinariker Michael Rüegg entworfene Mischung. Für 2 Personen. Versand am 26.01.22. Nur innerhalb der Schweiz möglich."
+    },
+    {
       "key": "api/publikator/editMemo/error/404",
       "value": "Memo nicht gefunden"
     },

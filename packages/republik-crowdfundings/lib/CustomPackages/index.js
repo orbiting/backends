@@ -297,6 +297,32 @@ const evaluate = async ({
   return payload
 }
 
+const createSuggestionMap = (package) => (option) => {
+  const { membership, suggestions, reward, package, order } = option
+
+  const isOwnMembership = membership?.userId === package.user.id
+
+  return {
+    ...option,
+    suggestions: suggestions.map((suggestion, index) => {
+      const id = [package.name, option.id, 'suggestion', index].join('/')
+
+      return {
+        ...suggestion,
+        id, // : Buffer.from(id).toString('base64'),
+        _payload: {
+          isOwnMembership,
+          membership,
+          packageName: package?.name,
+          rewardType: reward?.type,
+          rewardName: reward?.name,
+          order,
+        }
+      }
+    }),
+  }
+}
+
 const getCustomOptions = async (package_) => {
   debug('getCustomOptions', package_.name, package_.id)
   debug('user', package_.user.id)
@@ -400,6 +426,7 @@ const getCustomOptions = async (package_) => {
     )
     // … aaaand findally sort by sortOrder, at last
     .sort((a, b) => ascending(a.order, b.order))
+    .map(createSuggestionMap(package_))
 
   if (!filteredAndSortedOptions.length) {
     return
@@ -414,15 +441,6 @@ const getCustomOptions = async (package_) => {
     ...package_,
     options: filteredAndSortedOptions,
     suggestedTotal,
-  }
-}
-
-const createSuggestionMap = (packageOption) => (suggestion, index) => {
-  const id = [packageOption.id, 'suggestion', index].join('/')
-
-  return {
-    ...suggestion,
-    id: Buffer.from(id).toString('base64'),
   }
 }
 
@@ -532,9 +550,7 @@ const resolvePackages = async ({
         const suggestions = [
           !!hasDefaultSuggestion && { price: packageOption.price },
           ...packageOption.suggestions,
-        ]
-          .filter(Boolean)
-          .map(createSuggestionMap(packageOption))
+        ].filter(Boolean)
 
         const reward = allRewards.find(
           (reward) => packageOption.rewardId === reward.rewardId,
