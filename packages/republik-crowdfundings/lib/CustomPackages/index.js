@@ -260,6 +260,14 @@ const evaluate = async ({
         payload.userPrice = false
       }
     }
+
+    // Favorise suggestion which matches best current membership type
+    if (isOwnMembership && isSameRewardId) {
+      const suggestionIndex = payload.suggestions.findIndex(
+        (s) => s.price === packageOption.price,
+      )
+      payload.suggestions[suggestionIndex].favorite = true
+    }
   }
 
   // Apply package rules. Rules may pass or not, and may mutate payload.
