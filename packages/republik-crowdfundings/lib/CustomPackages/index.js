@@ -7,7 +7,9 @@ const { ascending, descending } = require('d3-array')
 const {
   applyPgInterval: { add: addInterval },
 } = require('@orbiting/backend-modules-utils')
+const { timeFormat } = require('@orbiting/backend-modules-formats')
 
+const dateFormat = timeFormat('%x')
 const { getPeriodEndingLast, getLastEndDate } = require('../utils')
 const rules = require('./rules')
 
@@ -382,17 +384,25 @@ const createSuggestionMap = (package) => (option, index, options) => {
           !suggestion.filterIfNotFavorite ||
           (suggestion.filterIfNotFavorite && !!suggestion.favorite),
       )
+      .map((suggestion) => {
+        if (!!suggestion.isGifted) {
+
+          return {
+            ...suggestion,
+            claimerName: membership?.claimerName,
+            endDate:
+              membership?.latestPeriod?.endDate &&
+              dateFormat(membership.latestPeriod.endDate),
+          }
+        }
+
+        return suggestion
+      })
       .map((suggestion, index) => {
         const id = [package.name, option.id, 'suggestion', index].join('/')
 
         return {
           ...suggestion,
-          ...(!!suggestion.isGifted
-            ? {
-                label: 'Label für Geschenkpipapo',
-                description: 'Description für Geschenkpipapo',
-              }
-            : {}),
           id,
         }
       }),

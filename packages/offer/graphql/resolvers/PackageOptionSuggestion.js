@@ -1,17 +1,23 @@
-const { timeFormat } = require('@orbiting/backend-modules-formats')
-
-const dateFormat = timeFormat('%x')
+const applyReplacements = (replacements, string) =>
+  Object.keys(replacements).reduce(
+    (prev, searchValue) =>
+      prev.replace(
+        new RegExp(`{${searchValue}}`, 'gmi'),
+        replacements[searchValue] || '',
+      ),
+    string,
+  )
 
 module.exports = {
   label: (packageOptionSuggestion) => {
-    const { label } = packageOptionSuggestion
+    const { label, claimerName, endDate } = packageOptionSuggestion
 
-    return label || 'ups?' // @TODO: Default to something meaningful
+    return applyReplacements({ claimerName, endDate }, label || 'ups?')
   },
   description: (packageOptionSuggestion) => {
-    const { description } = packageOptionSuggestion
+    const { description, claimerName, endDate } = packageOptionSuggestion
 
-    return description || 'äh?' // @TODO: Default to something meaningful
+    return applyReplacements({ claimerName, endDate }, description || 'äh?')
   },
   userPrice: (packageOptionSuggestion) => {
     return !!packageOptionSuggestion.userPrice
