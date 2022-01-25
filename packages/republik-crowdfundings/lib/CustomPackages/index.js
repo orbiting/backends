@@ -107,6 +107,12 @@ const evaluate = async ({
   if (!membership.id) {
     return {
       ...packageOption,
+      suggestions: packageOption.suggestions?.map((suggestion, index) => {
+        return {
+          ...suggestion,
+          ref: [package_.id, packageOption.id, index].join('/'),
+        }
+      }),
       templateId: packageOption.id,
       package: package_,
       membership: null,
@@ -121,6 +127,12 @@ const evaluate = async ({
     ...packageOption,
     ...(packageOption.reward?.type === 'MembershipType' && {
       id: [packageOption.id, membership.id].join('-'),
+    }),
+    suggestions: packageOption.suggestions?.map((suggestion, index) => {
+      return {
+        ...suggestion,
+        ref: [package_.id, packageOption.id, index].join('/'),
+      }
     }),
     templateId: packageOption.id,
     package: package_,
@@ -226,6 +238,8 @@ const evaluate = async ({
       ...beginEnd,
     })
 
+    const isOwnMembership = membership.userId === package_.user.id
+
     const isSameRewardId =
       packageOption.rewardId ===
       (latestPeriod.pledgeOption?.packageOption?.rewardId ||
@@ -240,7 +254,6 @@ const evaluate = async ({
       payload.suggestedPrice = suggestedPrice
     }
 
-    const isOwnMembership = membership.userId === package_.user.id
     // If membership stems from ABO_GIVE_MONTHS package, default ABO option
     if (
       isOwnMembership &&
@@ -259,14 +272,6 @@ const evaluate = async ({
         // If user does not own membership, set userPrice to false
         payload.userPrice = false
       }
-    }
-
-    // Favorise suggestion which matches best current membership type
-    if (isOwnMembership && isSameRewardId) {
-      const suggestionIndex = payload.suggestions.findIndex(
-        (s) => s.price === packageOption.price,
-      )
-      payload.suggestions[suggestionIndex].favorite = true
     }
   }
 
@@ -290,6 +295,12 @@ const evaluate = async ({
   if (packageOption.reward?.type !== 'MembershipType') {
     return {
       ...packageOption,
+      suggestions: packageOption.suggestions?.map((suggestion, index) => {
+        return {
+          ...suggestion,
+          ref: [package_.id, packageOption.id, index].join('/'),
+        }
+      }),
       templateId: packageOption.id,
     }
   }
@@ -297,29 +308,94 @@ const evaluate = async ({
   return payload
 }
 
-const createSuggestionMap = (package) => (option) => {
-  const { membership, suggestions, reward, package, order } = option
+const createSuggestionMap = (package) => (option, index, options) => {
+  const { membership, reward, suggestions: suggestions_, optionGroup } = option
 
+  const suggestions = [...suggestions_]
+
+  const hasMembership = !!membership
   const isOwnMembership = membership?.userId === package.user.id
+  const isSameRewardId =
+    reward?.rewardId ===
+    (membership?.latestPeriod.pledgeOption?.packageOption?.rewardId ||
+      membership?.membershipType.rewardId)
+
+  // find options by optionGroup
+  // check if suggestedPrice is set on either of it
+  // find best options[].suggestions[]
+  // flag as favorite, if in this option.suggestions[]
+  // remove filterIfNotFavorite === true in option.suggestions[]
+  // elseif find suggested.price === option.price
+  // flag as favorite
+  // (elseif only one option.defaultAmount > 0, flag as favorite)
+  // if none is favorite, pick first
+
+  const optionsByGroup = options.filter(
+    (option) => option.optionGroup === optionGroup,
+  )
+
+  const suggestedPriceOption = optionsByGroup.find(
+    (option) => !!option.suggestedPrice,
+  )
+
+  if (suggestedPriceOption) {
+    const { suggestedPrice } = suggestedPriceOption
+    const favoriteSuggestion = optionsByGroup
+      .map((option) => option.suggestions)
+      .flat()
+      .filter((option) => !!option.userPrice)
+      .reduce((a, b) => (b?.minPrice < suggestedPrice ? b : a))
+
+    const favoriteIndex = suggestions.findIndex(
+      (suggestion) => suggestion.ref === favoriteSuggestion.ref,
+    )
+
+    if (favoriteIndex >= 0) {
+      suggestions[favoriteIndex] = {
+        ...suggestions[favoriteIndex],
+        price: suggestedPrice,
+        favorite: true,
+      }
+    }
+  } else if (isOwnMembership && isSameRewardId) {
+    const favoriteIndex = suggestions.findIndex(
+      (suggestion) => suggestion.price === option.price,
+    )
+
+    if (favoriteIndex >= 0) {
+      suggestions[favoriteIndex] = {
+        ...suggestions[favoriteIndex],
+        favorite: true,
+      }
+    }
+  }
 
   return {
     ...option,
-    suggestions: suggestions.map((suggestion, index) => {
-      const id = [package.name, option.id, 'suggestion', index].join('/')
+    suggestions: suggestions
+      .filter(
+        (suggestion) =>
+          !hasMembership || !!suggestion.isGifted === !isOwnMembership,
+      )
+      .filter(
+        (suggestion) =>
+          !suggestion.filterIfNotFavorite ||
+          (suggestion.filterIfNotFavorite && !!suggestion.favorite),
+      )
+      .map((suggestion, index) => {
+        const id = [package.name, option.id, 'suggestion', index].join('/')
 
-      return {
-        ...suggestion,
-        id, // : Buffer.from(id).toString('base64'),
-        _payload: {
-          isOwnMembership,
-          membership,
-          packageName: package?.name,
-          rewardType: reward?.type,
-          rewardName: reward?.name,
-          order,
+        return {
+          ...suggestion,
+          ...(!!suggestion.isGifted
+            ? {
+                label: 'Label für Geschenkpipapo',
+                description: 'Description für Geschenkpipapo',
+              }
+            : {}),
+          id,
         }
-      }
-    }),
+      }),
   }
 }
 
@@ -543,15 +619,6 @@ const resolvePackages = async ({
     const packageOptions = allPackageOptions
       .filter((packageOption) => packageOption.packageId === package_.id)
       .map((packageOption) => {
-        const hasDefaultSuggestion = !packageOption.suggestions.find(
-          (suggestion) => suggestion.price === packageOption.price,
-        )
-
-        const suggestions = [
-          !!hasDefaultSuggestion && { price: packageOption.price },
-          ...packageOption.suggestions,
-        ].filter(Boolean)
-
         const reward = allRewards.find(
           (reward) => packageOption.rewardId === reward.rewardId,
         )
@@ -560,7 +627,7 @@ const resolvePackages = async ({
             packageOption.rewardId === membershipType.rewardId,
         )
 
-        return { ...packageOption, suggestions, reward, membershipType }
+        return { ...packageOption, reward, membershipType }
       })
 
     return { ...package_, packageOptions, user: { ...pledger, memberships } }

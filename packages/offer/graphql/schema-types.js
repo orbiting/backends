@@ -37,6 +37,7 @@ type PackageOptionSuggestion {
   price: Int
   userPrice: Boolean!
   favorite: Boolean!
+  minPrice: Int
 }
 
 `
