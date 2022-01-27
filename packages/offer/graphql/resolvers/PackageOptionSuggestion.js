@@ -19,10 +19,13 @@ module.exports = {
 
     return applyReplacements({ claimerName, endDate }, description || 'äh?')
   },
-  userPrice: (packageOptionSuggestion) => {
-    return !!packageOptionSuggestion.userPrice
-  },
   favorite: (packageOptionSuggestion) => {
     return !!packageOptionSuggestion.favorite
+  },
+  userPriceFallback: (packageOptionSuggestion) => {
+    return !!packageOptionSuggestion.userPriceFallback
+  },
+  userPrice: (packageOptionSuggestion) => {
+    return !!packageOptionSuggestion.userPrice
   },
 }

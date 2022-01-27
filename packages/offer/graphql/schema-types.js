@@ -34,10 +34,11 @@ type PackageOptionSuggestion {
   id: ID!
   label: String!
   description: String!
+  favorite: Boolean!
+  userPriceFallback: Boolean!
   price: Int
   userPrice: Boolean!
-  favorite: Boolean!
-  minPrice: Int
+  minUserPrice: Int
 }
 
 `
