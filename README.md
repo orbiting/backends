@@ -1,4 +1,6 @@
-# @orbiting/backends [![Build Status](https://travis-ci.com/orbiting/backends.svg?branch=master)](https://travis-ci.com/orbiting/backends) [![Coverage Status](https://coveralls.io/repos/github/orbiting/backends/badge.svg?branch=master)](https://coveralls.io/github/orbiting/backends?branch=master)
+# [DEPRECATED]  @orbiting/backends [![Build Status](https://travis-ci.com/orbiting/backends.svg?branch=master)](https://travis-ci.com/orbiting/backends) [![Coverage Status](https://coveralls.io/repos/github/orbiting/backends/badge.svg?branch=master)](https://coveralls.io/github/orbiting/backends?branch=master)
+
+⚠️ This repository together with others has been merged into the [republik/plattform](https://github.com/republik/plattform) monorepo. Let's continue the journey there. ⚠️
 
 This repo contains all the backend code in use at Republik. For easier development the previously separate repos [republik-backend](https://github.com/orbiting/republik-backend), [publikator-backend](https://github.com/orbiting/publikator-backend), [assets-backend](https://github.com/orbiting/assets-backend) and [backend-modules](https://github.com/orbiting/backend-modules) where merged into this monorepo.
 
